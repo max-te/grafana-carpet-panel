@@ -12,6 +12,7 @@ import path from "path";
 import { DIST_DIR } from "./constants.ts";
 import ForkTsCheckerWebpackPlugin from "fork-ts-checker-webpack-plugin";
 import { RspackVirtualModulePlugin } from "rspack-plugin-virtual-module";
+import { BuildModeRspackPlugin } from "./BuildModeRspackPlugin.ts";
 
 const pluginJson = getPluginJson();
 
@@ -32,6 +33,9 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
     context: path.join(process.cwd(), "src"),
     devtool: env.production ? "source-map" : "eval-source-map",
     mode: env.production ? "production" : "development",
+    devServer: {
+      watchFiles: "src",
+    },
 
     externals: [
       { "amd-module": "module" },
@@ -170,7 +174,8 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
     },
 
     plugins: [
-      // virtualPublicPath,
+      new BuildModeRspackPlugin(),
+      virtualPublicPath,
       new rspack.CopyRspackPlugin({
         patterns: [
           // If src/README.md exists use it; otherwise the root README
@@ -224,10 +229,10 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
                 configFile: path.join(process.cwd(), "tsconfig.json"),
               },
             }),
-            // new ESLintPlugin({
-            //   extensions: ['.ts', '.tsx'],
-            //   lintDirtyModulesOnly: Boolean(env.development), // don't lint on start, only lint changed files
-            // }),
+            new ESLintPlugin({
+              extensions: ['.ts', '.tsx'],
+              lintDirtyModulesOnly: Boolean(env.development), // don't lint on start, only lint changed files
+            }),
           ]
         : []),
     ],
