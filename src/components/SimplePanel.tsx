@@ -62,6 +62,7 @@ export const SimplePanel: React.FC<Props> = ({
 
       return { timeField, valueField, fields: frame.fields };
     });
+  const padding = 16;
 
   return (
     <div
@@ -78,31 +79,16 @@ export const SimplePanel: React.FC<Props> = ({
         height={height}
       >
         <Layer>
-          <Rect x={17} width={100} height={100} fill={theme.colors.primary.main}/>
-        </Layer>
-        <Layer>
           <Chart
-            x={0} y={0}
-            width={width}
-            height={height}
+            x={padding} y={padding}
+            width={width - 2 * padding}
+            height={height - 2 * padding}
             timeRange={timeRange}
             timeField={frames[0]!.timeField!}
             valueField={frames[0]!.valueField!}
             />
         </Layer>
       </Stage>
-{/*
-      <div className={styles.textBox}>
-
-        <div data-testid="simple-panel-series-counter">
-          Number of series: {data.series.length}
-          <p>
-            Number of frames: {frames.length}
-          </p>
-        </div>
-
-        <div>Text option value: {options.text}</div>
-      </div> */}
     </div>
   );
 };
