@@ -1,11 +1,12 @@
-import React from "react";
+import React, { useMemo } from "react";
 import type { PanelProps } from "@grafana/data";
 import type { SimpleOptions } from "../types";
 import { css, cx } from "@emotion/css";
-import { useStyles2, useTheme2 } from "@grafana/ui";
+import { useStyles2 } from "@grafana/ui";
 import { PanelDataErrorView } from "@grafana/runtime";
-import { Stage, Layer, Rect } from "react-konva";
+import { Stage, Layer } from "react-konva";
 import { Chart } from "./Chart";
+import * as d3ScaleChromatic from 'd3-scale-chromatic';
 
 interface Props extends PanelProps<SimpleOptions> {}
 
@@ -38,7 +39,6 @@ export const SimplePanel: React.FC<Props> = ({
   id,
   timeRange,
 }) => {
-  const theme = useTheme2();
   const styles = useStyles2(getStyles);
 
   if (data.series.length === 0) {
@@ -64,6 +64,16 @@ export const SimplePanel: React.FC<Props> = ({
     });
   const padding = 16;
 
+  const colorPalette = useMemo(() => {
+    const colorFnName = "interpolate" + (options.color?.scheme || 'Spectral');
+    let colorFn: (t: number) => string = (d3ScaleChromatic as any)[colorFnName] ?? d3ScaleChromatic.interpolateGreys;
+    if (options.color?.reverse) {
+      const primal = colorFn;
+      colorFn = (x: number) => primal(1 - x);
+    }
+    return colorFn;
+  }, [options.color?.reverse, options.color?.scheme]);  
+
   return (
     <div
       className={cx(
@@ -86,6 +96,7 @@ export const SimplePanel: React.FC<Props> = ({
             timeRange={timeRange}
             timeField={frames[0]!.timeField!}
             valueField={frames[0]!.valueField!}
+            colorPalette={colorPalette}
             />
         </Layer>
       </Stage>

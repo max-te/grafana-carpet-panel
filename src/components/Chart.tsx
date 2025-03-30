@@ -1,10 +1,9 @@
-import { css } from '@emotion/css';
 import { dateTime, getFieldConfigWithMinMax, type DateTime, type Field, type TimeRange } from '@grafana/data';
-import { Portal, SeriesTable, useTheme2, VizTooltip, VizTooltipContainer } from '@grafana/ui';
+import { SeriesTable, useTheme2, VizTooltip } from '@grafana/ui';
 import type { ScaleTime } from 'd3';
 import * as d3 from 'd3';
-import React, { useCallback, useMemo, useState } from 'react';
-import { Layer, Group, Rect, Line, Text } from 'react-konva';
+import React, { useMemo, useState } from 'react';
+import { Group, Rect, Line, Text } from 'react-konva';
 import { Html } from 'react-konva-utils';
 
 interface ChartProps {
@@ -24,6 +23,7 @@ interface ChartProps {
   // dailyIntervalHours: [number, number];
   // regions: TimeRegion[];
   // tooltip: boolean;
+  colorPalette: (t: number) => string;
 }
 
 type Bucket = {
@@ -43,6 +43,7 @@ export const Chart: React.FC<ChartProps> = ({
   timeRange,
   timeField,
   valueField,
+  colorPalette,
 }) => {
   const [hover, setHover] = useState<Bucket | null>(null);
 
@@ -50,21 +51,24 @@ export const Chart: React.FC<ChartProps> = ({
   const dayTo = dateTime(timeRange.to).endOf('day');
   const numDays = 1 + d3.timeDay.count(dayFrom.toDate(), dayTo.toDate());
   console.assert(numDays >= 0);
-  const dates: string[] = [];
-  for (let i = 0; i < numDays; i++) {
-    const day = dateTime(dayFrom).add(i, 'days');
-    dates.push(day.unix().toString());
-  }
+  const dates: string[] = useMemo(() => {
+    const dates: string[] = [];
+    for (let i = 0; i < numDays; i++) {
+      const day = dateTime(dayFrom).add(i, 'days');
+      dates.push(day.unix().toString());
+    }
+    return dates;
+  }, [dayFrom.toISOString(), numDays]);
 
   const xAxis = useMemo(() => d3.scaleBand().domain(dates).range([0, width]), [dates, width]);
-  const xTime = d3.scaleTime().domain([dayFrom.toDate(), dayTo.toDate()]).range([0, width]);
+  const xTime = useMemo(() => d3.scaleTime().domain([dayFrom.toDate(), dayTo.toDate()]).range([0, width]), [dayFrom.toISOString(), dayTo.toISOString(), width]);
 
-  const yAxis = d3.scaleLinear().domain([0, 24 * 60 * 60]).rangeRound([0, height])
+  const yAxis = useMemo(() => d3.scaleLinear().domain([0, 24 * 60 * 60]).rangeRound([0, height]), [height]);
   const fieldConfig = getFieldConfigWithMinMax(valueField);
-  const colorScale = useMemo(() => d3.scaleSequential(d3.interpolateMagma).domain(([fieldConfig.min!, fieldConfig.max!] as [number, number])), [numDays])
+  const colorScale = useMemo(() => d3.scaleSequential(colorPalette).domain(([fieldConfig.min!, fieldConfig.max!] as [number, number])), [numDays, colorPalette])
 
   let previous: Bucket | null = null;
-  const buckets = valueField.values.flatMap((value, i) => {
+  const buckets = useMemo(() => valueField.values.flatMap((value, i) => {
     const time = timeField.values[i]!;
     const date = dateTime(time);
     const dayStart = date.startOf('d');
@@ -88,7 +92,7 @@ export const Chart: React.FC<ChartProps> = ({
 
     previous = bucket;
     return [bucket];
-  })
+  }), [valueField.values, timeField.values, xTime, yAxis]);
 
   let hoverFrame = <></>;
 
