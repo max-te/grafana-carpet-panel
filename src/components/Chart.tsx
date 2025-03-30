@@ -2,9 +2,10 @@ import { dateTime, getFieldConfigWithMinMax, type DateTime, type Field, type Tim
 import { SeriesTable, useTheme2, VizTooltip } from '@grafana/ui';
 import type { ScaleTime } from 'd3';
 import * as d3 from 'd3';
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Group, Rect, Line, Text } from 'react-konva';
-import { Html } from 'react-konva-utils';
+import { Html, Portal } from 'react-konva-utils';
+import type Konva from 'konva';
 
 interface ChartProps {
   x: number;
@@ -86,6 +87,13 @@ export const Chart: React.FC<ChartProps> = ({
   }), [valueField.values, timeField.values, xTime, yAxis]);
 
   let hoverFrame = <></>;
+  const hoverCallback = useCallback(({evt, currentTarget}: {evt: MouseEvent, currentTarget: Konva.Node }) => {
+    const bucket = currentTarget.attrs['data-bucket'];
+    const innerRect = currentTarget.getClientRect();
+    const outerRect = (evt.target as Element).getBoundingClientRect();
+    setHover({ ...bucket, x: innerRect.x + outerRect.x + innerRect.width, y: innerRect.y + outerRect.y + innerRect.height });
+  }, [setHover]);
+  const unsetHover = useCallback(() => setHover(null), [setHover]);
 
   return <Group x={x} y={y}>
     {
@@ -109,7 +117,7 @@ export const Chart: React.FC<ChartProps> = ({
             fill={"rgba(255, 255, 255, 0.2)"}
             stroke={value > (fieldConfig.max! + fieldConfig.min!) / 2 ? colorScale(fieldConfig.min!) : colorScale(fieldConfig.max!)}
             strokeWidth={2}
-            onMouseOut={() => setHover(null)}
+            onMouseOut={unsetHover} // TODO: only unset when leaving the chart
           />
         }
 
@@ -120,7 +128,8 @@ export const Chart: React.FC<ChartProps> = ({
           width={dayWidth + 1}
           height={bucketHeight}
           fill={colorScale(value)}
-          onMouseOver={({ evt }) => setHover({ ...bucket, x: evt.clientX, y: evt.clientY })}
+          data-bucket={bucket}
+          onMouseOver={hoverCallback}
         />
       })
     }
@@ -133,10 +142,10 @@ export const Chart: React.FC<ChartProps> = ({
     />
     {hover && <>{hoverFrame}
       <Html>
-        <VizTooltip position={hover} offset={{x: 10, y: 0}}
-          content={<SeriesTable timestamp={dateTime(hover.time).toString()}
-          series={[{ label: valueField.name, value: valueField.display?.(hover.value!)!.text, color: valueField.display?.(hover.value!)!.color }]} />}
-        />
+          <VizTooltip position={hover} offset={{x: 5, y: 5}}
+            content={<SeriesTable timestamp={dateTime(hover.time * 1000).toString()}
+            series={[{ label: valueField.name, value: valueField.display?.(hover.value!)!.text, color: valueField.display?.(hover.value!)!.color }]} />}
+          />
       </Html>
     </>}
   </Group>
