@@ -88,17 +88,15 @@ export const SimplePanel: React.FC<Props> = ({
         width={width}
         height={height}
       >
-        <Layer>
-          <Chart
-            x={padding} y={padding}
-            width={width - 2 * padding}
-            height={height - 2 * padding}
-            timeRange={timeRange}
-            timeField={frames[0]!.timeField!}
-            valueField={frames[0]!.valueField!}
-            colorPalette={colorPalette}
-            />
-        </Layer>
+        <Chart
+          x={padding} y={padding}
+          width={width - 2 * padding}
+          height={height - 2 * padding}
+          timeRange={timeRange}
+          timeField={frames[0]!.timeField!}
+          valueField={frames[0]!.valueField!}
+          colorPalette={colorPalette}
+          />
       </Stage>
     </div>
   );

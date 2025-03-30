@@ -3,8 +3,8 @@ import { SeriesTable, useTheme2, VizTooltip } from '@grafana/ui';
 import type { ScaleTime } from 'd3';
 import * as d3 from 'd3';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Group, Rect, Line, Text } from 'react-konva';
-import { Html, Portal } from 'react-konva-utils';
+import { Group, Rect, Line, Text, Layer } from 'react-konva';
+import { Html } from 'react-konva-utils';
 import type Konva from 'konva';
 
 interface ChartProps {
@@ -52,6 +52,7 @@ export const Chart: React.FC<ChartProps> = ({
     const innerRect = currentTarget.getClientRect();
     const outerRect = (evt.target as Element).getBoundingClientRect();
     setHover({ ...bucket, x: innerRect.x + outerRect.x + innerRect.width, y: innerRect.y + outerRect.y + innerRect.height });
+    evt.stopPropagation();
   }, [setHover]);
   const unsetHover = useCallback(() => setHover(null), [setHover]);
 
@@ -79,14 +80,14 @@ export const Chart: React.FC<ChartProps> = ({
     const bucket = { time, value, x, y, dayStart }
 
     if (previous !== null && previous.time < dayStart.unix()) {
-      previous = bucket;
       const interBucket = {
         time: dayStart.unix(),
-        value: value,
+        value: previous.value,
         x: x,
-        y: 0,
+        y: yAxis(0)!,
         dayStart: dayStart
       }
+      previous = bucket;
       return [interBucket, bucket];
     }
 
@@ -122,37 +123,46 @@ export const Chart: React.FC<ChartProps> = ({
       fill={"rgba(255, 255, 255, 0.2)"}
       stroke={cell.value > (fieldConfig.max! + fieldConfig.min!) / 2 ? colorScale(fieldConfig.min!) : colorScale(fieldConfig.max!)}
       strokeWidth={2}
-      onMouseOut={unsetHover} // TODO: only unset when leaving the chart
     />
   }
 
-  return <Group x={x} y={y}>
-    {useMemo(() => cells.map(cell => <Rect
-      key={cell.time}
-      x={cell.x}
-      y={cell.y}
-      width={cell.width}
-      height={cell.height}
-      fill={colorScale(cell.value)}
-      data-bucket={cell}
-      onMouseOver={hoverCallback}
-    />), [cells, colorScale, hoverCallback])}
-    <XAxis
-      x={0}
-      y={height}
-      height={16}
-      width={width}
-      scale={xTime}
-    />
-    {hover && <>{hoverFrame}
+  return <>
+    {useMemo(() => <Layer onMouseOut={unsetHover}>{cells.map(cell => <Rect
+        key={cell.time}
+        x={cell.x}
+        y={cell.y}
+        width={cell.width}
+        height={cell.height}
+        fill={colorScale(cell.value)}
+        data-bucket={cell}
+        onMouseOver={hoverCallback}
+      />)}</Layer>, [cells, colorScale, unsetHover, hoverCallback])}
+    <Layer listening={false}>
+      <XAxis
+        x={0}
+        y={height}
+        height={16}
+        width={width}
+        scale={xTime}
+      />
+    </Layer>
+    <Layer listening={false}>
+      {hoverFrame}
       <Html>
-          <VizTooltip position={hover} offset={{x: 5, y: 5}}
-            content={<SeriesTable timestamp={dateTime(hover.time * 1000).toString()}
-            series={[{ label: valueField.name, value: valueField.display?.(hover.value!)!.text, color: valueField.display?.(hover.value!)!.color }]} />}
+          <VizTooltip position={hover ?? undefined} offset={{x: 5, y: 5}}
+            content={hover
+              ? <SeriesTable timestamp={dateTime(hover?.time * 1000).toString()}
+                series={[{ 
+                  label: valueField.name,
+                  value: valueField.display?.(hover?.value!)!.text,
+                  color: valueField.display?.(hover?.value!)!.color,
+                }]} />
+              : undefined
+          }
           />
       </Html>
-    </>}
-  </Group>
+    </Layer>
+  </>
 };
 
 const XAxis: React.FC<{ x: number, y: number, height: number; width: number; scale: ScaleTime<number, number> }> =
