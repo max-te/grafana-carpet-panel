@@ -29,7 +29,6 @@ interface ChartProps {
 type Bucket = {
   time: number;
   value: number;
-  date: DateTime;
   x: number;
   y: number;
   dayStart: DateTime;
@@ -47,23 +46,14 @@ export const Chart: React.FC<ChartProps> = ({
 }) => {
   const [hover, setHover] = useState<Bucket | null>(null);
 
-  const dayFrom = dateTime(timeRange.from).startOf('day');
-  const dayTo = dateTime(timeRange.to).endOf('day');
-  const numDays = 1 + d3.timeDay.count(dayFrom.toDate(), dayTo.toDate());
+  const dayFrom = useMemo(() => dateTime(timeRange.from).startOf('day').toDate(), [timeRange.from]);
+  const dayTo = useMemo(() => dateTime(timeRange.to).endOf('day').toDate(), [timeRange.to]);
+  const numDays = 1 + d3.timeDay.count(dayFrom, dayTo);
   console.assert(numDays >= 0);
-  const dates: string[] = useMemo(() => {
-    const dates: string[] = [];
-    for (let i = 0; i < numDays; i++) {
-      const day = dateTime(dayFrom).add(i, 'days');
-      dates.push(day.unix().toString());
-    }
-    return dates;
-  }, [dayFrom.toISOString(), numDays]);
 
-  const xAxis = useMemo(() => d3.scaleBand().domain(dates).range([0, width]), [dates, width]);
-  const xTime = useMemo(() => d3.scaleTime().domain([dayFrom.toDate(), dayTo.toDate()]).range([0, width]), [dayFrom.toISOString(), dayTo.toISOString(), width]);
-
+  const xTime = useMemo(() => d3.scaleTime().domain([dayFrom, dayTo]).range([0, width]), [dayFrom.valueOf(), dayTo.valueOf(), width]);
   const yAxis = useMemo(() => d3.scaleLinear().domain([0, 24 * 60 * 60]).rangeRound([0, height]), [height]);
+
   const fieldConfig = getFieldConfigWithMinMax(valueField);
   const colorScale = useMemo(() => d3.scaleSequential(colorPalette).domain(([fieldConfig.min!, fieldConfig.max!] as [number, number])), [numDays, colorPalette])
 
@@ -75,14 +65,13 @@ export const Chart: React.FC<ChartProps> = ({
 
     const x = xTime(dayStart)!;
     const y = yAxis(time / 1000 - dayStart.unix())!;
-    const bucket = { time, value, date, x, y, dayStart }
+    const bucket = { time, value, x, y, dayStart }
 
     if (previous !== null && previous.time / 1000 < dayStart.unix()) {
       previous = bucket;
       const interBucket = {
         time: dayStart.unix() * 1000,
         value: value,
-        date: dayStart,
         x: x,
         y: 0,
         dayStart: dayStart
@@ -99,8 +88,8 @@ export const Chart: React.FC<ChartProps> = ({
   return <Group x={x} y={y}>
     {
       buckets.map((bucket, i) => {
-        const { time, value, date, x, y, dayStart } = bucket;
-        const dayWidth = xAxis.bandwidth(); // TODO
+        const { time, value, x, y, dayStart } = bucket;
+        const dayWidth = width / numDays;
         let bucketEnd = timeRange.to.unix();
         if (i + 1 < buckets.length) {
           const nextBucket = buckets[i + 1]!;
