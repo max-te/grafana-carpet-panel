@@ -48,29 +48,31 @@ export const Chart: React.FC<ChartProps> = ({
 
   const dayFrom = useMemo(() => dateTime(timeRange.from).startOf('day').toDate(), [timeRange.from]);
   const dayTo = useMemo(() => dateTime(timeRange.to).endOf('day').toDate(), [timeRange.to]);
-  const numDays = 1 + d3.timeDay.count(dayFrom, dayTo);
-  console.assert(numDays >= 0);
+  const numDays = useMemo(() => 1 + d3.timeDay.count(dayFrom, dayTo), [dayFrom.valueOf(), dayTo.valueOf()]);
+  if (numDays <= 0) {
+    throw new Error('Negative time range');
+  }
 
   const xTime = useMemo(() => d3.scaleTime().domain([dayFrom, dayTo]).range([0, width]), [dayFrom.valueOf(), dayTo.valueOf(), width]);
   const yAxis = useMemo(() => d3.scaleLinear().domain([0, 24 * 60 * 60]).rangeRound([0, height]), [height]);
 
   const fieldConfig = getFieldConfigWithMinMax(valueField);
-  const colorScale = useMemo(() => d3.scaleSequential(colorPalette).domain(([fieldConfig.min!, fieldConfig.max!] as [number, number])), [numDays, colorPalette])
+  const colorScale = useMemo(() => d3.scaleSequential(colorPalette).domain(([fieldConfig.min!, fieldConfig.max!] as [number, number])), [colorPalette, fieldConfig.min, fieldConfig.max])
 
   let previous: Bucket | null = null;
   const buckets = useMemo(() => valueField.values.flatMap((value, i) => {
-    const time = timeField.values[i]!;
-    const date = dateTime(time);
+    const date = dateTime(timeField.values[i]!);
+    const time = date.unix();
     const dayStart = date.startOf('d');
 
     const x = xTime(dayStart)!;
-    const y = yAxis(time / 1000 - dayStart.unix())!;
+    const y = yAxis(time - dayStart.unix())!;
     const bucket = { time, value, x, y, dayStart }
 
-    if (previous !== null && previous.time / 1000 < dayStart.unix()) {
+    if (previous !== null && previous.time < dayStart.unix()) {
       previous = bucket;
       const interBucket = {
-        time: dayStart.unix() * 1000,
+        time: dayStart.unix(),
         value: value,
         x: x,
         y: 0,
@@ -93,7 +95,7 @@ export const Chart: React.FC<ChartProps> = ({
         let bucketEnd = timeRange.to.unix();
         if (i + 1 < buckets.length) {
           const nextBucket = buckets[i + 1]!;
-          bucketEnd = nextBucket.time / 1000;
+          bucketEnd = nextBucket.time;
         }
         // const bucketHeight = 1 + Math.min(height, yAxis(bucketEnd - dayStart.unix())!) - y!;
         const bucketHeight = 1 + yAxis(bucketEnd - dayStart.unix())! - y!;
