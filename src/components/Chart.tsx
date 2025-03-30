@@ -46,6 +46,14 @@ export const Chart: React.FC<ChartProps> = ({
   colorPalette,
 }) => {
   const [hover, setHover] = useState<Bucket | null>(null);
+  let hoverFrame = <></>;
+  const hoverCallback = useCallback(({evt, currentTarget}: {evt: MouseEvent, currentTarget: Konva.Node }) => {
+    const bucket = currentTarget.attrs['data-bucket'];
+    const innerRect = currentTarget.getClientRect();
+    const outerRect = (evt.target as Element).getBoundingClientRect();
+    setHover({ ...bucket, x: innerRect.x + outerRect.x + innerRect.width, y: innerRect.y + outerRect.y + innerRect.height });
+  }, [setHover]);
+  const unsetHover = useCallback(() => setHover(null), [setHover]);
 
   const dayFrom = useMemo(() => dateTime(timeRange.from).startOf('day').toDate(), [timeRange.from]);
   const dayTo = useMemo(() => dateTime(timeRange.to).endOf('day').toDate(), [timeRange.to]);
@@ -86,53 +94,49 @@ export const Chart: React.FC<ChartProps> = ({
     return [bucket];
   }), [valueField.values, timeField.values, xTime, yAxis]);
 
-  let hoverFrame = <></>;
-  const hoverCallback = useCallback(({evt, currentTarget}: {evt: MouseEvent, currentTarget: Konva.Node }) => {
-    const bucket = currentTarget.attrs['data-bucket'];
-    const innerRect = currentTarget.getClientRect();
-    const outerRect = (evt.target as Element).getBoundingClientRect();
-    setHover({ ...bucket, x: innerRect.x + outerRect.x + innerRect.width, y: innerRect.y + outerRect.y + innerRect.height });
-  }, [setHover]);
-  const unsetHover = useCallback(() => setHover(null), [setHover]);
+
+  const cells: (Bucket & { width: number, height: number })[] = useMemo(() => buckets.map((bucket, i) => {
+    const { y, dayStart } = bucket;
+    const dayWidth = width / numDays;
+    let bucketEnd = timeRange.to.unix();
+    if (i + 1 < buckets.length) {
+      bucketEnd = (buckets[i + 1]!).time;
+    }
+    const bucketHeight = 1 + yAxis(bucketEnd - dayStart.unix())! - y;
+
+    return {
+      ...bucket,
+      width: dayWidth + 1,
+      height: bucketHeight
+    }
+  }), [buckets, width, numDays, timeRange]);
+
+  if (hover) {
+    const i = cells.findIndex(b => b.time === hover.time)!;
+    const cell = cells[i]!;
+    hoverFrame = <Rect
+      x={cell.x}
+      y={cell.y}
+      width={cell.width}
+      height={cell.height}
+      fill={"rgba(255, 255, 255, 0.2)"}
+      stroke={cell.value > (fieldConfig.max! + fieldConfig.min!) / 2 ? colorScale(fieldConfig.min!) : colorScale(fieldConfig.max!)}
+      strokeWidth={2}
+      onMouseOut={unsetHover} // TODO: only unset when leaving the chart
+    />
+  }
 
   return <Group x={x} y={y}>
-    {
-      buckets.map((bucket, i) => {
-        const { time, value, x, y, dayStart } = bucket;
-        const dayWidth = width / numDays;
-        let bucketEnd = timeRange.to.unix();
-        if (i + 1 < buckets.length) {
-          const nextBucket = buckets[i + 1]!;
-          bucketEnd = nextBucket.time;
-        }
-        // const bucketHeight = 1 + Math.min(height, yAxis(bucketEnd - dayStart.unix())!) - y!;
-        const bucketHeight = 1 + yAxis(bucketEnd - dayStart.unix())! - y!;
-
-        if (hover?.time === bucket.time) {
-          hoverFrame = <Rect
-            x={x}
-            y={y}
-            width={dayWidth + 1}
-            height={bucketHeight}
-            fill={"rgba(255, 255, 255, 0.2)"}
-            stroke={value > (fieldConfig.max! + fieldConfig.min!) / 2 ? colorScale(fieldConfig.min!) : colorScale(fieldConfig.max!)}
-            strokeWidth={2}
-            onMouseOut={unsetHover} // TODO: only unset when leaving the chart
-          />
-        }
-
-        return <Rect
-          key={time}
-          x={x}
-          y={y}
-          width={dayWidth + 1}
-          height={bucketHeight}
-          fill={colorScale(value)}
-          data-bucket={bucket}
-          onMouseOver={hoverCallback}
-        />
-      })
-    }
+    {useMemo(() => cells.map(cell => <Rect
+      key={cell.time}
+      x={cell.x}
+      y={cell.y}
+      width={cell.width}
+      height={cell.height}
+      fill={colorScale(cell.value)}
+      data-bucket={cell}
+      onMouseOver={hoverCallback}
+    />), [cells, colorScale, hoverCallback])}
     <XAxis
       x={0}
       y={height}
