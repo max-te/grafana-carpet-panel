@@ -1,130 +1,126 @@
-import { PanelPlugin } from "@grafana/data";
-import { HeatmapColorMode, HeatmapColorScale, type SimpleOptions } from "./types";
-import { SimplePanel } from "./components/SimplePanel";
-import { colorSchemes, quantizeScheme } from "./palettes";
+import { PanelPlugin } from '@grafana/data';
+import { HeatmapColorMode, HeatmapColorScale, type SimpleOptions } from './types';
+import { SimplePanel } from './components/SimplePanel';
+import { colorSchemes, quantizeScheme } from './palettes';
 
-
-export const plugin = new PanelPlugin<SimpleOptions>(
-  SimplePanel
-).setPanelOptions((builder, context) => {
+export const plugin = new PanelPlugin<SimpleOptions>(SimplePanel).setPanelOptions((builder, context) => {
   const opts = context.options;
   builder
     .addFieldNamePicker({
-      path: "timeFieldName",
-      name: "Time field name",
-      description: "Description of time field name option",
+      path: 'timeFieldName',
+      name: 'Time field name',
+      description: 'Description of time field name option',
     })
     .addFieldNamePicker({
-      path: "valueFieldName",
-      name: "Value field name",
-      description: "Description of value field name option",
+      path: 'valueFieldName',
+      name: 'Value field name',
+      description: 'Description of value field name option',
     });
 
-    const category = ['Colors'];
+  const category = ['Colors'];
 
-    builder.addRadio({
-      path: `color.mode`,
-      name: 'Mode',
-      defaultValue: HeatmapColorMode.Scheme,
+  builder.addRadio({
+    path: `color.mode`,
+    name: 'Mode',
+    defaultValue: HeatmapColorMode.Scheme,
+    category,
+    settings: {
+      options: [
+        { label: 'Scheme', value: HeatmapColorMode.Scheme },
+        { label: 'Opacity', value: HeatmapColorMode.Opacity },
+      ],
+    },
+  });
+
+  builder.addColorPicker({
+    path: `color.fill`,
+    name: 'Color',
+    defaultValue: '#000000',
+    category,
+    showIf: (opts) => opts.color?.mode === HeatmapColorMode.Opacity,
+  });
+
+  builder.addRadio({
+    path: `color.scale`,
+    name: 'Scale',
+    defaultValue: HeatmapColorScale.Linear,
+    category,
+    settings: {
+      options: [
+        { label: 'Exponential', value: HeatmapColorScale.Exponential },
+        { label: 'Linear', value: HeatmapColorScale.Linear },
+      ],
+    },
+    showIf: (opts) => opts.color?.mode === HeatmapColorMode.Opacity,
+  });
+
+  builder.addSliderInput({
+    path: 'color.exponent',
+    name: 'Exponent',
+    defaultValue: 1,
+    category,
+    settings: {
+      min: 0.1, // 1 for on/off?
+      max: 2,
+      step: 0.1,
+    },
+    showIf: (opts) =>
+      opts.color?.mode === HeatmapColorMode.Opacity && opts.color?.scale === HeatmapColorScale.Exponential,
+  });
+
+  builder.addSelect({
+    path: `color.scheme`,
+    name: 'Scheme',
+    description: '',
+    defaultValue: 'Spectral',
+    category,
+    settings: {
+      options: colorSchemes.map((scheme) => ({
+        value: scheme.name,
+        label: scheme.name,
+      })),
+    },
+    showIf: (opts) => opts.color?.mode !== HeatmapColorMode.Opacity,
+  });
+
+  builder
+    // .addSliderInput({
+    //   path: 'color.steps',
+    //   name: 'Steps',
+    //   defaultValue: 2,
+    //   category,
+    //   settings: {
+    //     min: 2,
+    //     max: 128,
+    //     step: 1,
+    //   },
+    // })
+    .addBooleanSwitch({
+      path: 'color.reverse',
+      name: 'Reverse',
+      defaultValue: false,
       category,
+    });
+
+  builder
+    .addNumberInput({
+      path: 'color.min',
+      name: 'Start color scale from value',
+      defaultValue: undefined,
       settings: {
-        options: [
-          { label: 'Scheme', value: HeatmapColorMode.Scheme },
-          { label: 'Opacity', value: HeatmapColorMode.Opacity },
-        ],
+        placeholder: 'Auto (min)',
       },
-    });
-
-    builder.addColorPicker({
-      path: `color.fill`,
-      name: 'Color',
-      defaultValue: '#000000',
       category,
-      showIf: (opts) => opts.color?.mode === HeatmapColorMode.Opacity,
-    });
-
-    builder.addRadio({
-      path: `color.scale`,
-      name: 'Scale',
-      defaultValue: HeatmapColorScale.Linear,
-      category,
+    })
+    .addNumberInput({
+      path: 'color.max',
+      name: 'End color scale at value',
+      defaultValue: undefined,
       settings: {
-        options: [
-          { label: 'Exponential', value: HeatmapColorScale.Exponential },
-          { label: 'Linear', value: HeatmapColorScale.Linear },
-        ],
+        placeholder: 'Auto (max)',
       },
-      showIf: (opts) => opts.color?.mode === HeatmapColorMode.Opacity,
-    });
-
-    builder.addSliderInput({
-      path: 'color.exponent',
-      name: 'Exponent',
-      defaultValue: 1,
       category,
-      settings: {
-        min: 0.1, // 1 for on/off?
-        max: 2,
-        step: 0.1,
-      },
-      showIf: (opts) =>
-        opts.color?.mode === HeatmapColorMode.Opacity && opts.color?.scale === HeatmapColorScale.Exponential,
     });
-
-    builder.addSelect({
-      path: `color.scheme`,
-      name: 'Scheme',
-      description: '',
-      defaultValue: 'Spectral',
-      category,
-      settings: {
-        options: colorSchemes.map((scheme) => ({
-          value: scheme.name,
-          label: scheme.name,
-        })),
-      },
-      showIf: (opts) => opts.color?.mode !== HeatmapColorMode.Opacity,
-    });
-
-    builder
-      // .addSliderInput({
-      //   path: 'color.steps',
-      //   name: 'Steps',
-      //   defaultValue: 2,
-      //   category,
-      //   settings: {
-      //     min: 2,
-      //     max: 128,
-      //     step: 1,
-      //   },
-      // })
-      .addBooleanSwitch({
-        path: 'color.reverse',
-        name: 'Reverse',
-        defaultValue: false,
-        category,
-      })
-
-    builder
-      .addNumberInput({
-        path: 'color.min',
-        name: 'Start color scale from value',
-        defaultValue: undefined,
-        settings: {
-          placeholder: 'Auto (min)',
-        },
-        category,
-      })
-      .addNumberInput({
-        path: 'color.max',
-        name: 'End color scale at value',
-        defaultValue: undefined,
-        settings: {
-          placeholder: 'Auto (max)',
-        },
-        category,
-      });
-
 
   return builder;
 });

@@ -84,7 +84,7 @@ export function quantizeScheme(opts: HeatmapColorOptions, theme: GrafanaTheme2):
     }
   } else {
     const scheme = colorSchemes.find((scheme) => scheme.name === options.scheme) ?? DEFAULT_SCHEME!;
-    let fnName = 'interpolate' + (scheme.name);
+    let fnName = 'interpolate' + scheme.name;
     const interpolate: Interpolator = (d3ScaleChromatic as any)[fnName];
 
     for (let i = 0; i <= steps; i++) {

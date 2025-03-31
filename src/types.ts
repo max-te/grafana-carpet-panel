@@ -1,4 +1,3 @@
-
 export enum HeatmapColorMode {
   Opacity = 'opacity',
   Scheme = 'scheme',

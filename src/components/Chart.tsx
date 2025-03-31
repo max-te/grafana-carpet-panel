@@ -35,23 +35,23 @@ type Bucket = {
   dayStart: DateTime;
 };
 
-export const Chart: React.FC<ChartProps> = ({
-  width,
-  height,
-  timeRange,
-  timeField,
-  valueField,
-  colorPalette,
-}) => {
+export const Chart: React.FC<ChartProps> = ({ width, height, timeRange, timeField, valueField, colorPalette }) => {
   const [hover, setHover] = useState<Bucket | null>(null);
   let hoverFrame = <></>;
-  const hoverCallback = useCallback(({evt, currentTarget}: {evt: MouseEvent, currentTarget: Konva.Node }) => {
-    const bucket = currentTarget.attrs['data-bucket'];
-    const innerRect = currentTarget.getClientRect();
-    const outerRect = (evt.target as Element).getBoundingClientRect();
-    setHover({ ...bucket, x: innerRect.x + outerRect.x + innerRect.width, y: innerRect.y + outerRect.y + innerRect.height });
-    evt.stopPropagation();
-  }, [setHover]);
+  const hoverCallback = useCallback(
+    ({ evt, currentTarget }: { evt: MouseEvent; currentTarget: Konva.Node }) => {
+      const bucket = currentTarget.attrs['data-bucket'];
+      const innerRect = currentTarget.getClientRect();
+      const outerRect = (evt.target as Element).getBoundingClientRect();
+      setHover({
+        ...bucket,
+        x: innerRect.x + outerRect.x + innerRect.width,
+        y: innerRect.y + outerRect.y + innerRect.height,
+      });
+      evt.stopPropagation();
+    },
+    [setHover]
+  );
   const unsetHover = useCallback(() => setHover(null), [setHover]);
 
   const dayFrom = useMemo(() => dateTime(timeRange.from).startOf('day').toDate(), [timeRange.from]);
@@ -61,143 +61,190 @@ export const Chart: React.FC<ChartProps> = ({
     throw new Error('Negative time range');
   }
 
-  const xTime = useMemo(() => d3.scaleTime().domain([dayFrom, dayTo]).range([0, width]), [dayFrom.valueOf(), dayTo.valueOf(), width]);
-  const yAxis = useMemo(() => d3.scaleLinear().domain([0, 24 * 60 * 60]).rangeRound([0, height]), [height]);
+  const xTime = useMemo(
+    () => d3.scaleTime().domain([dayFrom, dayTo]).range([0, width]),
+    [dayFrom.valueOf(), dayTo.valueOf(), width]
+  );
+  const yAxis = useMemo(
+    () =>
+      d3
+        .scaleLinear()
+        .domain([0, 24 * 60 * 60])
+        .rangeRound([0, height]),
+    [height]
+  );
 
   const fieldConfig = getFieldConfigWithMinMax(valueField);
-  const colorScale = useMemo(() => d3.scaleSequential(colorPalette).domain(([fieldConfig.min!, fieldConfig.max!] as [number, number])), [colorPalette, fieldConfig.min, fieldConfig.max])
+  const colorScale = useMemo(
+    () => d3.scaleSequential(colorPalette).domain([fieldConfig.min!, fieldConfig.max!] as [number, number]),
+    [colorPalette, fieldConfig.min, fieldConfig.max]
+  );
 
   let previous: Bucket | null = null;
-  const buckets = useMemo(() => valueField.values.flatMap((value, i) => {
-    const date = dateTime(timeField.values[i]!);
-    const time = date.unix();
-    const dayStart = date.startOf('d');
+  const buckets = useMemo(
+    () =>
+      valueField.values.flatMap((value, i) => {
+        const date = dateTime(timeField.values[i]!);
+        const time = date.unix();
+        const dayStart = date.startOf('d');
 
-    const x = Math.floor(xTime(dayStart)!);
-    const y = Math.floor(yAxis(time - dayStart.unix())!);
-    const bucket = { time, value, x, y, dayStart }
+        const x = Math.floor(xTime(dayStart)!);
+        const y = Math.floor(yAxis(time - dayStart.unix())!);
+        const bucket = { time, value, x, y, dayStart };
 
-    if (previous !== null && previous.time < dayStart.unix()) {
-      const interBucket = {
-        time: dayStart.unix(),
-        value: previous.value,
-        x: x,
-        y: yAxis(0)!,
-        dayStart: dayStart
-      }
-      previous = bucket;
-      return [interBucket, bucket];
-    }
+        if (previous !== null && previous.time < dayStart.unix()) {
+          const interBucket = {
+            time: dayStart.unix(),
+            value: previous.value,
+            x: x,
+            y: yAxis(0)!,
+            dayStart: dayStart,
+          };
+          previous = bucket;
+          return [interBucket, bucket];
+        }
 
-    previous = bucket;
-    return [bucket];
-  }), [valueField.values, timeField.values, xTime, yAxis]);
+        previous = bucket;
+        return [bucket];
+      }),
+    [valueField.values, timeField.values, xTime, yAxis]
+  );
 
+  const cells: (Bucket & { width: number; height: number })[] = useMemo(
+    () =>
+      buckets.map((bucket, i) => {
+        const { x, y, dayStart } = bucket;
+        const nextDayX = Math.floor(xTime(dateTime(dayStart).add(1, 'd'))!);
+        const dayWidth = 0.5 + nextDayX - x;
+        console.debug(x, dayWidth);
+        let bucketEnd = timeRange.to.unix();
+        if (i + 1 < buckets.length) {
+          bucketEnd = buckets[i + 1]!.time;
+        }
+        const bucketHeight = Math.min(height, 0.5 + Math.ceil(yAxis(bucketEnd - dayStart.unix())!)) - y;
 
-  const cells: (Bucket & { width: number, height: number })[] = useMemo(() => buckets.map((bucket, i) => {
-    const { x, y, dayStart } = bucket;
-    const nextDayX = Math.floor(xTime(dateTime(dayStart).add(1, 'd'))!);
-    const dayWidth = 0.5 + nextDayX - x;
-    console.debug(x, dayWidth);
-    let bucketEnd = timeRange.to.unix();
-    if (i + 1 < buckets.length) {
-      bucketEnd = (buckets[i + 1]!).time;
-    }
-    const bucketHeight = Math.min(height, 0.5 + Math.ceil(yAxis(bucketEnd - dayStart.unix())!)) - y;
-
-    return {
-      ...bucket,
-      width: dayWidth,
-      height: bucketHeight
-    }
-  }), [buckets, xTime, timeRange]);
+        return {
+          ...bucket,
+          width: dayWidth,
+          height: bucketHeight,
+        };
+      }),
+    [buckets, xTime, timeRange]
+  );
 
   if (hover) {
-    const i = cells.findIndex(b => b.time === hover.time)!;
+    const i = cells.findIndex((b) => b.time === hover.time)!;
     const cell = cells[i]!;
-    hoverFrame = <Rect
-      x={cell.x}
-      y={cell.y}
-      width={cell.width}
-      height={cell.height}
-      fill={"rgba(120, 120, 130, 0.2)"}
-      stroke={cell.value > (fieldConfig.max! + fieldConfig.min!) / 2 ? colorScale(fieldConfig.min!) : colorScale(fieldConfig.max!)}
-      // stroke={"rgba(120, 120, 130, 0.5)"}
-      dash={[4, 2]}
-      strokeWidth={1}
-    />
-  }
-
-  return <>
-    {useMemo(() => <Layer onMouseOut={unsetHover}>{cells.map(cell => <Rect
-        key={cell.time}
+    hoverFrame = (
+      <Rect
         x={cell.x}
         y={cell.y}
         width={cell.width}
         height={cell.height}
-        fill={colorScale(cell.value)}
-        data-bucket={cell}
-        onMouseOver={hoverCallback}
-        perfectDrawEnabled={true}
-        strokeEnabled={false}
-        strokeWidth={0}
-      />)}</Layer>, [cells, colorScale, unsetHover, hoverCallback])}
-    <Layer listening={false}>
-      <XAxis
-        x={0}
-        y={height}
-        height={16}
-        width={width}
-        scale={xTime}
+        fill={'rgba(120, 120, 130, 0.2)'}
+        stroke={
+          cell.value > (fieldConfig.max! + fieldConfig.min!) / 2
+            ? colorScale(fieldConfig.min!)
+            : colorScale(fieldConfig.max!)
+        }
+        // stroke={"rgba(120, 120, 130, 0.5)"}
+        dash={[4, 2]}
+        strokeWidth={1}
       />
-    </Layer>
-    <Layer listening={false}>
-      {hoverFrame}
-      <Html>
-          <VizTooltip position={hover ?? undefined} offset={{x: 5, y: 5}}
-            content={hover
-              ? <SeriesTable timestamp={dateTime(hover?.time * 1000).toString()}
-                series={[{ 
-                  label: valueField.name,
-                  value: valueField.display?.(hover?.value!)!.text,
-                  color: valueField.display?.(hover?.value!)!.color,
-                  // color: colorScale(hover?.value!),
-                }]} />
-              : undefined
-          }
+    );
+  }
+
+  return (
+    <>
+      {useMemo(
+        () => (
+          <Layer onMouseOut={unsetHover}>
+            {cells.map((cell) => (
+              <Rect
+                key={cell.time}
+                x={cell.x}
+                y={cell.y}
+                width={cell.width}
+                height={cell.height}
+                fill={colorScale(cell.value)}
+                data-bucket={cell}
+                onMouseOver={hoverCallback}
+                perfectDrawEnabled={true}
+                strokeEnabled={false}
+                strokeWidth={0}
+              />
+            ))}
+          </Layer>
+        ),
+        [cells, colorScale, unsetHover, hoverCallback]
+      )}
+      <Layer listening={false}>
+        <XAxis x={0} y={height} height={16} width={width} scale={xTime} />
+      </Layer>
+      <Layer listening={false}>
+        {hoverFrame}
+        <Html>
+          <VizTooltip
+            position={hover ?? undefined}
+            offset={{ x: 5, y: 5 }}
+            content={
+              hover ? (
+                <SeriesTable
+                  timestamp={dateTime(hover?.time * 1000).toString()}
+                  series={[
+                    {
+                      label: valueField.name,
+                      value: valueField.display?.(hover?.value!)!.text,
+                      color: valueField.display?.(hover?.value!)!.color,
+                      // color: colorScale(hover?.value!),
+                    },
+                  ]}
+                />
+              ) : undefined
+            }
           />
-      </Html>
-    </Layer>
-  </>
+        </Html>
+      </Layer>
+    </>
+  );
 };
 
-const XAxis: React.FC<{ x: number, y: number, height: number; width: number; scale: ScaleTime<number, number> }> =
-  ({ x, y, width, scale }) => {
-    const ticks = scale.ticks();
-    ticks.forEach((t) => t.setHours(12))
-    const spacing = width / (ticks.length);
-    const theme = useTheme2();
-    const colorGrid = 'rgba(120, 120, 130, 0.5)';
-    const colorText = theme.colors.text.primary;
-    return <>
+const XAxis: React.FC<{ x: number; y: number; height: number; width: number; scale: ScaleTime<number, number> }> = ({
+  x,
+  y,
+  width,
+  scale,
+}) => {
+  const ticks = scale.ticks();
+  ticks.forEach((t) => t.setHours(12));
+  const spacing = width / ticks.length;
+  const theme = useTheme2();
+  const colorGrid = 'rgba(120, 120, 130, 0.5)';
+  const colorText = theme.colors.text.primary;
+  return (
+    <>
       <Line points={[x, y, x + width, y]} stroke={colorGrid} strokeWidth={1} />
-      {
-        ticks.map((date) => {
-          const x = scale(date)!;
-          const label = date.toLocaleDateString(navigator.language, { month:  "2-digit", day: "2-digit" });
-          return <>
-            <Line
-              points={[x, y, x, y + 4]}
-              stroke={colorGrid}
-              strokeWidth={1}
-            />
-            <Text text={label} x={x - spacing / 2} y={y + 5} fill={colorText} align='center'
-              fontFamily={theme.typography.fontFamily} width={spacing}
-              fontSize={theme.typography.htmlFontSize!} textBaseline="top"
-              wrap='word'
+      {ticks.map((date) => {
+        const x = scale(date)!;
+        const label = date.toLocaleDateString(navigator.language, { month: '2-digit', day: '2-digit' });
+        return (
+          <>
+            <Line points={[x, y, x, y + 4]} stroke={colorGrid} strokeWidth={1} />
+            <Text
+              text={label}
+              x={x - spacing / 2}
+              y={y + 5}
+              fill={colorText}
+              align="center"
+              fontFamily={theme.typography.fontFamily}
+              width={spacing}
+              fontSize={theme.typography.htmlFontSize!}
+              textBaseline="top"
+              wrap="word"
             />
           </>
-        })
-      }
+        );
+      })}
     </>
-  }
+  );
+};
