@@ -3,7 +3,7 @@ import { SeriesTable, useTheme2, VizTooltip } from '@grafana/ui';
 import type { ScaleTime } from 'd3';
 import * as d3 from 'd3';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Group, Rect, Line, Text, Layer } from 'react-konva';
+import { Rect, Line, Text, Layer } from 'react-konva';
 import { Html } from 'react-konva-utils';
 import type Konva from 'konva';
 
@@ -36,8 +36,6 @@ type Bucket = {
 };
 
 export const Chart: React.FC<ChartProps> = ({
-  x,
-  y,
   width,
   height,
   timeRange,
@@ -75,8 +73,8 @@ export const Chart: React.FC<ChartProps> = ({
     const time = date.unix();
     const dayStart = date.startOf('d');
 
-    const x = xTime(dayStart)!;
-    const y = yAxis(time - dayStart.unix())!;
+    const x = Math.floor(xTime(dayStart)!);
+    const y = Math.floor(yAxis(time - dayStart.unix())!);
     const bucket = { time, value, x, y, dayStart }
 
     if (previous !== null && previous.time < dayStart.unix()) {
@@ -97,20 +95,22 @@ export const Chart: React.FC<ChartProps> = ({
 
 
   const cells: (Bucket & { width: number, height: number })[] = useMemo(() => buckets.map((bucket, i) => {
-    const { y, dayStart } = bucket;
-    const dayWidth = width / numDays;
+    const { x, y, dayStart } = bucket;
+    const nextDayX = Math.floor(xTime(dateTime(dayStart).add(1, 'd'))!);
+    const dayWidth = 0.5 + nextDayX - x;
+    console.debug(x, dayWidth);
     let bucketEnd = timeRange.to.unix();
     if (i + 1 < buckets.length) {
       bucketEnd = (buckets[i + 1]!).time;
     }
-    const bucketHeight = 1 + yAxis(bucketEnd - dayStart.unix())! - y;
+    const bucketHeight = Math.min(height, 0.5 + Math.ceil(yAxis(bucketEnd - dayStart.unix())!)) - y;
 
     return {
       ...bucket,
-      width: dayWidth + 1,
+      width: dayWidth,
       height: bucketHeight
     }
-  }), [buckets, width, numDays, timeRange]);
+  }), [buckets, xTime, timeRange]);
 
   if (hover) {
     const i = cells.findIndex(b => b.time === hover.time)!;
@@ -120,9 +120,11 @@ export const Chart: React.FC<ChartProps> = ({
       y={cell.y}
       width={cell.width}
       height={cell.height}
-      fill={"rgba(255, 255, 255, 0.2)"}
+      fill={"rgba(120, 120, 130, 0.2)"}
       stroke={cell.value > (fieldConfig.max! + fieldConfig.min!) / 2 ? colorScale(fieldConfig.min!) : colorScale(fieldConfig.max!)}
-      strokeWidth={2}
+      // stroke={"rgba(120, 120, 130, 0.5)"}
+      dash={[4, 2]}
+      strokeWidth={1}
     />
   }
 
@@ -136,6 +138,9 @@ export const Chart: React.FC<ChartProps> = ({
         fill={colorScale(cell.value)}
         data-bucket={cell}
         onMouseOver={hoverCallback}
+        perfectDrawEnabled={true}
+        strokeEnabled={false}
+        strokeWidth={0}
       />)}</Layer>, [cells, colorScale, unsetHover, hoverCallback])}
     <Layer listening={false}>
       <XAxis
@@ -156,6 +161,7 @@ export const Chart: React.FC<ChartProps> = ({
                   label: valueField.name,
                   value: valueField.display?.(hover?.value!)!.text,
                   color: valueField.display?.(hover?.value!)!.color,
+                  // color: colorScale(hover?.value!),
                 }]} />
               : undefined
           }
@@ -169,24 +175,26 @@ const XAxis: React.FC<{ x: number, y: number, height: number; width: number; sca
   ({ x, y, width, scale }) => {
     const ticks = scale.ticks();
     ticks.forEach((t) => t.setHours(12))
-    ticks.pop();
-    const spacing = width / (ticks.length - 1);
+    const spacing = width / (ticks.length);
     const theme = useTheme2();
-    const color = theme.colors.text.primary;
+    const colorGrid = 'rgba(120, 120, 130, 0.5)';
+    const colorText = theme.colors.text.primary;
     return <>
-      <Line points={[x, y, x + width, y]} stroke={color} strokeWidth={1} />
+      <Line points={[x, y, x + width, y]} stroke={colorGrid} strokeWidth={1} />
       {
         ticks.map((date) => {
           const x = scale(date)!;
+          const label = date.toLocaleDateString(navigator.language, { month:  "2-digit", day: "2-digit" });
           return <>
             <Line
-              points={[x, y, x, y + 3]}
-              stroke={color}
+              points={[x, y, x, y + 4]}
+              stroke={colorGrid}
               strokeWidth={1}
             />
-            <Text text={(1 + date.getMonth()) + "-" + date.getDate()} x={x - spacing / 2} y={y + 5} fill={color} align='center'
-             fontFamily={theme.typography.fontFamily} width={spacing}
-              fontSize={theme.typography.htmlFontSize! * 0.75} textBaseline="top"
+            <Text text={label} x={x - spacing / 2} y={y + 5} fill={colorText} align='center'
+              fontFamily={theme.typography.fontFamily} width={spacing}
+              fontSize={theme.typography.htmlFontSize!} textBaseline="top"
+              wrap='word'
             />
           </>
         })
