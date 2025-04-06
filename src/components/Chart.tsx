@@ -4,6 +4,7 @@ import {
   getDisplayProcessor,
   getFieldConfigWithMinMax,
   type DateTime,
+  type DateTimeInput,
   type Field,
   type TimeRange,
 } from '@grafana/data';
@@ -74,19 +75,28 @@ export const Chart: React.FC<ChartProps> = ({
   const xTime = useMemo(
     () =>
       d3
-        .scaleTime()
+        .scaleUtc()
         .domain([dayFrom, dayTo])
         .range([1, width - 1]),
     [dayFrom.valueOf(), dayTo.valueOf(), width]
   );
-  const yAxis = useMemo(
-    () =>
-      d3
-        .scaleLinear()
-        .domain([0, 24 * 60 * 60])
-        .rangeRound([1, height]),
-    [height]
-  );
+
+  const yAxis = useMemo(() => {
+    const DOMAIN_START = 0;
+    const DOMAIN_END = 24 * 60 * 60;
+    const RANGE_START = 1;
+    const RANGE_END = height;
+    return (t: DateTimeInput) => {
+      if (typeof t === 'number') {
+        t *= 1000;
+      }
+      const time = dateTime(t);
+      const dayStart = dateTime(t).startOf('d');
+      const daySeconds = time.diff(dayStart, 's', false);
+      console.debug(daySeconds / 3600, dayStart.toString(), time.toString());
+      return RANGE_START + ((RANGE_END - RANGE_START) * (daySeconds - DOMAIN_START)) / (DOMAIN_END - DOMAIN_START);
+    };
+  }, [height]);
 
   const fieldConfig = getFieldConfigWithMinMax(valueField);
   const colorScale = useMemo(
@@ -105,10 +115,16 @@ export const Chart: React.FC<ChartProps> = ({
       valueField.values.flatMap((value, i) => {
         const date = dateTime(timeField.values[i]!);
         const time = date.unix();
-        const dayStart = date.startOf('d');
+        const dayStart = dateTime(date).startOf('d');
+        const dayLengthHours = dateTime(date).endOf('d').add(1, 's').diff(dayStart, 'h', false);
+        // if (dayLengthHours < 24) {
+        //   const dayLengthAnomalyHours = 24 - dayLengthHours;
+        //   console.debug('Offsetting', date.toString(), dayLengthAnomalyHours);
+        //   myYAxis = myYAxis.range([-dayLengthAnomalyHours * 60 * 60, (24 - dayLengthAnomalyHours) * 60 * 60]);
+        // }
 
         const x = Math.floor(xTime(dayStart)!);
-        const y = Math.floor(yAxis(time - dayStart.unix())!);
+        const y = Math.floor(yAxis(time)!);
         const bucket = { time, value, x, y, dayStart };
 
         if (previous !== null && previous.time < dayStart.unix()) {
@@ -116,7 +132,7 @@ export const Chart: React.FC<ChartProps> = ({
             time: dayStart.unix(),
             value: previous.value,
             x: x,
-            y: yAxis(0)!,
+            y: yAxis(dayStart)!,
             dayStart: dayStart,
           };
           previous = bucket;
@@ -137,9 +153,9 @@ export const Chart: React.FC<ChartProps> = ({
         const dayWidth = 0.5 + nextDayX - x;
         let bucketEnd = timeRange.to.unix();
         if (i + 1 < buckets.length) {
-          bucketEnd = buckets[i + 1]!.time;
+          bucketEnd = buckets[i + 1]!.time - 1;
         }
-        const bucketHeight = Math.min(height, 0.5 + Math.ceil(yAxis(bucketEnd - dayStart.unix())!)) - y;
+        const bucketHeight = Math.min(height, 0.5 + yAxis(bucketEnd)!) - y;
 
         return {
           ...bucket,
