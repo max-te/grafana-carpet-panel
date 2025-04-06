@@ -54,7 +54,10 @@ export interface HeatmapColorOptions {
 
 export interface SimpleOptions {
   timeFieldName?: string;
-  valueFieldName?: string;
+  valueField: {
+    name?: string;
+    unit?: string;
+  };
 
   color?: HeatmapColorOptions;
 }

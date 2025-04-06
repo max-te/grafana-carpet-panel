@@ -9,12 +9,15 @@ export const plugin = new PanelPlugin<SimpleOptions>(SimplePanel).setPanelOption
     .addFieldNamePicker({
       path: 'timeFieldName',
       name: 'Time field name',
-      description: 'Description of time field name option',
     })
     .addFieldNamePicker({
-      path: 'valueFieldName',
+      path: 'valueField.name',
       name: 'Value field name',
-      description: 'Description of value field name option',
+    })
+    .addUnitPicker({
+      path: 'valueField.unit',
+      name: 'Unit',
+      description: 'Unit of the value field',
     });
 
   const category = ['Colors'];

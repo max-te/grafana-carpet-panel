@@ -1,4 +1,15 @@
-import { dateTime, getFieldConfigWithMinMax, type DateTime, type Field, type TimeRange } from '@grafana/data';
+import {
+  dateTime,
+  formattedValueToString,
+  getDisplayProcessor,
+  getFieldConfigWithMinMax,
+  getFieldDisplayName,
+  getFieldDisplayValues,
+  getValueFormat,
+  type DateTime,
+  type Field,
+  type TimeRange,
+} from '@grafana/data';
 import { SeriesTable, useTheme2, VizTooltip } from '@grafana/ui';
 import type { ScaleTime } from 'd3';
 import * as d3 from 'd3';
@@ -70,7 +81,7 @@ export const Chart: React.FC<ChartProps> = ({ width, height, timeRange, timeFiel
       d3
         .scaleLinear()
         .domain([0, 24 * 60 * 60])
-        .rangeRound([0, height]),
+        .rangeRound([1, height]),
     [height]
   );
 
@@ -79,6 +90,10 @@ export const Chart: React.FC<ChartProps> = ({ width, height, timeRange, timeFiel
     () => d3.scaleSequential(colorPalette).domain([fieldConfig.min!, fieldConfig.max!] as [number, number]),
     [colorPalette, fieldConfig.min, fieldConfig.max]
   );
+  const display = getDisplayProcessor({
+    field: valueField,
+    theme: useTheme2(),
+  });
 
   let previous: Bucket | null = null;
   const buckets = useMemo(
@@ -116,7 +131,6 @@ export const Chart: React.FC<ChartProps> = ({ width, height, timeRange, timeFiel
         const { x, y, dayStart } = bucket;
         const nextDayX = Math.floor(xTime(dateTime(dayStart).add(1, 'd'))!);
         const dayWidth = 0.5 + nextDayX - x;
-        console.debug(x, dayWidth);
         let bucketEnd = timeRange.to.unix();
         if (i + 1 < buckets.length) {
           bucketEnd = buckets[i + 1]!.time;
@@ -194,9 +208,8 @@ export const Chart: React.FC<ChartProps> = ({ width, height, timeRange, timeFiel
                   series={[
                     {
                       label: valueField.name,
-                      value: valueField.display?.(hover?.value!)!.text,
-                      color: valueField.display?.(hover?.value!)!.color,
-                      // color: colorScale(hover?.value!),
+                      value: formattedValueToString(display(hover?.value!)!),
+                      color: display(hover?.value!)!.color,
                     },
                   ]}
                 />

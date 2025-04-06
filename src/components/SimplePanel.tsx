@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import type { PanelProps } from '@grafana/data';
+import { getDisplayProcessor, type PanelProps } from '@grafana/data';
 import type { SimpleOptions } from '../types';
 import { css, cx } from '@emotion/css';
 import { useStyles2 } from '@grafana/ui';
@@ -41,9 +41,10 @@ export const SimplePanel: React.FC<Props> = ({ options, data, width, height, fie
       ? frame.fields.find((f) => f.name === options.timeFieldName)
       : frame.fields.find((f) => f.type === 'time');
 
-    const valueField = options.valueFieldName
-      ? frame.fields.find((f) => f.name === options.valueFieldName)
+    const valueField = options.valueField?.name
+      ? frame.fields.find((f) => f.name === options.valueField?.name)
       : frame.fields.find((f) => f.type === 'number');
+    valueField!.config.unit = options.valueField?.unit;
 
     return { timeField, valueField, fields: frame.fields };
   });
