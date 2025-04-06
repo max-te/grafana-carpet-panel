@@ -23,9 +23,7 @@
     "react-dom": "18.2.0",
     "react-konva": "~18.2.10",
     "react-konva-utils": "^1.1.0",
-    "semver": "^7.3.4",
-    "tinycolor2": "^1.6.0",
-    "tslib": "2.5.3"
+    "tinycolor2": "^1.6.0"
   },
   "devDependencies": {
     "@emotion/core": "10.0.27",
@@ -45,8 +43,6 @@
     "@types/lodash": "^4.14.194",
     "@types/node": "^20.8.7",
     "@types/react": "^18.0.0",
-    "copy-webpack-plugin": "^11.0.0",
-    "css-loader": "^6.7.3",
     "emotion": "10.0.27",
     "eslint-plugin-deprecation": "^2.0.0",
     "eslint-webpack-plugin": "^4.0.1",
