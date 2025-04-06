@@ -1,10 +1,9 @@
 import { PanelPlugin } from '@grafana/data';
 import { HeatmapColorMode, HeatmapColorScale, type SimpleOptions } from './types';
 import { SimplePanel } from './components/SimplePanel';
-import { colorSchemes, quantizeScheme } from './palettes';
+import { colorSchemes } from './palettes';
 
 export const plugin = new PanelPlugin<SimpleOptions>(SimplePanel).setPanelOptions((builder, context) => {
-  const opts = context.options;
   builder
     .addFieldNamePicker({
       path: 'timeFieldName',

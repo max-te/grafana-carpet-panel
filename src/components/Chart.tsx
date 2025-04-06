@@ -3,9 +3,6 @@ import {
   formattedValueToString,
   getDisplayProcessor,
   getFieldConfigWithMinMax,
-  getFieldDisplayName,
-  getFieldDisplayValues,
-  getValueFormat,
   type DateTime,
   type Field,
   type TimeRange,
@@ -24,17 +21,11 @@ interface ChartProps {
   width: number;
   height: number;
 
-  // legend: boolean;
-  // cellBorder: boolean;
-  // showValueIndicator: boolean;
-  // legendGradientQuality: Quality;
   timeField: Field<number>;
   valueField: Field<number>;
-  // timeZone: string;
+  timeZone: string;
   timeRange: TimeRange;
   // dailyIntervalHours: [number, number];
-  // regions: TimeRegion[];
-  // tooltip: boolean;
   colorPalette: (t: number) => string;
 }
 
@@ -46,7 +37,15 @@ type Bucket = {
   dayStart: DateTime;
 };
 
-export const Chart: React.FC<ChartProps> = ({ width, height, timeRange, timeField, valueField, colorPalette }) => {
+export const Chart: React.FC<ChartProps> = ({
+  width,
+  height,
+  timeRange,
+  timeField,
+  valueField,
+  colorPalette,
+  timeZone,
+}) => {
   const [hover, setHover] = useState<Bucket | null>(null);
   let hoverFrame = <></>;
   const hoverCallback = useCallback(
@@ -73,7 +72,11 @@ export const Chart: React.FC<ChartProps> = ({ width, height, timeRange, timeFiel
   }
 
   const xTime = useMemo(
-    () => d3.scaleTime().domain([dayFrom, dayTo]).range([0, width]),
+    () =>
+      d3
+        .scaleTime()
+        .domain([dayFrom, dayTo])
+        .range([1, width - 1]),
     [dayFrom.valueOf(), dayTo.valueOf(), width]
   );
   const yAxis = useMemo(
@@ -93,6 +96,7 @@ export const Chart: React.FC<ChartProps> = ({ width, height, timeRange, timeFiel
   const display = getDisplayProcessor({
     field: valueField,
     theme: useTheme2(),
+    timeZone,
   });
 
   let previous: Bucket | null = null;
@@ -186,6 +190,7 @@ export const Chart: React.FC<ChartProps> = ({ width, height, timeRange, timeFiel
                 perfectDrawEnabled={true}
                 strokeEnabled={false}
                 strokeWidth={0}
+                globalCompositeOperation="copy"
               />
             ))}
           </Layer>
