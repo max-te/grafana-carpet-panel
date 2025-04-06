@@ -56,6 +56,8 @@ export const SimplePanel: React.FC<Props> = ({
       ? frame.fields.find((f) => f.name === options.valueField?.name)
       : frame.fields.find((f) => f.type === 'number');
     valueField!.config.unit = options.valueField?.unit;
+    valueField!.config.min = options.color?.min;
+    valueField!.config.max = options.color?.max;
 
     return { timeField, valueField, fields: frame.fields };
   });
