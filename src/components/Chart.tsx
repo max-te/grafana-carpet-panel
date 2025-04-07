@@ -11,7 +11,7 @@ import {
 import { SeriesTable, useTheme2, VizTooltip } from '@grafana/ui';
 import type { ScaleTime } from 'd3';
 import * as d3 from 'd3';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { Fragment, useCallback, useMemo, useState } from 'react';
 import { Rect, Line, Text, Layer } from 'react-konva';
 import { Html } from 'react-konva-utils';
 import type Konva from 'konva';
@@ -63,7 +63,9 @@ export const Chart: React.FC<ChartProps> = ({
     },
     [setHover]
   );
-  const unsetHover = useCallback(() => setHover(null), [setHover]);
+  const unsetHover = useCallback(() => {
+    setHover(null);
+  }, [setHover]);
 
   const dayFrom = useMemo(() => dateTime(timeRange.from).startOf('day').toDate(), [timeRange.from]);
   const dayTo = useMemo(() => dateTime(timeRange.to).endOf('day').toDate(), [timeRange.to]);
@@ -93,7 +95,7 @@ export const Chart: React.FC<ChartProps> = ({
       const time = dateTime(t);
       const dayStart = dateTime(t).startOf('d');
       const daySeconds = time.diff(dayStart, 's', false);
-      console.debug(daySeconds / 3600, dayStart.toString(), time.toString());
+      // console.debug(daySeconds / 3600, dayStart.toString(), time.toString());
       return RANGE_START + ((RANGE_END - RANGE_START) * (daySeconds - DOMAIN_START)) / (DOMAIN_END - DOMAIN_START);
     };
   }, [height]);
@@ -109,41 +111,34 @@ export const Chart: React.FC<ChartProps> = ({
     timeZone,
   });
 
-  let previous: Bucket | null = null;
-  const buckets = useMemo(
-    () =>
-      valueField.values.flatMap((value, i) => {
-        const date = dateTime(timeField.values[i]!);
-        const time = date.unix();
-        const dayStart = dateTime(date).startOf('d');
-        const dayLengthHours = dateTime(date).endOf('d').add(1, 's').diff(dayStart, 'h', false);
-        // if (dayLengthHours < 24) {
-        //   const dayLengthAnomalyHours = 24 - dayLengthHours;
-        //   console.debug('Offsetting', date.toString(), dayLengthAnomalyHours);
-        //   myYAxis = myYAxis.range([-dayLengthAnomalyHours * 60 * 60, (24 - dayLengthAnomalyHours) * 60 * 60]);
-        // }
+  const buckets = useMemo(() => {
+    let previous: Bucket | null = null;
 
-        const x = Math.floor(xTime(dayStart)!);
-        const y = Math.floor(yAxis(time)!);
-        const bucket = { time, value, x, y, dayStart };
+    return valueField.values.flatMap((value, i) => {
+      const date = dateTime(timeField.values[i]!);
+      const time = date.unix();
+      const dayStart = dateTime(date).startOf('d');
 
-        if (previous !== null && previous.time < dayStart.unix()) {
-          const interBucket = {
-            time: dayStart.unix(),
-            value: previous.value,
-            x: x,
-            y: yAxis(dayStart)!,
-            dayStart: dayStart,
-          };
-          previous = bucket;
-          return [interBucket, bucket];
-        }
+      const x = Math.floor(xTime(dayStart)!);
+      const y = Math.floor(yAxis(time)!);
+      const bucket = { time, value, x, y, dayStart };
 
-        previous = bucket;
-        return [bucket];
-      }),
-    [valueField.values, timeField.values, xTime, yAxis]
-  );
+      // if (previous !== null && previous.time < dayStart.unix()) {
+      //   const interBucket = {
+      //     time: dayStart.unix(),
+      //     value: previous.value,
+      //     x: x,
+      //     y: yAxis(dayStart)!,
+      //     dayStart: dayStart,
+      //   };
+      //   previous = bucket;
+      //   return [interBucket, bucket];
+      // }
+
+      previous = bucket;
+      return [bucket];
+    });
+  }, [valueField.values, timeField.values, xTime, yAxis]);
 
   const cells: (Bucket & { width: number; height: number })[] = useMemo(
     () =>
@@ -163,7 +158,7 @@ export const Chart: React.FC<ChartProps> = ({
           height: bucketHeight,
         };
       }),
-    [buckets, xTime, timeRange]
+    [buckets, xTime, timeRange.to]
   );
 
   if (hover) {
@@ -225,7 +220,7 @@ export const Chart: React.FC<ChartProps> = ({
             content={
               hover ? (
                 <SeriesTable
-                  timestamp={dateTime(hover?.time * 1000).toString()}
+                  timestamp={dateTime(hover?.time * 1000).toISOString()}
                   series={[
                     {
                       label: valueField.name,
@@ -262,7 +257,7 @@ const XAxis: React.FC<{ x: number; y: number; height: number; width: number; sca
         const x = scale(date)!;
         const label = date.toLocaleDateString(navigator.language, { month: '2-digit', day: '2-digit' });
         return (
-          <>
+          <Fragment key={label}>
             <Line points={[x, y, x, y + 4]} stroke={colorGrid} strokeWidth={1} />
             <Text
               text={label}
@@ -276,7 +271,7 @@ const XAxis: React.FC<{ x: number; y: number; height: number; width: number; sca
               textBaseline="top"
               wrap="word"
             />
-          </>
+          </Fragment>
         );
       })}
     </>
