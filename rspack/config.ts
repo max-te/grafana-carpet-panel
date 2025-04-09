@@ -60,10 +60,10 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
       // Mark legacy SDK imports as external if their name starts with the "grafana/" prefix
       ({ request }, callback) => {
         const prefix = 'grafana/';
-        const hasPrefix = (request) => request.indexOf(prefix) === 0;
-        const stripPrefix = (request) => request.substr(prefix.length);
+        const hasPrefix = (request: string) => request.indexOf(prefix) === 0;
+        const stripPrefix = (request: string) => request.substring(prefix.length);
 
-        if (hasPrefix(request)) {
+        if (request && hasPrefix(request)) {
           return callback(undefined, stripPrefix(request));
         }
 
