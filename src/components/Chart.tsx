@@ -1,5 +1,6 @@
 import {
   dateTime,
+  dateTimeForTimeZone,
   formattedValueToString,
   getDisplayProcessor,
   getFieldConfigWithMinMax,
@@ -84,21 +85,21 @@ export const Chart: React.FC<ChartProps> = ({
   );
 
   const yAxis = useMemo(() => {
-    const DOMAIN_START = 0;
-    const DOMAIN_END = 24 * 60 * 60;
     const RANGE_START = 1;
     const RANGE_END = height;
     return (t: DateTimeInput) => {
       if (typeof t === 'number') {
         t *= 1000;
       }
-      const time = dateTime(t);
-      const dayStart = dateTime(t).startOf('d');
-      const daySeconds = time.diff(dayStart, 's', false);
-      // console.debug(daySeconds / 3600, dayStart.toString(), time.toString());
-      return RANGE_START + ((RANGE_END - RANGE_START) * (daySeconds - DOMAIN_START)) / (DOMAIN_END - DOMAIN_START);
+      const time = dateTimeForTimeZone(timeZone, t);
+      const dayStart = dateTimeForTimeZone(timeZone, t).startOf('d');
+      const tSecondsInDay = time.diff(dayStart, 's', false);
+      const dayEnd = dateTimeForTimeZone(timeZone, t).endOf('d');
+      const daySeconds = dayEnd.diff(dayStart, 's', false);
+
+      return RANGE_START + ((RANGE_END - RANGE_START) * (tSecondsInDay)) / daySeconds;
     };
-  }, [height]);
+  }, [height, timeZone]);
 
   const fieldConfig = getFieldConfigWithMinMax(valueField);
   const colorScale = useMemo(
@@ -144,11 +145,15 @@ export const Chart: React.FC<ChartProps> = ({
     () =>
       buckets.map((bucket, i) => {
         const { x, y, dayStart } = bucket;
-        const nextDayX = Math.floor(xTime(dateTime(dayStart).add(1, 'd'))!);
+        const nextDay = dateTime(dayStart).add(1, 'd');
+        const nextDayX = Math.floor(xTime(nextDay)!);
         const dayWidth = 0.5 + nextDayX - x;
         let bucketEnd = timeRange.to.unix();
         if (i + 1 < buckets.length) {
           bucketEnd = buckets[i + 1]!.time - 1;
+        }
+        if (bucketEnd >= nextDay.unix()) {
+          bucketEnd = nextDay.unix() - 1;
         }
         const bucketHeight = Math.min(height, 0.5 + yAxis(bucketEnd)!) - y;
 
@@ -220,7 +225,7 @@ export const Chart: React.FC<ChartProps> = ({
             content={
               hover ? (
                 <SeriesTable
-                  timestamp={dateTime(hover?.time * 1000).toISOString()}
+                  timestamp={dateTime(hover?.time * 1000).toLocaleString()}
                   series={[
                     {
                       label: valueField.name,
