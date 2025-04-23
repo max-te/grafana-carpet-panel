@@ -7,6 +7,7 @@ import {
   type DateTime,
   type DateTimeInput,
   type Field,
+  type FieldConfig,
   type TimeRange,
 } from '@grafana/data';
 import { SeriesTable, useTheme2, VizTooltip } from '@grafana/ui';
@@ -88,22 +89,20 @@ export const Chart: React.FC<ChartProps> = ({
     const RANGE_START = 1;
     const RANGE_END = height;
     return (t: DateTimeInput) => {
-      if (typeof t === 'number') {
-        t *= 1000;
-      }
-      const time = dateTimeForTimeZone(timeZone, t);
-      const dayStart = dateTimeForTimeZone(timeZone, t).startOf('d');
+      const timeInMs = typeof t === 'number' ? t * 1000 : t;
+      const time = dateTimeForTimeZone(timeZone, timeInMs);
+      const dayStart = dateTimeForTimeZone(timeZone, timeInMs).startOf('d');
       const tSecondsInDay = time.diff(dayStart, 's', false);
-      const dayEnd = dateTimeForTimeZone(timeZone, t).endOf('d');
+      const dayEnd = dateTimeForTimeZone(timeZone, timeInMs).endOf('d');
       const daySeconds = dayEnd.diff(dayStart, 's', false);
 
       return RANGE_START + ((RANGE_END - RANGE_START) * (tSecondsInDay)) / daySeconds;
     };
   }, [height, timeZone]);
 
-  const fieldConfig = getFieldConfigWithMinMax(valueField);
+  const fieldConfig = getFieldConfigWithMinMax(valueField) as FieldConfig & { min: number; max: number };
   const colorScale = useMemo(
-    () => d3.scaleSequential(colorPalette).domain([fieldConfig.min!, fieldConfig.max!] as [number, number]),
+    () => d3.scaleSequential(colorPalette).domain([fieldConfig.min, fieldConfig.max]),
     [colorPalette, fieldConfig.min, fieldConfig.max]
   );
   const display = getDisplayProcessor({
@@ -167,7 +166,7 @@ export const Chart: React.FC<ChartProps> = ({
   );
 
   if (hover) {
-    const i = cells.findIndex((b) => b.time === hover.time)!;
+    const i = cells.findIndex((b) => b.time === hover.time);
     const cell = cells[i]!;
     hoverFrame = (
       <Rect
@@ -177,9 +176,9 @@ export const Chart: React.FC<ChartProps> = ({
         height={cell.height}
         fill={'rgba(120, 120, 130, 0.2)'}
         stroke={
-          cell.value > (fieldConfig.max! + fieldConfig.min!) / 2
-            ? colorScale(fieldConfig.min!)
-            : colorScale(fieldConfig.max!)
+          cell.value > (fieldConfig.min + fieldConfig.max) / 2
+            ? colorScale(fieldConfig.min)
+            : colorScale(fieldConfig.max)
         }
         // stroke={"rgba(120, 120, 130, 0.5)"}
         dash={[4, 2]}
@@ -272,7 +271,7 @@ const XAxis: React.FC<{ x: number; y: number; height: number; width: number; sca
               align="center"
               fontFamily={theme.typography.fontFamily}
               width={spacing}
-              fontSize={theme.typography.htmlFontSize!}
+              fontSize={theme.typography.htmlFontSize ?? 16}
               textBaseline="top"
               wrap="word"
             />
