@@ -30,5 +30,6 @@
     },
     "resolveJsonModule": true
   },
-  "extends": "@grafana/tsconfig"
+  "extends": "@grafana/tsconfig",
+  "exclude": ["dist"]
 }

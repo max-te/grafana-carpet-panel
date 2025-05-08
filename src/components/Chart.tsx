@@ -1,16 +1,19 @@
 import {
   dateTime,
+  dateTimeForTimeZone,
   formattedValueToString,
   getDisplayProcessor,
   getFieldConfigWithMinMax,
   type DateTime,
+  type DateTimeInput,
   type Field,
+  type FieldConfig,
   type TimeRange,
 } from '@grafana/data';
 import { SeriesTable, useTheme2, VizTooltip } from '@grafana/ui';
 import type { ScaleTime } from 'd3';
 import * as d3 from 'd3';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { Fragment, useCallback, useMemo, useState } from 'react';
 import { Rect, Line, Text, Layer } from 'react-konva';
 import { Html } from 'react-konva-utils';
 import type Konva from 'konva';
@@ -62,7 +65,9 @@ export const Chart: React.FC<ChartProps> = ({
     },
     [setHover]
   );
-  const unsetHover = useCallback(() => setHover(null), [setHover]);
+  const unsetHover = useCallback(() => {
+    setHover(null);
+  }, [setHover]);
 
   const dayFrom = useMemo(() => dateTime(timeRange.from).startOf('day').toDate(), [timeRange.from]);
   const dayTo = useMemo(() => dateTime(timeRange.to).endOf('day').toDate(), [timeRange.to]);
@@ -74,23 +79,30 @@ export const Chart: React.FC<ChartProps> = ({
   const xTime = useMemo(
     () =>
       d3
-        .scaleTime()
+        .scaleUtc()
         .domain([dayFrom, dayTo])
         .range([1, width - 1]),
     [dayFrom.valueOf(), dayTo.valueOf(), width]
   );
-  const yAxis = useMemo(
-    () =>
-      d3
-        .scaleLinear()
-        .domain([0, 24 * 60 * 60])
-        .rangeRound([1, height]),
-    [height]
-  );
 
-  const fieldConfig = getFieldConfigWithMinMax(valueField);
+  const yAxis = useMemo(() => {
+    const RANGE_START = 1;
+    const RANGE_END = height;
+    return (t: DateTimeInput) => {
+      const timeInMs = typeof t === 'number' ? t * 1000 : t;
+      const time = dateTimeForTimeZone(timeZone, timeInMs);
+      const dayStart = dateTimeForTimeZone(timeZone, timeInMs).startOf('d');
+      const tSecondsInDay = time.diff(dayStart, 's', false);
+      const dayEnd = dateTimeForTimeZone(timeZone, timeInMs).endOf('d');
+      const daySeconds = dayEnd.diff(dayStart, 's', false);
+
+      return RANGE_START + ((RANGE_END - RANGE_START) * (tSecondsInDay)) / daySeconds;
+    };
+  }, [height, timeZone]);
+
+  const fieldConfig = getFieldConfigWithMinMax(valueField) as FieldConfig & { min: number; max: number };
   const colorScale = useMemo(
-    () => d3.scaleSequential(colorPalette).domain([fieldConfig.min!, fieldConfig.max!] as [number, number]),
+    () => d3.scaleSequential(colorPalette).domain([fieldConfig.min, fieldConfig.max]),
     [colorPalette, fieldConfig.min, fieldConfig.max]
   );
   const display = getDisplayProcessor({
@@ -99,47 +111,50 @@ export const Chart: React.FC<ChartProps> = ({
     timeZone,
   });
 
-  let previous: Bucket | null = null;
-  const buckets = useMemo(
-    () =>
-      valueField.values.flatMap((value, i) => {
-        const date = dateTime(timeField.values[i]!);
-        const time = date.unix();
-        const dayStart = date.startOf('d');
+  const buckets = useMemo(() => {
+    let previous: Bucket | null = null;
 
-        const x = Math.floor(xTime(dayStart)!);
-        const y = Math.floor(yAxis(time - dayStart.unix())!);
-        const bucket = { time, value, x, y, dayStart };
+    return valueField.values.flatMap((value, i) => {
+      const date = dateTime(timeField.values[i]!);
+      const time = date.unix();
+      const dayStart = dateTime(date).startOf('d');
 
-        if (previous !== null && previous.time < dayStart.unix()) {
-          const interBucket = {
-            time: dayStart.unix(),
-            value: previous.value,
-            x: x,
-            y: yAxis(0)!,
-            dayStart: dayStart,
-          };
-          previous = bucket;
-          return [interBucket, bucket];
-        }
+      const x = Math.floor(xTime(dayStart)!);
+      const y = Math.floor(yAxis(time)!);
+      const bucket = { time, value, x, y, dayStart };
 
-        previous = bucket;
-        return [bucket];
-      }),
-    [valueField.values, timeField.values, xTime, yAxis]
-  );
+      // if (previous !== null && previous.time < dayStart.unix()) {
+      //   const interBucket = {
+      //     time: dayStart.unix(),
+      //     value: previous.value,
+      //     x: x,
+      //     y: yAxis(dayStart)!,
+      //     dayStart: dayStart,
+      //   };
+      //   previous = bucket;
+      //   return [interBucket, bucket];
+      // }
+
+      previous = bucket;
+      return [bucket];
+    });
+  }, [valueField.values, timeField.values, xTime, yAxis]);
 
   const cells: (Bucket & { width: number; height: number })[] = useMemo(
     () =>
       buckets.map((bucket, i) => {
         const { x, y, dayStart } = bucket;
-        const nextDayX = Math.floor(xTime(dateTime(dayStart).add(1, 'd'))!);
+        const nextDay = dateTime(dayStart).add(1, 'd');
+        const nextDayX = Math.floor(xTime(nextDay)!);
         const dayWidth = 0.5 + nextDayX - x;
         let bucketEnd = timeRange.to.unix();
         if (i + 1 < buckets.length) {
-          bucketEnd = buckets[i + 1]!.time;
+          bucketEnd = buckets[i + 1]!.time - 1;
         }
-        const bucketHeight = Math.min(height, 0.5 + Math.ceil(yAxis(bucketEnd - dayStart.unix())!)) - y;
+        if (bucketEnd >= nextDay.unix()) {
+          bucketEnd = nextDay.unix() - 1;
+        }
+        const bucketHeight = Math.min(height, 0.5 + yAxis(bucketEnd)!) - y;
 
         return {
           ...bucket,
@@ -147,11 +162,11 @@ export const Chart: React.FC<ChartProps> = ({
           height: bucketHeight,
         };
       }),
-    [buckets, xTime, timeRange]
+    [buckets, xTime, timeRange.to]
   );
 
   if (hover) {
-    const i = cells.findIndex((b) => b.time === hover.time)!;
+    const i = cells.findIndex((b) => b.time === hover.time);
     const cell = cells[i]!;
     hoverFrame = (
       <Rect
@@ -161,9 +176,9 @@ export const Chart: React.FC<ChartProps> = ({
         height={cell.height}
         fill={'rgba(120, 120, 130, 0.2)'}
         stroke={
-          cell.value > (fieldConfig.max! + fieldConfig.min!) / 2
-            ? colorScale(fieldConfig.min!)
-            : colorScale(fieldConfig.max!)
+          cell.value > (fieldConfig.min + fieldConfig.max) / 2
+            ? colorScale(fieldConfig.min)
+            : colorScale(fieldConfig.max)
         }
         // stroke={"rgba(120, 120, 130, 0.5)"}
         dash={[4, 2]}
@@ -209,7 +224,7 @@ export const Chart: React.FC<ChartProps> = ({
             content={
               hover ? (
                 <SeriesTable
-                  timestamp={dateTime(hover?.time * 1000).toString()}
+                  timestamp={dateTime(hover?.time * 1000).toLocaleString()}
                   series={[
                     {
                       label: valueField.name,
@@ -246,7 +261,7 @@ const XAxis: React.FC<{ x: number; y: number; height: number; width: number; sca
         const x = scale(date)!;
         const label = date.toLocaleDateString(navigator.language, { month: '2-digit', day: '2-digit' });
         return (
-          <>
+          <Fragment key={label}>
             <Line points={[x, y, x, y + 4]} stroke={colorGrid} strokeWidth={1} />
             <Text
               text={label}
@@ -256,11 +271,11 @@ const XAxis: React.FC<{ x: number; y: number; height: number; width: number; sca
               align="center"
               fontFamily={theme.typography.fontFamily}
               width={spacing}
-              fontSize={theme.typography.htmlFontSize!}
+              fontSize={theme.typography.htmlFontSize ?? 16}
               textBaseline="top"
               wrap="word"
             />
-          </>
+          </Fragment>
         );
       })}
     </>

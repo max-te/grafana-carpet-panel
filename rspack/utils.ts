@@ -54,5 +54,5 @@ export async function getEntries(): Promise<Record<string, string>> {
       result[entryName] = module;
       return result;
     }, result);
-  }, {});
+  }, {} as Record<string, string>);
 }
