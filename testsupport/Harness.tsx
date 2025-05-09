@@ -8,7 +8,7 @@ import {
   getThemeById,
 } from '@grafana/data';
 import { Stage } from 'react-konva';
-import { Chart } from '../components/Chart';
+import { Chart } from '../src/components/Chart';
 import React from 'react';
 import * as d3 from 'd3';
 import { Box, GlobalStyles, PanelContainer, Stack } from '@grafana/ui';
@@ -45,7 +45,7 @@ export const Harness: React.FC = () => {
               x={0}
               y={0}
               width={width}
-              height={height}
+              height={height - 50}
               timeField={timeField}
               valueField={valueField}
               timeZone={'Europe/Berlin'}

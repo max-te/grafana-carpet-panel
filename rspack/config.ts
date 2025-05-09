@@ -1,5 +1,5 @@
 import { defineConfig } from '@rspack/cli';
-import { rspack } from '@rspack/core';
+import { rspack, type SwcLoaderOptions } from '@rspack/core';
 import ReplaceInFileWebpackPlugin from 'replace-in-file-webpack-plugin';
 import ESLintPlugin from 'eslint-webpack-plugin';
 import { getPackageJson, getPluginJson, hasReadme, getEntries } from './utils.ts';
@@ -89,9 +89,7 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
           use: [
             {
               loader: 'builtin:swc-loader',
-              options: {
-                imports: `side-effects grafana-public-path`,
-              },
+              options: {} satisfies SwcLoaderOptions,
             },
           ],
         },
@@ -130,7 +128,7 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
             // Keep publicPath relative for host.com/grafana/ deployments
             publicPath: `public/plugins/${pluginJson.id}/img/`,
             outputPath: 'img/',
-            filename: Boolean(env.production) ? '[hash][ext]' : '[file]',
+            filename: env.production ? '[hash][ext]' : '[file]',
           },
         },
         {
@@ -140,7 +138,7 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
             // Keep publicPath relative for host.com/grafana/ deployments
             publicPath: `public/plugins/${pluginJson.id}/fonts/`,
             outputPath: 'fonts/',
-            filename: Boolean(env.production) ? '[hash][ext]' : '[name][ext]',
+            filename: env.production ? '[hash][ext]' : '[name][ext]',
           },
         },
       ],
@@ -149,7 +147,7 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
     output: {
       clean: {
         // It really doesn't matter if this regex syntax works. We just need to prevent rspack from deleting the directory, since it's mounted by docker.
-        keep: '(.*?_(amd64|arm(64)?)(.exe)?|go_plugin_build_manifest)',
+        keep: (_f) => false,
       },
       filename: '[name].js',
       chunkFilename: env.production ? '[name].js?_cache=[contenthash]' : '[name].js',
@@ -215,20 +213,20 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
       ]),
       ...(env.development
         ? [
-            new ForkTsCheckerWebpackPlugin({
-              async: Boolean(env.development),
-              issue: {
-                include: [{ file: '**/*.{ts,tsx}' }],
-              },
-              typescript: {
-                configFile: path.join(process.cwd(), 'tsconfig.json'),
-              },
-            }),
-            new ESLintPlugin({
-              extensions: ['.ts', '.tsx'],
-              lintDirtyModulesOnly: Boolean(env.development), // don't lint on start, only lint changed files
-            }),
-          ]
+          new ForkTsCheckerWebpackPlugin({
+            async: Boolean(env.development),
+            issue: {
+              include: [{ file: '**/*.{ts,tsx}' }],
+            },
+            typescript: {
+              configFile: path.join(process.cwd(), 'tsconfig.json'),
+            },
+          }),
+          new ESLintPlugin({
+            extensions: ['.ts', '.tsx'],
+            lintDirtyModulesOnly: Boolean(env.development), // don't lint on start, only lint changed files
+          }),
+        ]
         : []),
     ],
   });

@@ -4,8 +4,8 @@ import path from 'path';
 
 const config = async (env: Record<string, any>, argv: Record<string, any>) => {
   return defineConfig({
-    entry: path.resolve(process.cwd(), 'src/testsupport/index.tsx'),
-    context: path.join(process.cwd(), 'src/testsupport'),
+    entry: path.resolve(process.cwd(), 'testsupport/index.tsx'),
+    context: path.join(process.cwd(), 'testsupport'),
     devtool: 'eval-source-map',
     mode: 'development',
     devServer: {
@@ -72,17 +72,15 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
     },
     output: {
       filename: 'index.js',
-      path: path.resolve(process.cwd(), 'dist.dev/'),
-      publicPath: '/',
       clean: true,
     },
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx'],
-      modules: [path.resolve(process.cwd(), 'src/testsupport'), 'node_modules'],
+      modules: [path.resolve(process.cwd(), 'testsupport'), 'node_modules'],
     },
     plugins: [
       new rspack.HtmlRspackPlugin({
-        template: path.resolve(process.cwd(), 'src/testsupport/index.html'),
+        template: path.resolve(process.cwd(), 'testsupport/index.html'),
         filename: 'index.html',
       }),
     ],
