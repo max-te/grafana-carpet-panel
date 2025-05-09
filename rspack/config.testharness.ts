@@ -1,0 +1,92 @@
+import { defineConfig } from '@rspack/cli';
+import { rspack } from '@rspack/core';
+import path from 'path';
+
+const config = async (env: Record<string, any>, argv: Record<string, any>) => {
+  return defineConfig({
+    entry: path.resolve(process.cwd(), 'src/testsupport/index.tsx'),
+    context: path.join(process.cwd(), 'src/testsupport'),
+    devtool: 'eval-source-map',
+    mode: 'development',
+    devServer: {
+      watchFiles: 'src',
+    },
+    module: {
+      rules: [
+        {
+          resolve: {
+            alias: {
+              'react-loading-skeleton': path.resolve(
+                import.meta.dirname,
+                '../node_modules/react-loading-skeleton/dist/index.js'
+              )
+            }
+          }
+        },
+        {
+          exclude: /(node_modules)/,
+          test: /\.[tj]sx?$/,
+          use: {
+            loader: 'builtin:swc-loader',
+            options: {
+              jsc: {
+                target: 'es2015',
+                loose: false,
+                parser: {
+                  syntax: 'typescript',
+                  tsx: true,
+                  decorators: false,
+                  dynamicImport: true,
+                },
+              },
+            },
+          },
+        },
+        {
+          test: /\.css$/,
+          use: ['style-loader', 'css-loader'],
+        },
+        {
+          test: /\.s[ac]ss$/,
+          use: ['style-loader', 'css-loader', 'sass-loader'],
+        },
+        {
+          test: /\.(png|jpe?g|gif|svg)$/,
+          type: 'asset/resource',
+          generator: {
+            publicPath: 'img/',
+            outputPath: 'img/',
+            filename: env.production ? '[hash][ext]' : '[file]',
+          },
+        },
+        {
+          test: /\.(woff|woff2|eot|ttf|otf)(\?v=\d+\.\d+\.\d+)?$/,
+          type: 'asset/resource',
+          generator: {
+            publicPath: 'fonts/',
+            outputPath: 'fonts/',
+            filename: env.production ? '[hash][ext]' : '[name][ext]',
+          },
+        },
+      ],
+    },
+    output: {
+      filename: 'index.js',
+      path: path.resolve(process.cwd(), 'dist.dev/'),
+      publicPath: '/',
+      clean: true,
+    },
+    resolve: {
+      extensions: ['.js', '.jsx', '.ts', '.tsx'],
+      modules: [path.resolve(process.cwd(), 'src/testsupport'), 'node_modules'],
+    },
+    plugins: [
+      new rspack.HtmlRspackPlugin({
+        template: path.resolve(process.cwd(), 'src/testsupport/index.html'),
+        filename: 'index.html',
+      }),
+    ],
+  });
+};
+
+export default config;
