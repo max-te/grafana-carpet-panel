@@ -1,15 +1,12 @@
-# grafana-konva-panel
+# Carpet Panel
 
-To install dependencies:
+This is a Grafana panel plugin that displays a carpet plot.
+It's a spiritual successor to the Marcus Olsson's [Hourly Heatmap panel](https://grafana.com/grafana/plugins/marcusolsson-hourly-heatmap-panel/).
+It was build with [Konva](https://konvajs.org/) and [react-konva](https://www.npmjs.com/package/react-konva), focusing on performance on large time ranges and precise rendering.
 
-```bash
-bun install
-```
+![Screenshot](src/img/screenshot.png)
 
-To run:
+## Building
 
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.2.5. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+This project uses [Bun](https://bun.sh/) as a package manager and build tool.
+Install dependencies with `bun install` and build with `bun run build`.
