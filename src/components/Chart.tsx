@@ -96,7 +96,7 @@ export const Chart: React.FC<ChartProps> = ({
       const dayEnd = dateTimeForTimeZone(timeZone, timeInMs).endOf('d');
       const daySeconds = dayEnd.diff(dayStart, 's', false);
 
-      return RANGE_START + ((RANGE_END - RANGE_START) * (tSecondsInDay)) / daySeconds;
+      return RANGE_START + ((RANGE_END - RANGE_START) * tSecondsInDay) / daySeconds;
     };
   }, [height, timeZone]);
 

@@ -74,14 +74,24 @@ export const SimplePanel: React.FC<Props> = ({
       }
       return colorFn;
     } else {
-      const fill = tinycolor(theme.visualization.getColorByName(options.color?.fill!)).toPercentageRgb();
+      const fill = tinycolor(theme.visualization.getColorByName(options.color?.fill!)).toRgb();
+      const background = tinycolor(theme.colors.background.primary).toRgb();
 
       const scaleAlpha =
         options.color?.scale === HeatmapColorScale.Exponential
           ? d3.scalePow().exponent(options.color.exponent).domain([0, 1]).range([0, 1])
           : d3.scaleLinear().domain([0, 1]).range([0, 1]);
 
-      let colorFn: (t: number) => string = (t) => `rgba(${fill.r}, ${fill.g}, ${fill.b}, ${fill.a * scaleAlpha(t)!}`;
+      let colorFn: (t: number) => string = (t) => {
+        const inter = scaleAlpha(t)!;
+        const blend = {
+          r: fill.r * inter + (1 - inter) * background.r,
+          g: fill.g * inter + (1 - inter) * background.g,
+          b: fill.b * inter + (1 - inter) * background.b,
+          a: background.a,
+        };
+        return `rgba(${blend.r}, ${blend.g}, ${blend.b}, ${blend.a}`;
+      };
       if (options.color?.reverse) {
         const primal = colorFn;
         colorFn = (x: number) => primal(1 - x);
