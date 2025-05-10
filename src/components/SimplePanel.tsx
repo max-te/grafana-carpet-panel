@@ -98,7 +98,7 @@ export const SimplePanel: React.FC<Props> = ({
       }
       return colorFn;
     }
-  }, [options.color]);
+  }, [options.color, theme]);
 
   return (
     <div
