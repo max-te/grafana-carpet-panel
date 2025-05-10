@@ -205,7 +205,6 @@ export const Chart: React.FC<ChartProps> = ({
                 perfectDrawEnabled={true}
                 strokeEnabled={false}
                 strokeWidth={0}
-                globalCompositeOperation="copy"
               />
             ))}
           </Layer>
