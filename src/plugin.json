@@ -4,14 +4,16 @@
   "name": "Carpet-Panel",
   "id": "maxte-carpet-panel",
   "info": {
-    "keywords": ["panel"],
+    "keywords": [
+      "panel"
+    ],
     "description": "",
     "author": {
       "name": "Max te"
     },
     "logos": {
-      "small": "img/logo.svg",
-      "large": "img/logo.svg"
+      "small": "img/logo.png",
+      "large": "img/logo.png"
     },
     "links": [],
     "screenshots": [],
