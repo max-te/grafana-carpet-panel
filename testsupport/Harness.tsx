@@ -51,6 +51,7 @@ export const Harness: React.FC = () => {
               timeZone={'Europe/Berlin'}
               timeRange={timeRange}
               colorPalette={(t) => d3.interpolateViridis(t)}
+              gapWidth={2}
             />
           </Stage>
         </div>

@@ -17,6 +17,16 @@ export const plugin = new PanelPlugin<SimpleOptions>(SimplePanel).setPanelOption
       path: 'valueField.unit',
       name: 'Unit',
       description: 'Unit of the value field',
+    })
+    .addSliderInput({
+      path: 'gapWidth',
+      name: 'Gap',
+      description: 'Gap between cells',
+      settings: {
+        min: 0,
+        max: 10,
+        step: 0.5,
+      },
     });
 
   const category = ['Colors'];

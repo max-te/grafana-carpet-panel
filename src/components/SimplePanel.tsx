@@ -121,6 +121,7 @@ export const SimplePanel: React.FC<Props> = ({
           valueField={frames[0]!.valueField!}
           colorPalette={colorPalette}
           timeZone={timeZone}
+          gapWidth={options.gapWidth ?? 0}
         />
       </Stage>
     </div>

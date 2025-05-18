@@ -60,4 +60,5 @@ export interface SimpleOptions {
   };
 
   color?: HeatmapColorOptions;
+  gapWidth?: number;
 }

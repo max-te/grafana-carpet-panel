@@ -31,6 +31,7 @@ interface ChartProps {
   timeRange: TimeRange;
   // dailyIntervalHours: [number, number];
   colorPalette: (t: number) => string;
+  gapWidth: number;
 }
 
 type Bucket = {
@@ -49,6 +50,7 @@ export const Chart: React.FC<ChartProps> = ({
   valueField,
   colorPalette,
   timeZone,
+  gapWidth,
 }) => {
   Konva.pixelRatio = Math.ceil(useDevicePixelRatio({ round: false, maxDpr: 4 }));
 
@@ -104,9 +106,10 @@ export const Chart: React.FC<ChartProps> = ({
     () => d3.scaleSequential(colorPalette).domain([fieldConfig.min, fieldConfig.max]),
     [colorPalette, fieldConfig.min, fieldConfig.max]
   );
+  const theme = useTheme2();
   const display = getDisplayProcessor({
     field: valueField,
-    theme: useTheme2(),
+    theme,
     timeZone,
   });
 
@@ -201,13 +204,14 @@ export const Chart: React.FC<ChartProps> = ({
                 data-bucket={cell}
                 onMouseOver={hoverCallback}
                 perfectDrawEnabled={true}
-                strokeEnabled={false}
-                strokeWidth={0}
+                strokeEnabled={gapWidth > 0}
+                strokeWidth={gapWidth}
+                stroke={theme.colors.background.primary}
               />
             ))}
           </Layer>
         ),
-        [cells, colorScale, unsetHover, hoverCallback]
+        [cells, colorScale, unsetHover, hoverCallback, gapWidth]
       )}
       <Layer listening={false}>
         <XAxis x={0} y={height} height={16} width={width} scale={xTime} />
