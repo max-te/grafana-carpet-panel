@@ -171,7 +171,7 @@ export const Chart: React.FC<ChartProps> = ({
       <Rect
         x={cell.x - 0.5}
         y={cell.y}
-        width={cell.width}
+        width={cell.width + 0.5}
         height={cell.height - 0.5}
         fill={'rgba(120, 120, 130, 0.2)'}
         stroke={
@@ -179,7 +179,6 @@ export const Chart: React.FC<ChartProps> = ({
             ? colorScale(fieldConfig.min)
             : colorScale(fieldConfig.max)
         }
-        // stroke={"rgba(120, 120, 130, 0.5)"}
         dash={[4, 2]}
         strokeWidth={1}
       />
