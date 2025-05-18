@@ -25,7 +25,8 @@
     "react-dom": "18.2.0",
     "react-konva": "~18.2.10",
     "react-konva-utils": "^1.1.0",
-    "tinycolor2": "^1.6.0"
+    "tinycolor2": "^1.6.0",
+    "use-device-pixel-ratio": "^1.1.2"
   },
   "devDependencies": {
     "@emotion/core": "10.0.27",

@@ -13,10 +13,11 @@ import {
 import { SeriesTable, useTheme2, VizTooltip } from '@grafana/ui';
 import type { ScaleTime } from 'd3';
 import * as d3 from 'd3';
-import React, { Fragment, useCallback, useMemo, useState } from 'react';
+import React, { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { Rect, Line, Text, Layer } from 'react-konva';
 import { Html } from 'react-konva-utils';
-import type Konva from 'konva';
+import Konva from 'konva';
+import { useDevicePixelRatio } from 'use-device-pixel-ratio';
 
 interface ChartProps {
   x: number;
@@ -49,6 +50,8 @@ export const Chart: React.FC<ChartProps> = ({
   colorPalette,
   timeZone,
 }) => {
+  Konva.pixelRatio = Math.ceil(useDevicePixelRatio({ round: false, maxDpr: 4 }));
+
   const [hover, setHover] = useState<Bucket | null>(null);
   let hoverFrame = <></>;
   const hoverCallback = useCallback(
@@ -77,11 +80,7 @@ export const Chart: React.FC<ChartProps> = ({
   }
 
   const xTime = useMemo(
-    () =>
-      d3
-        .scaleUtc()
-        .domain([dayFrom, dayTo])
-        .range([1, width - 1]),
+    () => d3.scaleUtc().domain([dayFrom, dayTo]).range([0, width]),
     [dayFrom.valueOf(), dayTo.valueOf(), width]
   );
 
@@ -146,7 +145,7 @@ export const Chart: React.FC<ChartProps> = ({
         const { x, y, dayStart } = bucket;
         const nextDay = dateTime(dayStart).add(1, 'd');
         const nextDayX = Math.floor(xTime(nextDay)!);
-        const dayWidth = 0.5 + nextDayX - x;
+        const dayWidth = nextDayX - x;
         let bucketEnd = timeRange.to.unix();
         if (i + 1 < buckets.length) {
           bucketEnd = buckets[i + 1]!.time - 1;
@@ -154,7 +153,7 @@ export const Chart: React.FC<ChartProps> = ({
         if (bucketEnd >= nextDay.unix()) {
           bucketEnd = nextDay.unix() - 1;
         }
-        const bucketHeight = Math.min(height, 0.5 + yAxis(bucketEnd)!) - y;
+        const bucketHeight = Math.min(height, yAxis(bucketEnd)!) - y;
 
         return {
           ...bucket,
@@ -170,10 +169,10 @@ export const Chart: React.FC<ChartProps> = ({
     const cell = cells[i]!;
     hoverFrame = (
       <Rect
-        x={cell.x}
+        x={cell.x - 0.5}
         y={cell.y}
         width={cell.width}
-        height={cell.height}
+        height={cell.height - 0.5}
         fill={'rgba(120, 120, 130, 0.2)'}
         stroke={
           cell.value > (fieldConfig.min + fieldConfig.max) / 2
