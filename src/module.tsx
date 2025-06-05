@@ -3,7 +3,7 @@ import { HeatmapColorMode, HeatmapColorScale, type SimpleOptions } from './types
 import { SimplePanel } from './components/SimplePanel';
 import { colorSchemes } from './palettes';
 
-export const plugin = new PanelPlugin<SimpleOptions>(SimplePanel).setPanelOptions((builder, context) => {
+export const plugin = new PanelPlugin<SimpleOptions>(SimplePanel).setPanelOptions((builder) => {
   builder
     .addFieldNamePicker({
       path: 'timeFieldName',
@@ -21,6 +21,7 @@ export const plugin = new PanelPlugin<SimpleOptions>(SimplePanel).setPanelOption
     .addSliderInput({
       path: 'gapWidth',
       name: 'Gap',
+      defaultValue: 0,
       description: 'Gap between cells',
       settings: {
         min: 0,
@@ -47,9 +48,9 @@ export const plugin = new PanelPlugin<SimpleOptions>(SimplePanel).setPanelOption
   builder.addColorPicker({
     path: `color.fill`,
     name: 'Color',
-    defaultValue: '#000000',
+    defaultValue: 'green',
     category,
-    showIf: (opts) => opts.color?.mode === HeatmapColorMode.Opacity,
+    showIf: (opts) => opts.color.mode === HeatmapColorMode.Opacity,
   });
 
   builder.addRadio({
@@ -63,7 +64,7 @@ export const plugin = new PanelPlugin<SimpleOptions>(SimplePanel).setPanelOption
         { label: 'Linear', value: HeatmapColorScale.Linear },
       ],
     },
-    showIf: (opts) => opts.color?.mode === HeatmapColorMode.Opacity,
+    showIf: (opts) => opts.color.mode === HeatmapColorMode.Opacity,
   });
 
   builder.addSliderInput({
@@ -77,14 +78,14 @@ export const plugin = new PanelPlugin<SimpleOptions>(SimplePanel).setPanelOption
       step: 0.1,
     },
     showIf: (opts) =>
-      opts.color?.mode === HeatmapColorMode.Opacity && opts.color?.scale === HeatmapColorScale.Exponential,
+      opts.color.mode === HeatmapColorMode.Opacity && opts.color.scale === HeatmapColorScale.Exponential,
   });
 
   builder.addSelect({
     path: `color.scheme`,
     name: 'Scheme',
     description: '',
-    defaultValue: 'Spectral',
+    defaultValue: colorSchemes[0]?.name,
     category,
     settings: {
       options: colorSchemes.map((scheme) => ({
@@ -92,7 +93,7 @@ export const plugin = new PanelPlugin<SimpleOptions>(SimplePanel).setPanelOption
         label: scheme.name,
       })),
     },
-    showIf: (opts) => opts.color?.mode !== HeatmapColorMode.Opacity,
+    showIf: (opts) => opts.color.mode !== HeatmapColorMode.Opacity,
   });
 
   builder.addBooleanSwitch({

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { type PanelProps } from '@grafana/data';
+import { FieldType, type PanelProps } from '@grafana/data';
 import { HeatmapColorMode, HeatmapColorScale, type SimpleOptions } from '../types';
 import { css, cx } from '@emotion/css';
 import { useStyles2, useTheme2 } from '@grafana/ui';
@@ -10,7 +10,7 @@ import * as d3ScaleChromatic from 'd3-scale-chromatic';
 import tinycolor from 'tinycolor2';
 import * as d3 from 'd3';
 
-interface Props extends PanelProps<SimpleOptions> {}
+type Props = PanelProps<SimpleOptions>;
 
 const getStyles = () => {
   return {
@@ -44,55 +44,83 @@ export const SimplePanel: React.FC<Props> = ({
 }) => {
   const styles = useStyles2(getStyles);
 
-  if (data.series.length === 0) {
-    return <PanelDataErrorView fieldConfig={fieldConfig} panelId={id} data={data} needsStringField />;
+  const frame = data.series[0]; // TODO: Handle multiple series (?)
+  if (frame === undefined) {
+    return (
+      <PanelDataErrorView
+        fieldConfig={fieldConfig}
+        panelId={id}
+        data={data}
+        message="No series"
+        needsTimeField
+        needsNumberField
+      />
+    );
   }
-  const frames = data.series.map((frame) => {
-    const timeField = options.timeFieldName
-      ? frame.fields.find((f) => f.name === options.timeFieldName)
-      : frame.fields.find((f) => f.type === 'time');
+  const timeField = options.timeFieldName
+    ? frame.fields.find((f) => f.name === options.timeFieldName)
+    : frame.fields.find((f) => f.type === FieldType.time);
 
-    const valueField = options.valueField?.name
-      ? frame.fields.find((f) => f.name === options.valueField?.name)
-      : frame.fields.find((f) => f.type === 'number');
-    valueField!.config.unit = options.valueField?.unit;
-    valueField!.config.min = options.color?.min;
-    valueField!.config.max = options.color?.max;
+  const valueField = options.valueField?.name
+    ? frame.fields.find((f) => f.name === options.valueField?.name)
+    : frame.fields.find((f) => f.type === FieldType.number);
 
-    return { timeField, valueField, fields: frame.fields };
-  });
+  if (timeField === undefined || valueField === undefined) {
+    return (
+      <PanelDataErrorView
+        fieldConfig={fieldConfig}
+        panelId={id}
+        data={data}
+        needsTimeField={timeField === undefined}
+        needsNumberField={valueField === undefined}
+      />
+    );
+  }
+  valueField.config.unit = options.valueField?.unit;
+  valueField.config.min = options.color.min;
+  valueField.config.max = options.color.max;
+
   const padding = 16;
   const theme = useTheme2();
 
-  const colorPalette = useMemo(() => {
-    if (options.color?.mode === HeatmapColorMode.Scheme) {
-      const colorFnName = 'interpolate' + (options.color?.scheme || 'Spectral');
-      let colorFn: (t: number) => string = (d3ScaleChromatic as any)[colorFnName] ?? d3ScaleChromatic.interpolateGreys;
-      if (options.color?.reverse) {
+  type ColorFn = (t: number) => string;
+
+  const colorPalette: ColorFn = useMemo(() => {
+    if (options.color.mode === HeatmapColorMode.Scheme) {
+      type ColorFnName = {
+        [N in keyof typeof d3ScaleChromatic]: (typeof d3ScaleChromatic)[N] extends ColorFn ? N : never;
+      }[keyof typeof d3ScaleChromatic];
+      const colorFnName = ('interpolate' + (options.color.scheme || 'Spectral')) as ColorFnName;
+      let colorFn: ColorFn = d3ScaleChromatic[colorFnName];
+      if (options.color.reverse) {
         const primal = colorFn;
         colorFn = (x: number) => primal(1 - x);
       }
       return colorFn;
     } else {
-      const fill = tinycolor(theme.visualization.getColorByName(options.color?.fill!)).toRgb();
+      const fill = tinycolor(theme.visualization.getColorByName(options.color.fill)).toRgb();
       const background = tinycolor(theme.colors.background.primary).toRgb();
 
       const scaleAlpha =
-        options.color?.scale === HeatmapColorScale.Exponential
-          ? d3.scalePow().exponent(options.color.exponent).domain([0, 1]).range([0, 1])
+        options.color.scale === HeatmapColorScale.Exponential
+          ? d3
+              .scalePow()
+              .exponent(options.color.exponent ?? 1)
+              .domain([0, 1])
+              .range([0, 1])
           : d3.scaleLinear().domain([0, 1]).range([0, 1]);
 
       let colorFn: (t: number) => string = (t) => {
-        const inter = scaleAlpha(t)!;
+        const inter = scaleAlpha(t);
         const blend = {
           r: fill.r * inter + (1 - inter) * background.r,
           g: fill.g * inter + (1 - inter) * background.g,
           b: fill.b * inter + (1 - inter) * background.b,
           a: background.a,
         };
-        return `rgba(${blend.r}, ${blend.g}, ${blend.b}, ${blend.a}`;
+        return `rgba(${blend.r.toFixed(3)}, ${blend.g.toFixed(3)}, ${blend.b.toFixed(3)}, ${blend.a.toFixed(3)}`;
       };
-      if (options.color?.reverse) {
+      if (options.color.reverse) {
         const primal = colorFn;
         colorFn = (x: number) => primal(1 - x);
       }
@@ -117,8 +145,8 @@ export const SimplePanel: React.FC<Props> = ({
           width={width - 2 * padding}
           height={height - 2 * padding}
           timeRange={timeRange}
-          timeField={frames[0]!.timeField!}
-          valueField={frames[0]!.valueField!}
+          timeField={timeField}
+          valueField={valueField}
           colorPalette={colorPalette}
           timeZone={timeZone}
           gapWidth={options.gapWidth ?? 0}

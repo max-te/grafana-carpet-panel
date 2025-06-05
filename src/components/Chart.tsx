@@ -13,7 +13,7 @@ import {
 import { SeriesTable, useTheme2, VizTooltip } from '@grafana/ui';
 import type { ScaleTime } from 'd3';
 import * as d3 from 'd3';
-import React, { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { Fragment, useCallback, useMemo, useState } from 'react';
 import { Rect, Line, Text, Layer } from 'react-konva';
 import { Html } from 'react-konva-utils';
 import Konva from 'konva';
@@ -29,7 +29,6 @@ interface ChartProps {
   valueField: Field<number>;
   timeZone: string;
   timeRange: TimeRange;
-  // dailyIntervalHours: [number, number];
   colorPalette: (t: number) => string;
   gapWidth: number;
 }
@@ -58,7 +57,7 @@ export const Chart: React.FC<ChartProps> = ({
   let hoverFrame = <></>;
   const hoverCallback = useCallback(
     ({ evt, currentTarget }: { evt: MouseEvent; currentTarget: Konva.Node }) => {
-      const bucket = currentTarget.attrs['data-bucket'];
+      const bucket = currentTarget.getAttr('data-bucket') as Bucket;
       const innerRect = currentTarget.getClientRect();
       const outerRect = (evt.target as Element).getBoundingClientRect();
       setHover({
@@ -114,15 +113,13 @@ export const Chart: React.FC<ChartProps> = ({
   });
 
   const buckets = useMemo(() => {
-    let previous: Bucket | null = null;
-
     return valueField.values.flatMap((value, i) => {
-      const date = dateTime(timeField.values[i]!);
+      const date = dateTime(timeField.values[i]);
       const time = date.unix();
       const dayStart = dateTime(date).startOf('d');
 
-      const x = Math.floor(xTime(dayStart)!);
-      const y = Math.floor(yAxis(time)!);
+      const x = Math.floor(xTime(dayStart));
+      const y = Math.floor(yAxis(time));
       const bucket = { time, value, x, y, dayStart };
 
       // TODO: Buckets which cross a date boundary should be split for rendering proportionally in either days' column.
@@ -138,7 +135,6 @@ export const Chart: React.FC<ChartProps> = ({
       //   return [interBucket, bucket];
       // }
 
-      previous = bucket;
       return [bucket];
     });
   }, [valueField.values, timeField.values, xTime, yAxis]);
@@ -148,16 +144,17 @@ export const Chart: React.FC<ChartProps> = ({
       buckets.map((bucket, i) => {
         const { x, y, dayStart } = bucket;
         const nextDay = dateTime(dayStart).add(1, 'd');
-        const nextDayX = Math.floor(xTime(nextDay)!);
+        const nextDayX = Math.floor(xTime(nextDay));
         const dayWidth = nextDayX - x;
         let bucketEnd = timeRange.to.unix();
         if (i + 1 < buckets.length) {
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           bucketEnd = buckets[i + 1]!.time - 1;
         }
         if (bucketEnd >= nextDay.unix()) {
           bucketEnd = nextDay.unix() - 1;
         }
-        const bucketHeight = Math.min(height, yAxis(bucketEnd)!) - y;
+        const bucketHeight = Math.min(height, yAxis(bucketEnd)) - y;
 
         return {
           ...bucket,
@@ -168,18 +165,17 @@ export const Chart: React.FC<ChartProps> = ({
     [buckets, xTime, timeRange.to]
   );
 
-  if (hover) {
-    const i = cells.findIndex((b) => b.time === hover.time);
-    const cell = cells[i]!;
+  const hoverCell = cells.find((b) => b.time === hover?.time);
+  if (hoverCell) {
     hoverFrame = (
       <Rect
-        x={cell.x - 0.5}
-        y={cell.y}
-        width={cell.width + 0.5}
-        height={cell.height - 0.5}
+        x={hoverCell.x - 0.5}
+        y={hoverCell.y}
+        width={hoverCell.width + 0.5}
+        height={hoverCell.height - 0.5}
         fill={'rgba(120, 120, 130, 0.2)'}
         stroke={
-          cell.value > (fieldConfig.min + fieldConfig.max) / 2
+          hoverCell.value > (fieldConfig.min + fieldConfig.max) / 2
             ? colorScale(fieldConfig.min)
             : colorScale(fieldConfig.max)
         }
@@ -226,12 +222,13 @@ export const Chart: React.FC<ChartProps> = ({
             content={
               hover ? (
                 <SeriesTable
-                  timestamp={dateTime(hover?.time * 1000).toLocaleString()}
+                  // TODO: Check how Grafana does datetime formatting
+                  timestamp={dateTime(hover.time * 1000).toISOString()}
                   series={[
                     {
                       label: valueField.name,
-                      value: formattedValueToString(display(hover?.value!)!),
-                      color: display(hover?.value!)!.color,
+                      value: formattedValueToString(display(hover.value)),
+                      color: display(hover.value).color,
                     },
                   ]}
                 />
@@ -260,7 +257,7 @@ const XAxis: React.FC<{ x: number; y: number; height: number; width: number; sca
     <>
       <Line points={[x, y, x + width, y]} stroke={colorGrid} strokeWidth={1} />
       {ticks.map((date) => {
-        const x = scale(date)!;
+        const x = scale(date);
         const label = date.toLocaleDateString(navigator.language, { month: '2-digit', day: '2-digit' });
         return (
           <Fragment key={label}>

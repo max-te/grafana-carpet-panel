@@ -4,6 +4,7 @@
 // https://github.com/grafana/grafana/blob/3d9989a04af12dbe5bf366f9d6e44867dd758ac7/public/app/plugins/panel/heatmap/palettes.ts
 export const colorSchemes = [
   // Diverging
+  { name: 'Spectral', invert: 'always' },
   { name: 'BrBG', invert: 'always' },
   { name: 'PiYG', invert: 'always' },
   { name: 'PRGn', invert: 'always' },
@@ -12,7 +13,6 @@ export const colorSchemes = [
   { name: 'RdGy', invert: 'always' },
   { name: 'RdYlBu', invert: 'always' },
   { name: 'RdYlGn', invert: 'always' },
-  { name: 'Spectral', invert: 'always' },
 
   // Sequential (Single Hue)
   { name: 'Blues', invert: 'dark' },
