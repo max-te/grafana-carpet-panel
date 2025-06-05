@@ -1,5 +1,5 @@
 import { defineConfig } from '@rspack/cli';
-import { rspack } from '@rspack/core';
+import { rspack, type RspackOptions } from '@rspack/core';
 import path from 'path';
 
 const config = async (env: Record<string, any>, argv: Record<string, any>) => {
@@ -84,7 +84,7 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
         filename: 'index.html',
       }),
     ],
-  });
+  }) satisfies RspackOptions;
 };
 
 export default config;

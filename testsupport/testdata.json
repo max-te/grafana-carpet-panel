@@ -2168,9 +2168,6 @@
                         1746734400000
                     ],
                     "state": {
-                        "scopedVars": {
-                            "__dataContext": "Filtered out in JSON serialization"
-                        },
                         "displayName": null,
                         "seriesIndex": 0
                     }
@@ -4339,9 +4336,6 @@
                         0.10000000149011
                     ],
                     "state": {
-                        "scopedVars": {
-                            "__dataContext": "Filtered out in JSON serialization"
-                        },
                         "displayName": null,
                         "seriesIndex": 0,
                         "range": {
@@ -4390,7 +4384,6 @@
         ],
         "maxDataPoints": 9999999,
         "scopedVars": {
-            "__sceneObject": "Filtered out in JSON serialization",
             "__interval": {
                 "text": "1h",
                 "value": "1h"

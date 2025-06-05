@@ -1,17 +1,9 @@
-import {
-  type Field,
-  FieldType,
-  type FieldConfig,
-  type TimeRange,
-  dateTime,
-  ThemeContext,
-  getThemeById,
-} from '@grafana/data';
+import { type Field, type TimeRange, dateTime, ThemeContext, getThemeById } from '@grafana/data';
 import { Stage } from 'react-konva';
 import { Chart } from '../src/components/Chart';
 import React from 'react';
 import * as d3 from 'd3';
-import { Box, GlobalStyles, PanelContainer, Stack } from '@grafana/ui';
+import { GlobalStyles, PanelContainer } from '@grafana/ui';
 import * as testData from './testdata.json';
 
 export const Harness: React.FC = () => {
@@ -20,9 +12,9 @@ export const Harness: React.FC = () => {
     to: dateTime(testData.request.range.to),
     raw: testData.request.range.raw,
   };
-  const timeField: Field<number> = testData?.series[0]?.fields[0] as Field<number>;
+  const timeField: Field<number> = testData.series[0]!.fields[0] as Field<number>;
 
-  const valueField = testData?.series[0]?.fields[1] as Field<number>;
+  const valueField = testData.series[0]!.fields[1] as Field<number>;
 
   const theme = getThemeById('light');
 

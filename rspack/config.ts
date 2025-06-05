@@ -1,5 +1,5 @@
 import { defineConfig } from '@rspack/cli';
-import { rspack, type SwcLoaderOptions } from '@rspack/core';
+import { rspack, type SwcLoaderOptions, type RspackOptions } from '@rspack/core';
 import ReplaceInFileWebpackPlugin from 'replace-in-file-webpack-plugin';
 import ESLintPlugin from 'eslint-webpack-plugin';
 import { getPackageJson, getPluginJson, hasReadme, getEntries } from './utils.ts';
@@ -229,7 +229,7 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
         ]
         : []),
     ],
-  });
+  }) satisfies RspackOptions;
 };
 
 export default config;
