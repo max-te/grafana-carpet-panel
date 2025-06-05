@@ -125,6 +125,7 @@ export const Chart: React.FC<ChartProps> = ({
       const y = Math.floor(yAxis(time)!);
       const bucket = { time, value, x, y, dayStart };
 
+      // TODO: Buckets which cross a date boundary should be split for rendering proportionally in either days' column.
       // if (previous !== null && previous.time < dayStart.unix()) {
       //   const interBucket = {
       //     time: dayStart.unix(),

@@ -1,10 +1,7 @@
-// https://observablehq.com/@d3/color-schemes?collection=@d3/d3-scale-chromatic
-
-// the previous heatmap panel used d3 deps and some code to interpolate to static 9-color palettes. here we just hard-code them for clarity.
-// if the need arises for configurable-sized palettes, we can bring back the deps & variable interpolation (see simplified code at end)
-
 // Schemes from d3-scale-chromatic
 // https://github.com/d3/d3-scale-chromatic
+// This is the same mapping of the d3 color-maps as the official Grafana Heatmap panel uses, to provide a consistent UX.
+// https://github.com/grafana/grafana/blob/3d9989a04af12dbe5bf366f9d6e44867dd758ac7/public/app/plugins/panel/heatmap/palettes.ts
 export const colorSchemes = [
   // Diverging
   { name: 'BrBG', invert: 'always' },

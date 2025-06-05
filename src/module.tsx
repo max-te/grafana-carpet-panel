@@ -95,24 +95,12 @@ export const plugin = new PanelPlugin<SimpleOptions>(SimplePanel).setPanelOption
     showIf: (opts) => opts.color?.mode !== HeatmapColorMode.Opacity,
   });
 
-  builder
-    // .addSliderInput({
-    //   path: 'color.steps',
-    //   name: 'Steps',
-    //   defaultValue: 2,
-    //   category,
-    //   settings: {
-    //     min: 2,
-    //     max: 128,
-    //     step: 1,
-    //   },
-    // })
-    .addBooleanSwitch({
-      path: 'color.reverse',
-      name: 'Reverse',
-      defaultValue: false,
-      category,
-    });
+  builder.addBooleanSwitch({
+    path: 'color.reverse',
+    name: 'Reverse',
+    defaultValue: false,
+    category,
+  });
 
   builder
     .addNumberInput({
