@@ -23,8 +23,8 @@ export const Harness: React.FC = () => {
     background: ${theme.colors.background.primary};
   }
   `;
-  const width = 1200;
-  const height = 650;
+  const width = 1000;
+  const height = 360;
 
   return (
     <ThemeContext.Provider value={theme}>
@@ -34,16 +34,14 @@ export const Harness: React.FC = () => {
         <div style={{ position: 'relative', width: `${width}px`, height: `${height}px`, overflow: 'hidden' }}>
           <Stage width={width} height={height}>
             <Chart
-              x={0}
-              y={0}
-              width={width}
+              width={width - 50}
               height={height - 50}
               timeField={timeField}
               valueField={valueField}
               timeZone={'Europe/Berlin'}
               timeRange={timeRange}
               colorPalette={(t) => d3.interpolateViridis(t)}
-              gapWidth={2}
+              gapWidth={1}
             />
           </Stage>
         </div>

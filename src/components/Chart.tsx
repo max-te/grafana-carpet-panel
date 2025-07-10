@@ -20,8 +20,6 @@ import Konva from 'konva';
 import { useDevicePixelRatio } from 'use-device-pixel-ratio';
 
 interface ChartProps {
-  x: number;
-  y: number;
   width: number;
   height: number;
 
@@ -99,6 +97,7 @@ export const Chart: React.FC<ChartProps> = ({
       return RANGE_START + ((RANGE_END - RANGE_START) * tSecondsInDay) / daySeconds;
     };
   }, [height, timeZone]);
+  const yAxisWidth = 42;
 
   const fieldConfig = getFieldConfigWithMinMax(valueField) as FieldConfig & { min: number; max: number };
   const colorScale = useMemo(
@@ -189,7 +188,7 @@ export const Chart: React.FC<ChartProps> = ({
     <>
       {useMemo(
         () => (
-          <Layer onMouseOut={unsetHover}>
+          <Layer onMouseOut={unsetHover} x={yAxisWidth} y={8}>
             {cells.map((cell) => (
               <Rect
                 key={cell.time}
@@ -210,10 +209,11 @@ export const Chart: React.FC<ChartProps> = ({
         ),
         [cells, colorScale, unsetHover, hoverCallback, gapWidth]
       )}
-      <Layer listening={false}>
-        <XAxis x={0} y={height} height={16} width={width} scale={xTime} />
+      <Layer listening={false} y={8}>
+        <XAxis x={yAxisWidth} y={height} height={16} width={width} scale={xTime} />
+        <YAxis x={yAxisWidth} y={0} height={height} width={32} />
       </Layer>
-      <Layer listening={false}>
+      <Layer listening={false} x={yAxisWidth} y={8}>
         {hoverFrame}
         <Html>
           <VizTooltip
@@ -223,7 +223,7 @@ export const Chart: React.FC<ChartProps> = ({
               hover ? (
                 <SeriesTable
                   // TODO: Check how Grafana does datetime formatting
-                  timestamp={dateTime(hover.time * 1000).toISOString()}
+                  timestamp={dateTime(hover.time * 1000).toLocaleString()}
                   series={[
                     {
                       label: valueField.name,
@@ -257,23 +257,62 @@ const XAxis: React.FC<{ x: number; y: number; height: number; width: number; sca
     <>
       <Line points={[x, y, x + width, y]} stroke={colorGrid} strokeWidth={1} />
       {ticks.map((date) => {
-        const x = scale(date);
+        const tickX = scale(date) + x;
         const label = date.toLocaleDateString(navigator.language, { month: '2-digit', day: '2-digit' });
         return (
           <Fragment key={label}>
-            <Line points={[x, y, x, y + 4]} stroke={colorGrid} strokeWidth={1} />
+            <Line points={[tickX, y, tickX, y + 4]} stroke={colorGrid} strokeWidth={1} />
             <Text
               text={label}
-              x={x - spacing / 2}
+              x={tickX - spacing / 2}
               y={y + 5}
               fill={colorText}
               align="center"
               fontFamily={theme.typography.fontFamily}
               width={spacing}
               fontSize={theme.typography.htmlFontSize ?? 16}
-              textBaseline="top"
               wrap="word"
             />
+          </Fragment>
+        );
+      })}
+    </>
+  );
+};
+
+const YAxis: React.FC<{ x: number; y: number; height: number; width: number }> = ({ x, y, width, height }) => {
+  const ticks = Array.from({ length: 25 }, (_, i) => i);
+  const theme = useTheme2();
+  const colorGrid = 'rgba(120, 120, 130, 0.5)';
+  const colorText = theme.colors.text.primary;
+  const fontSize = theme.typography.htmlFontSize ?? 16;
+  const tickMod = Math.ceil(fontSize / (height / 24));
+  // TODO ceil to next divisor of 24
+  return (
+    <>
+      <Line points={[x, y, x, y + height]} stroke={colorGrid} strokeWidth={1} />
+      {ticks.map((hour) => {
+        const tickY = y + (hour * height) / 24;
+        const label = `${hour.toString()}h`;
+        return (
+          <Fragment key={label}>
+            <Line points={[x, tickY, x - 2, tickY]} stroke={colorGrid} strokeWidth={1} />
+            {hour % tickMod === 0 && (
+              <>
+                <Line points={[x, tickY, x - 4, tickY]} stroke={colorGrid} strokeWidth={1} />
+                <Text
+                  text={label}
+                  x={x - width}
+                  y={tickY - fontSize / 2}
+                  fill={colorText}
+                  align="right"
+                  width={width - 5}
+                  fontFamily={theme.typography.fontFamily}
+                  fontSize={theme.typography.htmlFontSize ?? 16}
+                  textBaseline="middle"
+                />
+              </>
+            )}
           </Fragment>
         );
       })}
