@@ -46,6 +46,7 @@ export const plugin = new PanelPlugin<SimpleOptions>(SimplePanel).setPanelOption
 
   const category = ['Colors'];
 
+  // TODO: Consider adding a custom color mode that allows users to define their own color stops
   builder.addRadio({
     path: `color.mode`,
     name: 'Mode',
@@ -137,5 +138,8 @@ export const plugin = new PanelPlugin<SimpleOptions>(SimplePanel).setPanelOption
       category,
     });
 
+  // TODO: Add options for tooltip customization (format, additional fields, etc.)
+  // TODO: Consider adding legend options for better data interpretation
+  
   return builder;
 });

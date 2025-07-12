@@ -85,8 +85,10 @@ export const SimplePanel: React.FC<Props> = ({
 
   type ColorFn = (t: number) => string;
 
+  // TODO: Extract color palette generation into a separate utility function for better testability
   const colorPalette: ColorFn = useMemo(() => {
     if (options.color.mode === HeatmapColorMode.Scheme) {
+      // TODO: Add error handling for invalid color scheme names
       type ColorFnName = {
         [N in keyof typeof d3ScaleChromatic]: (typeof d3ScaleChromatic)[N] extends ColorFn ? N : never;
       }[keyof typeof d3ScaleChromatic];

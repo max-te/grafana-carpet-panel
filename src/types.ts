@@ -29,12 +29,16 @@ export interface SimpleOptions {
   valueField?: {
     name?: string;
     unit?: string;
+    // TODO: Add decimals configuration for value formatting
   };
   axes?: {
     showX?: boolean;
     showY?: boolean;
+    // TODO: Add configuration for axis labels, tick density, and formatting
   }
 
   color: HeatmapColorOptions;
   gapWidth?: number;
+  // TODO: Add tooltip configuration options (show/hide, format, etc.)
+  // TODO: Add legend configuration options
 }

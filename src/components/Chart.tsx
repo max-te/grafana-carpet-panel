@@ -42,6 +42,7 @@ type Bucket = {
   dayStart: DateTime;
 };
 
+// TODO: Consider extracting this hook into a separate file for better code organization and testability
 const useCells = (
   valueField: Field<number>,
   timeField: Field<number>,
@@ -57,9 +58,9 @@ const useCells = (
     return (t: DateTimeInput) => {
       const timeInMs = typeof t === 'number' ? t * 1000 : t;
       const time = dateTimeForTimeZone(timeZone, timeInMs);
-      const dayStart = dateTimeForTimeZone(timeZone, timeInMs).startOf('d');
+      const dayStart = dateTime(time).startOf('d');
       const tSecondsInDay = time.diff(dayStart, 's', false);
-      const dayEnd = dateTimeForTimeZone(timeZone, timeInMs).endOf('d');
+      const dayEnd = dateTime(time).endOf('d');
       const daySeconds = dayEnd.diff(dayStart, 's', false);
 
       return RANGE_START + ((RANGE_END - RANGE_START) * tSecondsInDay) / daySeconds;
@@ -175,6 +176,7 @@ export const Chart: React.FC<ChartProps> = ({
   const yAxisWidth = showYAxis ? 42 : 0;
   const xAxisHeight = showXAxis ? 16 : 0;
   // TODO: Reintroduce a padding of ca. fontSize/2 around the chart.
+  // TODO: Make padding configurable in the panel options?
 
   const fieldConfig = getFieldConfigWithMinMax(valueField) as FieldConfig & { min: number; max: number };
   const colorScale = useMemo(
@@ -277,6 +279,7 @@ export const Chart: React.FC<ChartProps> = ({
   );
 };
 
+// TODO: Extract XAxis and YAxis into separate files to improve code organization
 const XAxis: React.FC<{ x: number; y: number; height: number; width: number; scale: ScaleTime<number, number> }> = ({
   x,
   y,
@@ -285,6 +288,7 @@ const XAxis: React.FC<{ x: number; y: number; height: number; width: number; sca
 }) => {
   const ticks = scale.ticks();
   ticks.forEach((t) => t.setHours(12));
+  // TODO: Implement adaptive tick density based on available width to prevent label overlap
   const spacing = width / ticks.length;
   const theme = useTheme2();
   const colorGrid = 'rgba(120, 120, 130, 0.5)';
@@ -323,7 +327,8 @@ const YAxis: React.FC<{ x: number; y: number; height: number; width: number }> =
   const colorText = theme.colors.text.primary;
   const fontSize = theme.typography.htmlFontSize ?? 16;
   const tickMod = Math.ceil(fontSize / (height / 24));
-  // TODO ceil to next divisor of 24
+  // TODO: Improve tick calculation to find the next divisor of 24 for more natural label spacing
+  // TODO: Consider making the hour format configurable (12h vs 24h) based on user locale
   return (
     <>
       <Line points={[x, y, x, y + height]} stroke={colorGrid} strokeWidth={1} />
