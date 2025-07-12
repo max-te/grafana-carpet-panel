@@ -39,50 +39,15 @@ type Bucket = {
   dayStart: DateTime;
 };
 
-export const Chart: React.FC<ChartProps> = ({
-  width,
-  height,
-  timeRange,
-  timeField,
-  valueField,
-  colorPalette,
-  timeZone,
-  gapWidth,
-}) => {
-  Konva.pixelRatio = Math.ceil(useDevicePixelRatio({ round: false, maxDpr: 4 }));
-
-  const [hover, setHover] = useState<Bucket | null>(null);
-  let hoverFrame = <></>;
-  const hoverCallback = useCallback(
-    ({ evt, currentTarget }: { evt: MouseEvent; currentTarget: Konva.Node }) => {
-      const bucket = currentTarget.getAttr('data-bucket') as Bucket;
-      const innerRect = currentTarget.getClientRect();
-      const outerRect = (evt.target as Element).getBoundingClientRect();
-      setHover({
-        ...bucket,
-        x: innerRect.x + outerRect.x + innerRect.width,
-        y: innerRect.y + outerRect.y + innerRect.height,
-      });
-      evt.stopPropagation();
-    },
-    [setHover]
-  );
-  const unsetHover = useCallback(() => {
-    setHover(null);
-  }, [setHover]);
-
-  const dayFrom = useMemo(() => dateTime(timeRange.from).startOf('day').toDate(), [timeRange.from]);
-  const dayTo = useMemo(() => dateTime(timeRange.to).endOf('day').toDate(), [timeRange.to]);
-  const numDays = useMemo(() => 1 + d3.timeDay.count(dayFrom, dayTo), [dayFrom.valueOf(), dayTo.valueOf()]);
-  if (numDays <= 0) {
-    throw new Error('Negative time range');
-  }
-
-  const xTime = useMemo(
-    () => d3.scaleUtc().domain([dayFrom, dayTo]).range([0, width]),
-    [dayFrom.valueOf(), dayTo.valueOf(), width]
-  );
-
+const useCells = (
+  valueField: Field<number>,
+  timeField: Field<number>,
+  xTime: ScaleTime<number, number>,
+  timeZone: string,
+  timeRange: TimeRange,
+  // TODO(cleanup): Remove height parameter, use 0-1 coordinates and scale when drawing
+  height: number
+): (Bucket & { width: number; height: number })[] => {
   const yAxis = useMemo(() => {
     const RANGE_START = 1;
     const RANGE_END = height;
@@ -97,19 +62,6 @@ export const Chart: React.FC<ChartProps> = ({
       return RANGE_START + ((RANGE_END - RANGE_START) * tSecondsInDay) / daySeconds;
     };
   }, [height, timeZone]);
-  const yAxisWidth = 42;
-
-  const fieldConfig = getFieldConfigWithMinMax(valueField) as FieldConfig & { min: number; max: number };
-  const colorScale = useMemo(
-    () => d3.scaleSequential(colorPalette).domain([fieldConfig.min, fieldConfig.max]),
-    [colorPalette, fieldConfig.min, fieldConfig.max]
-  );
-  const theme = useTheme2();
-  const display = getDisplayProcessor({
-    field: valueField,
-    theme,
-    timeZone,
-  });
 
   const buckets = useMemo(() => {
     return valueField.values.flatMap((value, i) => {
@@ -138,7 +90,7 @@ export const Chart: React.FC<ChartProps> = ({
     });
   }, [valueField.values, timeField.values, xTime, yAxis]);
 
-  const cells: (Bucket & { width: number; height: number })[] = useMemo(
+  const cells = useMemo(
     () =>
       buckets.map((bucket, i) => {
         const { x, y, dayStart } = bucket;
@@ -161,82 +113,157 @@ export const Chart: React.FC<ChartProps> = ({
           height: bucketHeight,
         };
       }),
-    [buckets, xTime, timeRange.to]
+    [buckets, xTime, timeRange.to, height]
   );
 
-  const hoverCell = cells.find((b) => b.time === hover?.time);
-  if (hoverCell) {
-    hoverFrame = (
-      <Rect
-        x={hoverCell.x - 0.5}
-        y={hoverCell.y}
-        width={hoverCell.width + 0.5}
-        height={hoverCell.height - 0.5}
-        fill={'rgba(120, 120, 130, 0.2)'}
-        stroke={
-          hoverCell.value > (fieldConfig.min + fieldConfig.max) / 2
-            ? colorScale(fieldConfig.min)
-            : colorScale(fieldConfig.max)
-        }
-        dash={[4, 2]}
-        strokeWidth={1}
-      />
-    );
+  return cells;
+};
+
+const useTimeScale = (timeRange: TimeRange, width: number): ScaleTime<number, number> => {
+  const dayFrom = useMemo(() => dateTime(timeRange.from).startOf('day').toDate(), [timeRange.from]);
+  const dayTo = useMemo(() => dateTime(timeRange.to).endOf('day').toDate(), [timeRange.to]);
+  const numDays = useMemo(() => 1 + d3.timeDay.count(dayFrom, dayTo), [dayFrom.valueOf(), dayTo.valueOf()]);
+  if (numDays <= 0) {
+    throw new Error('Negative time range');
   }
+
+  const xTime = useMemo(
+    () => d3.scaleUtc().domain([dayFrom, dayTo]).range([0, width]),
+    [dayFrom.valueOf(), dayTo.valueOf(), width]
+  );
+
+  return xTime;
+};
+
+export const Chart: React.FC<ChartProps> = ({
+  width,
+  height,
+  timeRange,
+  timeField,
+  valueField,
+  colorPalette,
+  timeZone,
+  gapWidth,
+}) => {
+  Konva.pixelRatio = Math.ceil(useDevicePixelRatio({ round: false, maxDpr: 4 }));
+
+  const [hover, setHover] = useState<Bucket | null>(null);
+
+  const hoverCallback = useCallback(
+    ({ evt, currentTarget }: { evt: MouseEvent; currentTarget: Konva.Node }) => {
+      const bucket = currentTarget.getAttr('data-bucket') as Bucket;
+      const innerRect = currentTarget.getClientRect();
+      const outerRect = (evt.target as Element).getBoundingClientRect();
+      setHover({
+        ...bucket,
+        x: innerRect.x + outerRect.x + innerRect.width,
+        y: innerRect.y + outerRect.y + innerRect.height,
+      });
+      evt.stopPropagation();
+    },
+    [setHover]
+  );
+  const unsetHover = useCallback(() => {
+    setHover(null);
+  }, [setHover]);
+
+  const yAxisWidth = 42;
+
+  const fieldConfig = getFieldConfigWithMinMax(valueField) as FieldConfig & { min: number; max: number };
+  const colorScale = useMemo(
+    () => d3.scaleSequential(colorPalette).domain([fieldConfig.min, fieldConfig.max]),
+    [colorPalette, fieldConfig.min, fieldConfig.max]
+  );
+  const theme = useTheme2();
+  const display = getDisplayProcessor({
+    field: valueField,
+    theme,
+    timeZone,
+  });
+
+  const xTime = useTimeScale(timeRange, width - yAxisWidth);
+
+  const axesLayer = (
+    <Layer listening={true} y={8}>
+      <XAxis x={yAxisWidth} y={height} height={16} width={width - yAxisWidth} scale={xTime} />
+      <YAxis x={yAxisWidth} y={0} height={height} width={yAxisWidth} />
+    </Layer>
+  );
+
+  const cells = useCells(valueField, timeField, xTime, timeZone, timeRange, height);
+
+  const heatmapLayer = useMemo(
+    () => (
+      <Layer onMouseOut={unsetHover} x={yAxisWidth} y={8} width={width - yAxisWidth}>
+        {cells.map((cell) => (
+          <Rect
+            key={cell.time}
+            x={cell.x}
+            y={cell.y}
+            width={cell.width}
+            height={cell.height}
+            fill={colorScale(cell.value)}
+            data-bucket={cell}
+            onMouseOver={hoverCallback}
+            perfectDrawEnabled={true}
+            strokeEnabled={gapWidth > 0}
+            strokeWidth={gapWidth}
+            stroke={theme.colors.background.primary}
+          />
+        ))}
+      </Layer>
+    ),
+    [cells, colorScale, unsetHover, hoverCallback, gapWidth]
+  );
+
+  const hoveredCell = cells.find((b) => b.time === hover?.time);
+  const hoverLayer = (
+    <Layer listening={false} x={yAxisWidth} y={8}>
+      {hoveredCell ? (
+        <Rect
+          x={hoveredCell.x - 0.5}
+          y={hoveredCell.y}
+          width={hoveredCell.width + 0.5}
+          height={hoveredCell.height - 0.5}
+          fill={'rgba(120, 120, 130, 0.2)'}
+          stroke={
+            hoveredCell.value > (fieldConfig.min + fieldConfig.max) / 2
+              ? colorScale(fieldConfig.min)
+              : colorScale(fieldConfig.max)
+          }
+          dash={[4, 2]}
+          strokeWidth={1}
+        />
+      ) : null}
+      <Html>
+        <VizTooltip
+          position={hover ?? undefined}
+          offset={{ x: 5, y: 5 }}
+          content={
+            hover ? (
+              <SeriesTable
+                // TODO: Check how Grafana does datetime formatting
+                timestamp={dateTime(hover.time * 1000).toLocaleString()}
+                series={[
+                  {
+                    label: valueField.name,
+                    value: formattedValueToString(display(hover.value)),
+                    color: display(hover.value).color,
+                  },
+                ]}
+              />
+            ) : undefined
+          }
+        />
+      </Html>
+    </Layer>
+  );
 
   return (
     <>
-      {useMemo(
-        () => (
-          <Layer onMouseOut={unsetHover} x={yAxisWidth} y={8}>
-            {cells.map((cell) => (
-              <Rect
-                key={cell.time}
-                x={cell.x}
-                y={cell.y}
-                width={cell.width}
-                height={cell.height}
-                fill={colorScale(cell.value)}
-                data-bucket={cell}
-                onMouseOver={hoverCallback}
-                perfectDrawEnabled={true}
-                strokeEnabled={gapWidth > 0}
-                strokeWidth={gapWidth}
-                stroke={theme.colors.background.primary}
-              />
-            ))}
-          </Layer>
-        ),
-        [cells, colorScale, unsetHover, hoverCallback, gapWidth]
-      )}
-      <Layer listening={false} y={8}>
-        <XAxis x={yAxisWidth} y={height} height={16} width={width} scale={xTime} />
-        <YAxis x={yAxisWidth} y={0} height={height} width={32} />
-      </Layer>
-      <Layer listening={false} x={yAxisWidth} y={8}>
-        {hoverFrame}
-        <Html>
-          <VizTooltip
-            position={hover ?? undefined}
-            offset={{ x: 5, y: 5 }}
-            content={
-              hover ? (
-                <SeriesTable
-                  // TODO: Check how Grafana does datetime formatting
-                  timestamp={dateTime(hover.time * 1000).toLocaleString()}
-                  series={[
-                    {
-                      label: valueField.name,
-                      value: formattedValueToString(display(hover.value)),
-                      color: display(hover.value).color,
-                    },
-                  ]}
-                />
-              ) : undefined
-            }
-          />
-        </Html>
-      </Layer>
+      {heatmapLayer}
+      {axesLayer}
+      {hoverLayer}
     </>
   );
 };
