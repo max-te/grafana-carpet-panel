@@ -1,17 +1,24 @@
-import { PanelPlugin } from '@grafana/data';
-import { HeatmapColorMode, HeatmapColorScale, type SimpleOptions } from './types';
-import { SimplePanel } from './components/SimplePanel';
+import { FieldType, PanelPlugin } from '@grafana/data';
+import { HeatmapColorMode, HeatmapColorScale, type CarpetPanelOptions } from './types';
+import { CarpetPanel } from './components/CarpetPanel';
 import { colorSchemes } from './palettes';
 
-export const plugin = new PanelPlugin<SimpleOptions>(SimplePanel).setPanelOptions((builder) => {
+export const plugin = new PanelPlugin<CarpetPanelOptions>(CarpetPanel).setPanelOptions((builder) => {
   builder
     .addFieldNamePicker({
       path: 'timeFieldName',
       name: 'Time field name',
+      settings: {
+        filter: (field) => field.type === FieldType.time,
+      },
     })
     .addFieldNamePicker({
       path: 'valueField.name',
       name: 'Value field name',
+      settings: {
+        filter: (field) => field.type === FieldType.number,
+        // TODO: Add support for categorical data
+      }
     })
     .addUnitPicker({
       path: 'valueField.unit',

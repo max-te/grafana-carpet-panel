@@ -24,7 +24,7 @@ export interface HeatmapColorOptions {
   scheme: string;
 }
 
-export interface SimpleOptions {
+export interface CarpetPanelOptions {
   timeFieldName?: string;
   valueField?: {
     name?: string;

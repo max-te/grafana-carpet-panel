@@ -13,11 +13,12 @@ import {
 import { SeriesTable, useTheme2, VizTooltip } from '@grafana/ui';
 import type { ScaleTime } from 'd3';
 import * as d3 from 'd3';
-import React, { Fragment, useCallback, useMemo, useState } from 'react';
-import { Rect, Line, Text, Layer } from 'react-konva';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Rect, Layer } from 'react-konva';
 import { Html } from 'react-konva-utils';
 import Konva from 'konva';
 import { useDevicePixelRatio } from 'use-device-pixel-ratio';
+import { XAxisIndicator, YAxisIndicator } from './AxisLabels';
 
 interface ChartProps {
   width: number;
@@ -34,7 +35,7 @@ interface ChartProps {
   showYAxis?: boolean;
 }
 
-type Bucket = {
+type CellData = {
   time: number;
   value: number;
   x: number;
@@ -51,7 +52,7 @@ const useCells = (
   timeRange: TimeRange,
   // TODO(cleanup): Remove height parameter, use 0-1 coordinates and scale when drawing
   height: number
-): (Bucket & { width: number; height: number })[] => {
+): (CellData & { width: number; height: number })[] => {
   const yAxis = useMemo(() => {
     const RANGE_START = 1;
     const RANGE_END = height;
@@ -139,7 +140,7 @@ const useTimeScale = (timeRange: TimeRange, width: number): ScaleTime<number, nu
   return xTime;
 };
 
-export const Chart: React.FC<ChartProps> = ({
+export const CarpetPlot: React.FC<ChartProps> = ({
   width,
   height,
   timeRange,
@@ -153,25 +154,25 @@ export const Chart: React.FC<ChartProps> = ({
 }) => {
   Konva.pixelRatio = Math.ceil(useDevicePixelRatio({ round: false, maxDpr: 4 }));
 
-  const [hover, setHover] = useState<Bucket | null>(null);
+  const [hoveredCellData, setHoveredCellData] = useState<CellData | null>(null);
 
-  const hoverCallback = useCallback(
+  const handleCellMouseOver = useCallback(
     ({ evt, currentTarget }: { evt: MouseEvent; currentTarget: Konva.Node }) => {
-      const bucket = currentTarget.getAttr('data-bucket') as Bucket;
+      const cellData = currentTarget.getAttr('data-bucket') as CellData;
       const innerRect = currentTarget.getClientRect();
       const outerRect = (evt.target as Element).getBoundingClientRect();
-      setHover({
-        ...bucket,
+      setHoveredCellData({
+        ...cellData,
         x: innerRect.x + outerRect.x + innerRect.width,
         y: innerRect.y + outerRect.y + innerRect.height,
       });
       evt.stopPropagation();
     },
-    [setHover]
+    []
   );
-  const unsetHover = useCallback(() => {
-    setHover(null);
-  }, [setHover]);
+  const handleCellMouseOut = useCallback(() => {
+    setHoveredCellData(null);
+  }, []);
 
   const yAxisWidth = showYAxis ? 42 : 0;
   const xAxisHeight = showXAxis ? 16 : 0;
@@ -195,9 +196,9 @@ export const Chart: React.FC<ChartProps> = ({
   const axesLayer = (
     <Layer listening={false}>
       {showXAxis && (
-        <XAxis x={yAxisWidth} y={height - xAxisHeight} height={xAxisHeight} width={width - yAxisWidth} scale={xTime} />
+        <XAxisIndicator x={yAxisWidth} y={height - xAxisHeight} height={xAxisHeight} width={width - yAxisWidth} scale={xTime} />
       )}
-      {showYAxis && <YAxis x={yAxisWidth} y={0} height={height - xAxisHeight} width={yAxisWidth} />}
+      {showYAxis && <YAxisIndicator x={yAxisWidth} y={0} height={height - xAxisHeight} width={yAxisWidth} />}
     </Layer>
   );
 
@@ -205,7 +206,7 @@ export const Chart: React.FC<ChartProps> = ({
 
   const heatmapLayer = useMemo(
     () => (
-      <Layer onMouseOut={unsetHover} x={yAxisWidth} width={width - yAxisWidth}>
+      <Layer onMouseOut={handleCellMouseOut} x={yAxisWidth} width={width - yAxisWidth} height={height - xAxisHeight}>
         {cells.map((cell) => (
           <Rect
             key={cell.time}
@@ -215,7 +216,7 @@ export const Chart: React.FC<ChartProps> = ({
             height={cell.height}
             fill={colorScale(cell.value)}
             data-bucket={cell}
-            onMouseOver={hoverCallback}
+            onMouseOver={handleCellMouseOver}
             perfectDrawEnabled={true}
             strokeEnabled={gapWidth > 0}
             strokeWidth={gapWidth}
@@ -224,10 +225,10 @@ export const Chart: React.FC<ChartProps> = ({
         ))}
       </Layer>
     ),
-    [cells, colorScale, unsetHover, hoverCallback, gapWidth]
+    [cells, colorScale, handleCellMouseOut, handleCellMouseOver, gapWidth]
   );
 
-  const hoveredCell = cells.find((b) => b.time === hover?.time);
+  const hoveredCell = cells.find((b) => b.time === hoveredCellData?.time);
   const hoverLayer = (
     <Layer listening={false} x={yAxisWidth}>
       {hoveredCell ? (
@@ -248,18 +249,18 @@ export const Chart: React.FC<ChartProps> = ({
       ) : null}
       <Html>
         <VizTooltip
-          position={hover ?? undefined}
+          position={hoveredCellData ?? undefined}
           offset={{ x: 5, y: 5 }}
           content={
-            hover ? (
+            hoveredCellData ? (
               <SeriesTable
                 // TODO: Check how Grafana does datetime formatting
-                timestamp={dateTime(hover.time * 1000).toLocaleString()}
+                timestamp={dateTime(hoveredCellData.time * 1000).toLocaleString()}
                 series={[
                   {
                     label: valueField.name,
-                    value: formattedValueToString(display(hover.value)),
-                    color: display(hover.value).color,
+                    value: formattedValueToString(display(hoveredCellData.value)),
+                    color: display(hoveredCellData.value).color,
                   },
                 ]}
               />
@@ -275,88 +276,6 @@ export const Chart: React.FC<ChartProps> = ({
       {heatmapLayer}
       {axesLayer}
       {hoverLayer}
-    </>
-  );
-};
-
-// TODO: Extract XAxis and YAxis into separate files to improve code organization
-const XAxis: React.FC<{ x: number; y: number; height: number; width: number; scale: ScaleTime<number, number> }> = ({
-  x,
-  y,
-  width,
-  scale,
-}) => {
-  const ticks = scale.ticks();
-  ticks.forEach((t) => t.setHours(12));
-  // TODO: Implement adaptive tick density based on available width to prevent label overlap
-  const spacing = width / ticks.length;
-  const theme = useTheme2();
-  const colorGrid = 'rgba(120, 120, 130, 0.5)';
-  const colorText = theme.colors.text.primary;
-  return (
-    <>
-      <Line points={[x, y, x + width, y]} stroke={colorGrid} strokeWidth={1} />
-      {ticks.map((date) => {
-        const tickX = scale(date) + x;
-        const label = date.toLocaleDateString(navigator.language, { month: '2-digit', day: '2-digit' });
-        return (
-          <Fragment key={label}>
-            <Line points={[tickX, y, tickX, y + 4]} stroke={colorGrid} strokeWidth={1} />
-            <Text
-              text={label}
-              x={tickX - spacing / 2}
-              y={y + 5}
-              fill={colorText}
-              align="center"
-              fontFamily={theme.typography.fontFamily}
-              width={spacing}
-              fontSize={theme.typography.htmlFontSize ?? 16}
-              wrap="word"
-            />
-          </Fragment>
-        );
-      })}
-    </>
-  );
-};
-
-const YAxis: React.FC<{ x: number; y: number; height: number; width: number }> = ({ x, y, width, height }) => {
-  const ticks = Array.from({ length: 25 }, (_, i) => i);
-  const theme = useTheme2();
-  const colorGrid = 'rgba(120, 120, 130, 0.5)';
-  const colorText = theme.colors.text.primary;
-  const fontSize = theme.typography.htmlFontSize ?? 16;
-  const tickMod = Math.ceil(fontSize / (height / 24));
-  // TODO: Improve tick calculation to find the next divisor of 24 for more natural label spacing
-  // TODO: Consider making the hour format configurable (12h vs 24h) based on user locale
-  return (
-    <>
-      <Line points={[x, y, x, y + height]} stroke={colorGrid} strokeWidth={1} />
-      {ticks.map((hour) => {
-        const tickY = y + (hour * height) / 24;
-        const label = `${hour.toString()}h`;
-        return (
-          <Fragment key={label}>
-            <Line points={[x, tickY, x - 2, tickY]} stroke={colorGrid} strokeWidth={1} />
-            {hour > 0 && hour % tickMod === 0 && (
-              <>
-                <Line points={[x, tickY, x - 4, tickY]} stroke={colorGrid} strokeWidth={1} />
-                <Text
-                  text={label}
-                  x={x - width}
-                  y={tickY - fontSize / 2}
-                  fill={colorText}
-                  align="right"
-                  width={width - 5}
-                  fontFamily={theme.typography.fontFamily}
-                  fontSize={theme.typography.htmlFontSize ?? 16}
-                  textBaseline="middle"
-                />
-              </>
-            )}
-          </Fragment>
-        );
-      })}
     </>
   );
 };

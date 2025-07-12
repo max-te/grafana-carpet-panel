@@ -1,7 +1,7 @@
 import { type Field, type TimeRange, dateTime, ThemeContext, getThemeById } from '@grafana/data';
 import { Stage } from 'react-konva';
-import { Chart } from '../src/components/Chart';
-type ChartProps = React.ComponentProps<typeof Chart>;
+import { CarpetPlot } from '../src/components/CarpetPlot';
+type ChartProps = React.ComponentProps<typeof CarpetPlot>;
 import React from 'react';
 import * as d3 from 'd3';
 import { Box, Field as InputField, GlobalStyles, PanelContainer, RadioButtonGroup, Slider, Space, Stack, Label, Switch, InlineSwitch, InlineField, InlineFieldRow, Checkbox } from '@grafana/ui';
@@ -58,7 +58,7 @@ export const Harness: React.FC = () => {
       <PanelContainer style={{ padding: theme.spacing(), width: 'min-content', height: 'min-content', margin: 'auto' }}>
         <div style={{ position: 'relative', width: `${width}px`, height: `${height}px`, overflow: 'hidden' }}>
           <Stage width={width} height={height}>
-            <Chart {...chartProps} />
+            <CarpetPlot {...chartProps} />
           </Stage>
         </div>
       </PanelContainer>
