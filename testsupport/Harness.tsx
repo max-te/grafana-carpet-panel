@@ -34,8 +34,8 @@ export const Harness: React.FC = () => {
         <div style={{ position: 'relative', width: `${width}px`, height: `${height}px`, overflow: 'hidden' }}>
           <Stage width={width} height={height}>
             <Chart
-              width={width - 50}
-              height={height - 50}
+              width={width}
+              height={height}
               timeField={timeField}
               valueField={valueField}
               timeZone={'Europe/Berlin'}

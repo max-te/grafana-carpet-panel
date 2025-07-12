@@ -140,8 +140,8 @@ export const SimplePanel: React.FC<Props> = ({
     >
       <Stage width={width} height={height}>
         <Chart
-          width={width - 2 * padding}
-          height={height - 2 * padding}
+          width={width}
+          height={height}
           timeRange={timeRange}
           timeField={timeField}
           valueField={valueField}

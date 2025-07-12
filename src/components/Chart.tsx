@@ -172,7 +172,9 @@ export const Chart: React.FC<ChartProps> = ({
     setHover(null);
   }, [setHover]);
 
-  const yAxisWidth = 42;
+  const yAxisWidth = showYAxis ? 42 : 0;
+  const xAxisHeight = showXAxis ? 16 : 0;
+  // TODO: Reintroduce a padding of ca. fontSize/2 around the chart.
 
   const fieldConfig = getFieldConfigWithMinMax(valueField) as FieldConfig & { min: number; max: number };
   const colorScale = useMemo(
@@ -189,17 +191,19 @@ export const Chart: React.FC<ChartProps> = ({
   const xTime = useTimeScale(timeRange, width - yAxisWidth);
 
   const axesLayer = (
-    <Layer listening={false} y={8}>
-      {showXAxis && <XAxis x={yAxisWidth} y={height} height={16} width={width - yAxisWidth} scale={xTime} />}
-      {showYAxis && <YAxis x={yAxisWidth} y={0} height={height} width={yAxisWidth} />}
+    <Layer listening={false}>
+      {showXAxis && (
+        <XAxis x={yAxisWidth} y={height - xAxisHeight} height={xAxisHeight} width={width - yAxisWidth} scale={xTime} />
+      )}
+      {showYAxis && <YAxis x={yAxisWidth} y={0} height={height - xAxisHeight} width={yAxisWidth} />}
     </Layer>
   );
 
-  const cells = useCells(valueField, timeField, xTime, timeZone, timeRange, height);
+  const cells = useCells(valueField, timeField, xTime, timeZone, timeRange, height - xAxisHeight);
 
   const heatmapLayer = useMemo(
     () => (
-      <Layer onMouseOut={unsetHover} x={yAxisWidth} y={8} width={width - yAxisWidth}>
+      <Layer onMouseOut={unsetHover} x={yAxisWidth} width={width - yAxisWidth}>
         {cells.map((cell) => (
           <Rect
             key={cell.time}
@@ -223,7 +227,7 @@ export const Chart: React.FC<ChartProps> = ({
 
   const hoveredCell = cells.find((b) => b.time === hover?.time);
   const hoverLayer = (
-    <Layer listening={false} x={yAxisWidth} y={8}>
+    <Layer listening={false} x={yAxisWidth}>
       {hoveredCell ? (
         <Rect
           x={hoveredCell.x - 0.5}
@@ -329,7 +333,7 @@ const YAxis: React.FC<{ x: number; y: number; height: number; width: number }> =
         return (
           <Fragment key={label}>
             <Line points={[x, tickY, x - 2, tickY]} stroke={colorGrid} strokeWidth={1} />
-            {tickMod > 0 && hour % tickMod === 0 && (
+            {hour > 0 && hour % tickMod === 0 && (
               <>
                 <Line points={[x, tickY, x - 4, tickY]} stroke={colorGrid} strokeWidth={1} />
                 <Text
