@@ -30,6 +30,20 @@ export const plugin = new PanelPlugin<SimpleOptions>(SimplePanel).setPanelOption
       },
     });
 
+  builder
+    .addBooleanSwitch({
+      path: 'axes.showX',
+      name: 'Show X axis',
+      defaultValue: true,
+      category: ['Axes'],
+    })
+    .addBooleanSwitch({
+      path: 'axes.showY',
+      name: 'Show Y axis',
+      defaultValue: false,
+      category: ['Axes'],
+    });
+
   const category = ['Colors'];
 
   builder.addRadio({

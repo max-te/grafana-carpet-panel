@@ -29,6 +29,9 @@ interface ChartProps {
   timeRange: TimeRange;
   colorPalette: (t: number) => string;
   gapWidth: number;
+
+  showXAxis?: boolean;
+  showYAxis?: boolean;
 }
 
 type Bucket = {
@@ -144,6 +147,8 @@ export const Chart: React.FC<ChartProps> = ({
   colorPalette,
   timeZone,
   gapWidth,
+  showXAxis,
+  showYAxis,
 }) => {
   Konva.pixelRatio = Math.ceil(useDevicePixelRatio({ round: false, maxDpr: 4 }));
 
@@ -184,9 +189,9 @@ export const Chart: React.FC<ChartProps> = ({
   const xTime = useTimeScale(timeRange, width - yAxisWidth);
 
   const axesLayer = (
-    <Layer listening={true} y={8}>
-      <XAxis x={yAxisWidth} y={height} height={16} width={width - yAxisWidth} scale={xTime} />
-      <YAxis x={yAxisWidth} y={0} height={height} width={yAxisWidth} />
+    <Layer listening={false} y={8}>
+      {showXAxis && <XAxis x={yAxisWidth} y={height} height={16} width={width - yAxisWidth} scale={xTime} />}
+      {showYAxis && <YAxis x={yAxisWidth} y={0} height={height} width={yAxisWidth} />}
     </Layer>
   );
 
@@ -324,7 +329,7 @@ const YAxis: React.FC<{ x: number; y: number; height: number; width: number }> =
         return (
           <Fragment key={label}>
             <Line points={[x, tickY, x - 2, tickY]} stroke={colorGrid} strokeWidth={1} />
-            {hour % tickMod === 0 && (
+            {tickMod > 0 && hour % tickMod === 0 && (
               <>
                 <Line points={[x, tickY, x - 4, tickY]} stroke={colorGrid} strokeWidth={1} />
                 <Text

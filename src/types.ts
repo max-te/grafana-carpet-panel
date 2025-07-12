@@ -30,6 +30,10 @@ export interface SimpleOptions {
     name?: string;
     unit?: string;
   };
+  axes?: {
+    showX?: boolean;
+    showY?: boolean;
+  }
 
   color: HeatmapColorOptions;
   gapWidth?: number;

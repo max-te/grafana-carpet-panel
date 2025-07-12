@@ -148,6 +148,8 @@ export const SimplePanel: React.FC<Props> = ({
           colorPalette={colorPalette}
           timeZone={timeZone}
           gapWidth={options.gapWidth ?? 0}
+          showXAxis={options.axes?.showX}
+          showYAxis={options.axes?.showY}
         />
       </Stage>
     </div>
