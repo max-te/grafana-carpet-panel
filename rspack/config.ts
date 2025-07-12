@@ -147,7 +147,7 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
     output: {
       clean: {
         // It really doesn't matter if this regex syntax works. We just need to prevent rspack from deleting the directory, since it's mounted by docker.
-        keep: (_f) => false,
+        keep: (f) => f.endsWith("LICENSE"),
       },
       filename: '[name].js',
       chunkFilename: env.production ? '[name].js?_cache=[contenthash]' : '[name].js',
