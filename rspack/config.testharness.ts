@@ -19,9 +19,9 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
               'react-loading-skeleton': path.resolve(
                 import.meta.dirname,
                 '../node_modules/react-loading-skeleton/dist/index.js'
-              )
-            }
-          }
+              ),
+            },
+          },
         },
         {
           exclude: /(node_modules)/,
@@ -45,10 +45,6 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
         {
           test: /\.css$/,
           use: ['style-loader', 'css-loader'],
-        },
-        {
-          test: /\.s[ac]ss$/,
-          use: ['style-loader', 'css-loader', 'sass-loader'],
         },
         {
           test: /\.(png|jpe?g|gif|svg)$/,

@@ -118,10 +118,6 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
           use: ['style-loader', 'css-loader'],
         },
         {
-          test: /\.s[ac]ss$/,
-          use: ['style-loader', 'css-loader', 'sass-loader'],
-        },
-        {
           test: /\.(png|jpe?g|gif|svg)$/,
           type: 'asset/resource',
           generator: {
