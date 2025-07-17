@@ -6,7 +6,22 @@ import Konva from 'konva';
 type ChartProps = React.ComponentProps<typeof CarpetPlot>;
 import React from 'react';
 import * as d3 from 'd3';
-import { Box, Field as InputField, GlobalStyles, PanelContainer, RadioButtonGroup, Slider, Space, Stack, Label, Switch, InlineSwitch, InlineField, InlineFieldRow, Checkbox } from '@grafana/ui';
+import {
+  Box,
+  Field as InputField,
+  GlobalStyles,
+  PanelContainer,
+  RadioButtonGroup,
+  Slider,
+  Space,
+  Stack,
+  Label,
+  Switch,
+  InlineSwitch,
+  InlineField,
+  InlineFieldRow,
+  Checkbox,
+} from '@grafana/ui';
 import * as testData from './testdata.json';
 
 export const Harness: React.FC = () => {
@@ -36,6 +51,9 @@ export const Harness: React.FC = () => {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+  }
+  :root {
+    scrollbar-gutter: stable both-edges;
   }
   `;
 
@@ -76,10 +94,9 @@ export const Harness: React.FC = () => {
           </Stage>
         </div>
       </PanelContainer>
-      <Space v={2}/>
-      <Box backgroundColor={"primary"} borderColor={"strong"} borderStyle={"solid"} padding={0.5}>
-
-      <InlineField label="Width" grow>
+      <Space v={2} />
+      <Box backgroundColor={'primary'} borderColor={'strong'} borderStyle={'solid'} padding={0.5}>
+        <InlineField label="Width" grow>
           <Slider value={width} onChange={setWidth} min={100} max={1000} />
         </InlineField>
         <InlineField label="Height" grow>
@@ -87,25 +104,40 @@ export const Harness: React.FC = () => {
         </InlineField>
 
         <InlineFieldRow>
-        <InlineField label="Theme">
-          <RadioButtonGroup options={[{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]} value={themeId} onChange={setThemeId} />
-        </InlineField>
+          <InlineField label="Theme">
+            <RadioButtonGroup
+              options={[
+                { value: 'light', label: 'Light' },
+                { value: 'dark', label: 'Dark' },
+              ]}
+              value={themeId}
+              onChange={setThemeId}
+            />
+          </InlineField>
 
-        <InlineField label="Color Palette">
-          <RadioButtonGroup options={[{ value: 'viridis', label: 'Viridis' }, { value: 'plasma', label: 'Plasma' }]} value={colorPaletteName} onChange={setColorPaletteName} />
-        </InlineField></InlineFieldRow>
+          <InlineField label="Color Palette">
+            <RadioButtonGroup
+              options={[
+                { value: 'viridis', label: 'Viridis' },
+                { value: 'plasma', label: 'Plasma' },
+              ]}
+              value={colorPaletteName}
+              onChange={setColorPaletteName}
+            />
+          </InlineField>
+        </InlineFieldRow>
         <InlineField label="Gap" grow>
           <Slider value={gapWidth} onChange={setGapWidth} min={0} max={10} step={0.5} />
         </InlineField>
         <InlineFieldRow>
           <InlineField>
-          <Checkbox value={showXAxis} onChange={(e) => setShowXAxis(e.target.checked)} label="show X axis" />
+            <Checkbox value={showXAxis} onChange={(e) => setShowXAxis(e.target.checked)} label="show X axis" />
           </InlineField>
           <InlineField>
-          <Checkbox value={showYAxis} onChange={(e) => setShowYAxis(e.target.checked)} label="show Y axis" />
+            <Checkbox value={showYAxis} onChange={(e) => setShowYAxis(e.target.checked)} label="show Y axis" />
           </InlineField>
         </InlineFieldRow>
-          </Box>
+      </Box>
     </ThemeContext.Provider>
   );
 };
