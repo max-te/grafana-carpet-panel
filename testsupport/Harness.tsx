@@ -1,6 +1,8 @@
 import { type Field, type TimeRange, dateTime, ThemeContext, getThemeById } from '@grafana/data';
 import { Stage } from 'react-konva';
 import { CarpetPlot } from '../src/components/CarpetPlot';
+import { useDevicePixelRatio } from 'use-device-pixel-ratio';
+import Konva from 'konva';
 type ChartProps = React.ComponentProps<typeof CarpetPlot>;
 import React from 'react';
 import * as d3 from 'd3';
@@ -8,6 +10,9 @@ import { Box, Field as InputField, GlobalStyles, PanelContainer, RadioButtonGrou
 import * as testData from './testdata.json';
 
 export const Harness: React.FC = () => {
+  const dpr = Math.ceil(useDevicePixelRatio({ round: false, maxDpr: 4, defaultDpr: 2 }));
+  Konva.pixelRatio = dpr;
+
   const timeRange: TimeRange = {
     from: dateTime(testData.request.range.from),
     to: dateTime(testData.request.range.to),
@@ -57,7 +62,7 @@ export const Harness: React.FC = () => {
       <style>{inlineStyle}</style>
       <PanelContainer style={{ padding: theme.spacing(), width: 'min-content', height: 'min-content', margin: 'auto' }}>
         <div style={{ position: 'relative', width: `${width}px`, height: `${height}px`, overflow: 'hidden' }}>
-          <Stage width={width} height={height}>
+          <Stage width={width} height={height} key={dpr}>
             <CarpetPlot {...chartProps} />
           </Stage>
         </div>

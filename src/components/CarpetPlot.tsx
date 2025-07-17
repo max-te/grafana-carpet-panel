@@ -16,8 +16,7 @@ import * as d3 from 'd3';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Rect, Layer } from 'react-konva';
 import { Html } from 'react-konva-utils';
-import Konva from 'konva';
-import { useDevicePixelRatio } from 'use-device-pixel-ratio';
+import type Konva from 'konva';
 import { XAxisIndicator, YAxisIndicator } from './AxisLabels';
 
 interface ChartProps {
@@ -166,8 +165,6 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   showXAxis,
   showYAxis,
 }) => {
-  Konva.pixelRatio = Math.ceil(useDevicePixelRatio({ round: false, maxDpr: 4 }));
-
   const [hoveredCellData, setHoveredCellData] = useState<CellData | null>(null);
 
   const handleCellMouseOver = useCallback(
