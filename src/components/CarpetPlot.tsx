@@ -43,16 +43,18 @@ type CellData = {
   dayStart: DateTime;
 };
 
+type Cell = CellData & { width: number; height: number };
+
 // TODO: Consider extracting this hook into a separate file for better code organization and testability
 const useCells = (
-  valueField: Field<number>,
+  valueField: Field<number | null>,
   timeField: Field<number>,
   xTime: ScaleTime<number, number>,
   timeZone: string,
   timeRange: TimeRange,
   // TODO(cleanup): Remove height parameter, use 0-1 coordinates and scale when drawing
   height: number
-): (CellData & { width: number; height: number })[] => {
+): Cell[] => {
   const yAxis = useMemo(() => {
     const RANGE_START = 1;
     const RANGE_END = height;
@@ -95,33 +97,45 @@ const useCells = (
     });
   }, [valueField.values, timeField.values, xTime, yAxis]);
 
+  const timeStep: number = getMinInterval(buckets);
   const cells = useMemo(
+    // TODO: Merge these `useMemo`s
     () =>
-      buckets.map((bucket, i) => {
-        const { x, y, dayStart } = bucket;
-        const nextDay = dateTime(dayStart).add(1, 'd');
-        const nextDayX = Math.floor(xTime(nextDay));
-        const dayWidth = nextDayX - x;
-        let bucketEnd = timeRange.to.unix();
-        if (i + 1 < buckets.length) {
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          bucketEnd = buckets[i + 1]!.time - 1;
-        }
-        if (bucketEnd >= nextDay.unix()) {
-          bucketEnd = nextDay.unix() - 1;
-        }
-        const bucketHeight = Math.min(height, yAxis(bucketEnd)) - y;
+      buckets
+        .map((bucket) => {
+          const { x, y, dayStart } = bucket;
+          const nextDay = dateTime(dayStart).add(1, 'd');
+          const nextDayX = Math.floor(xTime(nextDay));
+          const dayWidth = nextDayX - x;
+          let bucketEnd = bucket.time + timeStep;
+          if (bucketEnd >= nextDay.unix()) {
+            bucketEnd = nextDay.unix() - 1;
+          }
+          const bucketHeight = Math.min(height, yAxis(bucketEnd)) - y;
 
-        return {
-          ...bucket,
-          width: dayWidth,
-          height: bucketHeight,
-        };
-      }),
+          return {
+            ...bucket,
+            width: dayWidth,
+            height: bucketHeight,
+          };
+        })
+        .filter((cell) => cell.value !== null),
     [buckets, xTime, timeRange.to, height]
-  );
+  ) as Cell[];
 
   return cells;
+};
+
+const getMinInterval = (points: { time: number }[]) => {
+  let minInterval = Infinity;
+  for (let i = 1; i < points.length; i++) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const interval = points[i]!.time - points[i - 1]!.time;
+    if (interval < minInterval) {
+      minInterval = interval;
+    }
+  }
+  return minInterval;
 };
 
 const useTimeScale = (timeRange: TimeRange, width: number): ScaleTime<number, number> => {
