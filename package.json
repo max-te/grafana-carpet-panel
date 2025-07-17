@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "lint": "eslint src",
     "devserver": "NODE_ENV=development rspack serve --env development --config rspack/config.testharness.ts",
-    "test": "playwright test"
+    "test": "playwright test",
+    "test:update": "playwright test --update-snapshots"
   },
   "dependencies": {
     "@emotion/css": "^11.1.3",
