@@ -18,8 +18,10 @@ export const Harness: React.FC = () => {
     to: dateTime(testData.request.range.to),
     raw: testData.request.range.raw,
   };
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const timeField: Field<number> = testData.series[0]!.fields[0] as Field<number>;
 
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const valueField = testData.series[0]!.fields[1] as Field<number>;
 
   const [themeId, setThemeId] = React.useState<'light' | 'dark'>('light');
@@ -61,7 +63,14 @@ export const Harness: React.FC = () => {
       <GlobalStyles />
       <style>{inlineStyle}</style>
       <PanelContainer style={{ padding: theme.spacing(), width: 'min-content', height: 'min-content', margin: 'auto' }}>
-        <div style={{ position: 'relative', width: `${width}px`, height: `${height}px`, overflow: 'hidden' }}>
+        <div
+          style={{
+            position: 'relative',
+            width: `${width.toFixed(0)}px`,
+            height: `${height.toFixed(0)}px`,
+            overflow: 'hidden',
+          }}
+        >
           <Stage width={width} height={height} key={dpr}>
             <CarpetPlot {...chartProps} />
           </Stage>
