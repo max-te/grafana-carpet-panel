@@ -20,7 +20,8 @@ export const reactCompilerConfig = {
   loader: reactCompilerLoader,
   options: {
     target: '17',
-    panicThreshold: 'critical_errors',
+    panicThreshold: 'all_errors',
+    compilationMode: 'annotation',
     logger: {
       logEvent(filename, event) {
         const file = filename ? filename : '<unknown file>';
@@ -35,6 +36,10 @@ export const reactCompilerConfig = {
               `\n    at ${event.detail.loc ? formatSite(file, event.detail.loc) : file}` +
               (event.fnLoc ? `\n    at ${formatSite(file, event.fnLoc)}` : '');
             consola.warn(err);
+
+            if (event.detail.suggestions) {
+              consola.debug('Suggestions:', event.detail.suggestions);
+            }
             break;
           }
           case 'PipelineError': {

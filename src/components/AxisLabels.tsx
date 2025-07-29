@@ -9,21 +9,26 @@ export const XAxisIndicator: React.FC<{ x: number; y: number; height: number; wi
     width,
     scale,
   }) => {
-    const ticks = scale.ticks();
-    ticks.forEach((t) => t.setHours(12));
+    const theme = useTheme2();
+    const ticks = React.useMemo(() => {
+      const ts = scale.ticks();
+      ts.forEach((t) => t.setHours(12));
+      return ts;
+    }, [scale]);
+
     // TODO: Implement adaptive tick density based on available width to prevent label overlap
     const spacing = width / ticks.length;
-    const theme = useTheme2();
     const colorGrid = 'rgba(120, 120, 130, 0.5)';
     const colorText = theme.colors.text.primary;
     return (
       <>
         <Line points={[x, y, x + width, y]} stroke={colorGrid} strokeWidth={1} />
-        {ticks.map((date) => {
+        {ticks.map((date, idx) => {
           const tickX = scale(date) + x;
-          const label = date.toLocaleDateString(navigator.language, { month: '2-digit', day: '2-digit' });
+          const label = date.toLocaleDateString(undefined, { month: '2-digit', day: '2-digit' });
           return (
-            <Fragment key={label}>
+            // eslint-disable-next-line @eslint-react/no-array-index-key -- In the Konva context, this is okay. Using the date causes a bug where stale labels remain.
+            <Fragment key={idx}>
               <Line points={[tickX, y, tickX, y + 4]} stroke={colorGrid} strokeWidth={1} />
               <Text
                 text={label}
@@ -44,6 +49,7 @@ export const XAxisIndicator: React.FC<{ x: number; y: number; height: number; wi
   };
   
 export const YAxisIndicator: React.FC<{ x: number; y: number; height: number; width: number }> = ({ x, y, width, height }) => {
+    'use memo';
     const ticks = Array.from({ length: 25 }, (_, i) => i);
     const theme = useTheme2();
     const colorGrid = 'rgba(120, 120, 130, 0.5)';

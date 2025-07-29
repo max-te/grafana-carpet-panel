@@ -2,7 +2,7 @@ import { type Field, type TimeRange, dateTime, ThemeContext, getThemeById } from
 import { Stage } from 'react-konva';
 import { CarpetPlot } from '../src/components/CarpetPlot';
 type ChartProps = React.ComponentProps<typeof CarpetPlot>;
-import React from 'react';
+import React, { StrictMode } from 'react';
 import * as d3 from 'd3';
 import {
   Box,

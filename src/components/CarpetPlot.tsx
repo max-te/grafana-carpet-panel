@@ -19,6 +19,7 @@ import { Html } from 'react-konva-utils';
 import type Konva from 'konva';
 import { XAxisIndicator, YAxisIndicator } from './AxisLabels';
 
+type ColorPalette = (t: number) => string;
 interface ChartProps {
   width: number;
   height: number;
@@ -27,7 +28,7 @@ interface ChartProps {
   valueField: Field<number>;
   timeZone: string;
   timeRange: TimeRange;
-  colorPalette: (t: number) => string;
+  colorPalette: ColorPalette;
   gapWidth: number;
 
   showXAxis?: boolean;
@@ -45,87 +46,76 @@ type CellData = {
 type Cell = CellData & { width: number; height: number };
 
 // TODO: Consider extracting this hook into a separate file for better code organization and testability
-const useCells = (
+// eslint-disable-next-line @eslint-react/hooks-extra/no-unnecessary-use-prefix -- react-compiler turns this into a hook
+function useCells(
   valueField: Field<number | null>,
   timeField: Field<number>,
   xTime: ScaleTime<number, number>,
   timeZone: string,
-  timeRange: TimeRange,
+  _timeRange: TimeRange,
   // TODO(cleanup): Remove height parameter, use 0-1 coordinates and scale when drawing
   height: number
-): Cell[] => {
-  const yAxis = useMemo(() => {
+): Cell[] {
+  'use memo';
+  const yAxis = (t: DateTimeInput) => {
     const RANGE_START = 1;
     const RANGE_END = height;
-    return (t: DateTimeInput) => {
-      const timeInMs = typeof t === 'number' ? t * 1000 : t;
-      const time = dateTimeForTimeZone(timeZone, timeInMs);
-      const dayStart = dateTime(time).startOf('d');
-      const tSecondsInDay = time.diff(dayStart, 's', false);
-      const dayEnd = dateTime(time).endOf('d');
-      const daySeconds = dayEnd.diff(dayStart, 's', false);
+    const timeInMs = typeof t === 'number' ? t * 1000 : t;
+    const time = dateTimeForTimeZone(timeZone, timeInMs);
+    const dayStart = dateTime(time).startOf('d');
+    const tSecondsInDay = time.diff(dayStart, 's', false);
+    const dayEnd = dateTime(time).endOf('d');
+    const daySeconds = dayEnd.diff(dayStart, 's', false);
 
-      return RANGE_START + ((RANGE_END - RANGE_START) * tSecondsInDay) / daySeconds;
-    };
-  }, [height, timeZone]);
+    return RANGE_START + ((RANGE_END - RANGE_START) * tSecondsInDay) / daySeconds;
+  };
 
-  const buckets = useMemo(() => {
-    return valueField.values.flatMap((value, i) => {
-      const date = dateTime(timeField.values[i]);
-      const time = date.unix();
-      const dayStart = dateTime(date).startOf('d');
+  const buckets = valueField.values.flatMap((value, i) => {
+    const date = dateTime(timeField.values[i]);
+    const time = date.unix();
+    const dayStart = dateTime(date).startOf('d');
 
-      const x = Math.floor(xTime(dayStart));
-      const y = Math.floor(yAxis(time));
-      const bucket = { time, value, x, y, dayStart };
+    const x = Math.floor(xTime(dayStart));
+    const y = Math.floor(yAxis(time));
+    const bucket = { time, value, x, y, dayStart };
 
-      // TODO: Buckets which cross a date boundary should be split for rendering proportionally in either days' column.
-      // if (previous !== null && previous.time < dayStart.unix()) {
-      //   const interBucket = {
-      //     time: dayStart.unix(),
-      //     value: previous.value,
-      //     x: x,
-      //     y: yAxis(dayStart)!,
-      //     dayStart: dayStart,
-      //   };
-      //   previous = bucket;
-      //   return [interBucket, bucket];
-      // }
-
-      return [bucket];
-    });
-  }, [valueField.values, timeField.values, xTime, yAxis]);
-
+    // TODO: Buckets which cross a date boundary should be split for rendering proportionally in either days' column.
+    // if (previous !== null && previous.time < dayStart.unix()) {
+    //   const interBucket = {
+    //     time: dayStart.unix(),
+    //     value: previous.value,
+    //     x: x,
+    //     y: yAxis(dayStart)!,
+    //     dayStart: dayStart,
+    //   };
+    //   previous = bucket;
+    //   return [interBucket, bucket];
+    // }
+    return [bucket];
+  });
   const timeStep: number = getMinInterval(buckets);
-  const cells = useMemo(
-    // TODO: Merge these `useMemo`s
-    () =>
-      buckets
-        .map((bucket) => {
-          const { x, y, dayStart } = bucket;
-          const nextDay = dateTime(dayStart).add(1, 'd');
-          const nextDayX = Math.floor(xTime(nextDay));
-          const dayWidth = nextDayX - x;
-          let bucketEnd = bucket.time + timeStep;
-          if (bucketEnd >= nextDay.unix()) {
-            bucketEnd = nextDay.unix() - 1;
-          }
-          const bucketHeight = Math.min(height, yAxis(bucketEnd)) - y;
+  return buckets
+    .map((bucket) => {
+      const { x, y, dayStart } = bucket;
+      const nextDay = dateTime(dayStart).add(1, 'd');
+      const nextDayX = Math.floor(xTime(nextDay));
+      const dayWidth = nextDayX - x;
+      let bucketEnd = bucket.time + timeStep;
+      if (bucketEnd >= nextDay.unix()) {
+        bucketEnd = nextDay.unix() - 1;
+      }
+      const bucketHeight = Math.min(height, yAxis(bucketEnd)) - y;
 
-          return {
-            ...bucket,
-            width: dayWidth,
-            height: bucketHeight,
-          };
-        })
-        .filter((cell) => cell.value !== null),
-    [buckets, xTime, timeRange.to, height]
-  ) as Cell[];
+      return {
+        ...bucket,
+        width: dayWidth,
+        height: bucketHeight,
+      };
+    })
+    .filter((cell) => cell.value !== null) as Cell[];
+}
 
-  return cells;
-};
-
-const getMinInterval = (points: { time: number }[]) => {
+function getMinInterval(points: { time: number }[]) {
   let minInterval = Infinity;
   for (let i = 1; i < points.length; i++) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -135,14 +125,15 @@ const getMinInterval = (points: { time: number }[]) => {
     }
   }
   return minInterval;
-};
+}
 
-const useStableDateTimeValue = (dt: DateTime): DateTime => {
+function useStableDateTimeValue(dt: DateTime): DateTime {
+  'use no memo';
   const dtVal = dt.valueOf();
   return useMemo(() => Object.freeze(dateTime(dtVal)), [dtVal]);
-};
+}
 
-const useTimeScale = (timeRange: TimeRange, width: number): ScaleTime<number, number> => {
+function useTimeScale(timeRange: TimeRange, width: number): ScaleTime<number, number> {
   const dayFromValue = useStableDateTimeValue(timeRange.from);
   const dayToValue = useStableDateTimeValue(timeRange.to);
   const dayFrom = useMemo(() => dateTime(dayFromValue).startOf('day').toDate(), [dayFromValue]);
@@ -155,7 +146,12 @@ const useTimeScale = (timeRange: TimeRange, width: number): ScaleTime<number, nu
   const xTime = useMemo(() => d3.scaleUtc().domain([dayFrom, dayTo]).range([0, width]), [dayFrom, dayTo, width]);
 
   return xTime;
-};
+}
+
+function useColorScale(colorPalette: ColorPalette, min: number, max: number) {
+  const colorScale = useMemo(() => d3.scaleSequential(colorPalette).domain([min, max]), [min, max, colorPalette]);
+  return colorScale;
+}
 
 export const CarpetPlot: React.FC<ChartProps> = ({
   width,
@@ -169,6 +165,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   showXAxis,
   showYAxis,
 }) => {
+  'use memo';
   const [hoveredCellData, setHoveredCellData] = useState<CellData | null>(null);
 
   const handleCellMouseOver = useCallback(({ evt, currentTarget }: { evt: MouseEvent; currentTarget: Konva.Node }) => {
@@ -192,10 +189,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   // TODO: Make padding configurable in the panel options?
 
   const fieldConfig = getFieldConfigWithMinMax(valueField) as FieldConfig & { min: number; max: number };
-  const colorScale = useMemo(
-    () => d3.scaleSequential(colorPalette).domain([fieldConfig.min, fieldConfig.max]),
-    [colorPalette, fieldConfig.min, fieldConfig.max]
-  );
+  const colorScale = useColorScale(colorPalette, fieldConfig.min, fieldConfig.max);
   const theme = useTheme2();
   const display = getDisplayProcessor({
     field: valueField,
@@ -222,28 +216,25 @@ export const CarpetPlot: React.FC<ChartProps> = ({
 
   const cells = useCells(valueField, timeField, xTime, timeZone, timeRange, height - xAxisHeight);
 
-  const heatmapLayer = useMemo(
-    () => (
-      <Layer onMouseOut={handleCellMouseOut} x={yAxisWidth} width={width - yAxisWidth} height={height - xAxisHeight}>
-        {cells.map((cell) => (
-          <Rect
-            key={cell.time}
-            x={cell.x}
-            y={cell.y}
-            width={cell.width}
-            height={cell.height}
-            fill={colorScale(cell.value)}
-            data-bucket={cell}
-            onMouseOver={handleCellMouseOver}
-            perfectDrawEnabled={true}
-            strokeEnabled={gapWidth > 0}
-            strokeWidth={gapWidth}
-            stroke={theme.colors.background.primary}
-          />
-        ))}
-      </Layer>
-    ),
-    [cells, colorScale, handleCellMouseOut, handleCellMouseOver, gapWidth]
+  const heatmapLayer = (
+    <Layer onMouseOut={handleCellMouseOut} x={yAxisWidth} width={width - yAxisWidth} height={height - xAxisHeight}>
+      {cells.map((cell) => (
+        <Rect
+          key={cell.time}
+          x={cell.x}
+          y={cell.y}
+          width={cell.width}
+          height={cell.height}
+          fill={colorScale(cell.value)}
+          data-bucket={cell}
+          onMouseOver={handleCellMouseOver}
+          perfectDrawEnabled={true}
+          strokeEnabled={gapWidth > 0}
+          strokeWidth={gapWidth}
+          stroke={theme.colors.background.primary}
+        />
+      ))}
+    </Layer>
   );
 
   const hoveredCell = cells.find((b) => b.time === hoveredCellData?.time);
