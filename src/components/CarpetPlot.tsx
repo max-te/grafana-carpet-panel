@@ -276,7 +276,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
                 timestamp={dateTime(hoveredCellData.time * 1000)
                   .toDate()
                   .toLocaleString(undefined, {
-                    timeZone: timeZone,
+                    // timeZone: timeZone,
                     timeStyle: 'long',
                     dateStyle: 'medium',
                   })}
