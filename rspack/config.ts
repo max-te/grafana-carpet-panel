@@ -8,6 +8,7 @@ import { DIST_DIR } from './constants.ts';
 import ForkTsCheckerWebpackPlugin from 'fork-ts-checker-webpack-plugin';
 import { RspackVirtualModulePlugin } from 'rspack-plugin-virtual-module';
 import { BuildModeRspackPlugin } from './BuildModeRspackPlugin.ts';
+import { defineReactCompilerLoaderOption, reactCompilerLoader } from 'react-compiler-webpack';
 
 const pluginJson = getPluginJson();
 
@@ -96,22 +97,31 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
         {
           exclude: /(node_modules)/,
           test: /\.[tj]sx?$/,
-          use: {
-            loader: 'builtin:swc-loader',
-            options: {
-              jsc: {
-                baseUrl: path.resolve(import.meta.dirname, 'src'),
-                target: 'es2015',
-                loose: false,
-                parser: {
-                  syntax: 'typescript',
-                  tsx: true,
-                  decorators: false,
-                  dynamicImport: true,
+          use: [
+            {
+              loader: 'builtin:swc-loader',
+              options: {
+                jsc: {
+                  baseUrl: path.resolve(import.meta.dirname, 'src'),
+                  target: 'es2015',
+                  loose: false,
+                  parser: {
+                    syntax: 'typescript',
+                    tsx: true,
+                    decorators: false,
+                    dynamicImport: true,
+                  },
                 },
               },
             },
-          },
+            {
+              loader: reactCompilerLoader,
+              options: defineReactCompilerLoaderOption({
+                target: '17',
+                // React Compiler options goes here
+              }),
+            },
+          ],
         },
         {
           test: /\.css$/,
@@ -143,7 +153,7 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
     output: {
       clean: {
         // It really doesn't matter if this regex syntax works. We just need to prevent rspack from deleting the directory, since it's mounted by docker.
-        keep: (f) => f.endsWith("LICENSE"),
+        keep: (f) => f.endsWith('LICENSE'),
       },
       filename: '[name].js',
       chunkFilename: env.production ? '[name].js?_cache=[contenthash]' : '[name].js',
@@ -209,20 +219,20 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
       ]),
       ...(env.development
         ? [
-          new ForkTsCheckerWebpackPlugin({
-            async: Boolean(env.development),
-            issue: {
-              include: [{ file: '**/*.{ts,tsx}' }],
-            },
-            typescript: {
-              configFile: path.join(process.cwd(), 'tsconfig.json'),
-            },
-          }),
-          new ESLintPlugin({
-            extensions: ['.ts', '.tsx'],
-            lintDirtyModulesOnly: Boolean(env.development), // don't lint on start, only lint changed files
-          }),
-        ]
+            new ForkTsCheckerWebpackPlugin({
+              async: Boolean(env.development),
+              issue: {
+                include: [{ file: '**/*.{ts,tsx}' }],
+              },
+              typescript: {
+                configFile: path.join(process.cwd(), 'tsconfig.json'),
+              },
+            }),
+            new ESLintPlugin({
+              extensions: ['.ts', '.tsx'],
+              lintDirtyModulesOnly: Boolean(env.development), // don't lint on start, only lint changed files
+            }),
+          ]
         : []),
     ],
   }) satisfies RspackOptions;

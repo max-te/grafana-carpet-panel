@@ -1,6 +1,7 @@
 import { defineConfig } from '@rspack/cli';
 import { rspack, type RspackOptions } from '@rspack/core';
 import path from 'path';
+import { defineReactCompilerLoaderOption, reactCompilerLoader } from 'react-compiler-webpack';
 
 const config = async (env: Record<string, any>, argv: Record<string, any>) => {
   return defineConfig({
@@ -26,21 +27,30 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
         {
           exclude: /(node_modules)/,
           test: /\.[tj]sx?$/,
-          use: {
-            loader: 'builtin:swc-loader',
-            options: {
-              jsc: {
-                target: 'es2015',
-                loose: false,
-                parser: {
-                  syntax: 'typescript',
-                  tsx: true,
-                  decorators: false,
-                  dynamicImport: true,
+          use: [
+            {
+              loader: 'builtin:swc-loader',
+              options: {
+                jsc: {
+                  target: 'es2015',
+                  loose: false,
+                  parser: {
+                    syntax: 'typescript',
+                    tsx: true,
+                    decorators: false,
+                    dynamicImport: true,
+                  },
                 },
               },
             },
-          },
+            {
+              loader: reactCompilerLoader,
+              options: defineReactCompilerLoaderOption({
+                target: '17',
+                // React Compiler options goes here
+              }),
+            },
+          ],
         },
         {
           test: /\.css$/,
