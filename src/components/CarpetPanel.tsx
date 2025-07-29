@@ -1,7 +1,7 @@
 import React from 'react';
 import { FieldType, type PanelProps } from '@grafana/data';
-import { type CarpetPanelOptions } from '../types';
-import { css, cx } from '@emotion/css';
+import type { CarpetPanelOptions } from '../types';
+import { css } from '@emotion/css';
 import { useStyles2 } from '@grafana/ui';
 import { PanelDataErrorView } from '@grafana/runtime';
 import { Stage } from 'react-konva';
@@ -32,6 +32,7 @@ export const CarpetPanel: React.FC<Props> = ({
 }) => {
   const dpr = useKonvaDpr();
   const styles = useStyles2(getStyles);
+  const colorScale = useColorScale(options);
 
   const frame = data.series[0]; // TODO: Handle multiple series (?)
   if (frame === undefined) {
@@ -73,17 +74,13 @@ export const CarpetPanel: React.FC<Props> = ({
   valueField.config.min = options.color.min;
   valueField.config.max = options.color.max;
 
-  const colorScale = useColorScale(options);
-
   return (
     <div
-      className={cx(
-        styles.wrapper,
-        css`
-          width: ${width}px;
-          height: ${height}px;
-        `
-      )}
+      className={styles.wrapper}
+      style={{
+        width: `${width.toFixed(0)}px`,
+        height: `${height.toFixed(0)}px`,
+      }}
     >
       <Stage width={width} height={height} key={dpr}>
         <CarpetPlot
