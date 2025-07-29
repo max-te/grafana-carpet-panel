@@ -5,7 +5,7 @@ import ESLintPlugin from 'eslint-webpack-plugin';
 import { getPackageJson, getPluginJson, hasReadme, getEntries } from './utils.ts';
 import path from 'path';
 import { DIST_DIR } from './constants.ts';
-import ForkTsCheckerWebpackPlugin from 'fork-ts-checker-webpack-plugin';
+import { TsCheckerRspackPlugin } from 'ts-checker-rspack-plugin';
 import { RspackVirtualModulePlugin } from 'rspack-plugin-virtual-module';
 import { BuildModeRspackPlugin } from './BuildModeRspackPlugin.ts';
 import { reactCompilerConfig } from './react-compiler-config.ts';
@@ -213,7 +213,7 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
       ]),
       ...(env.development
         ? [
-            new ForkTsCheckerWebpackPlugin({
+            new TsCheckerRspackPlugin({
               async: Boolean(env.development),
               issue: {
                 include: [{ file: '**/*.{ts,tsx}' }],
