@@ -1,32 +1,25 @@
 import { type Field, type TimeRange, dateTime, ThemeContext, getThemeById } from '@grafana/data';
 import { Stage } from 'react-konva';
 import { CarpetPlot } from '../src/components/CarpetPlot';
-import { useDevicePixelRatio } from 'use-device-pixel-ratio';
-import Konva from 'konva';
 type ChartProps = React.ComponentProps<typeof CarpetPlot>;
 import React from 'react';
 import * as d3 from 'd3';
 import {
   Box,
-  Field as InputField,
   GlobalStyles,
   PanelContainer,
   RadioButtonGroup,
   Slider,
   Space,
-  Stack,
-  Label,
-  Switch,
-  InlineSwitch,
   InlineField,
   InlineFieldRow,
   Checkbox,
 } from '@grafana/ui';
 import * as testData from './testdata.json';
+import { useKonvaDpr } from '../src/components/useKonvaDpr';
 
 export const Harness: React.FC = () => {
-  const dpr = Math.ceil(useDevicePixelRatio({ round: false, maxDpr: 4, defaultDpr: 2 }));
-  Konva.pixelRatio = dpr;
+  const dpr = useKonvaDpr();
 
   const timeRange: TimeRange = {
     from: dateTime(testData.request.range.from),

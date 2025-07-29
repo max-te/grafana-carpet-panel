@@ -7,8 +7,7 @@ import { PanelDataErrorView } from '@grafana/runtime';
 import { Stage } from 'react-konva';
 import { CarpetPlot } from './CarpetPlot';
 import { useColorScale } from './useColorScale';
-import { useDevicePixelRatio } from 'use-device-pixel-ratio';
-import Konva from 'konva';
+import { useKonvaDpr } from './useKonvaDpr';
 
 type Props = PanelProps<CarpetPanelOptions>;
 
@@ -31,8 +30,7 @@ export const CarpetPanel: React.FC<Props> = ({
   timeRange,
   timeZone,
 }) => {
-  const dpr = Math.ceil(useDevicePixelRatio({ round: false, maxDpr: 4, defaultDpr: 2 }));
-  Konva.pixelRatio = dpr;
+  const dpr = useKonvaDpr();
   const styles = useStyles2(getStyles);
 
   const frame = data.series[0]; // TODO: Handle multiple series (?)
@@ -68,14 +66,7 @@ export const CarpetPanel: React.FC<Props> = ({
     );
   }
   if (timeField.type !== FieldType.time) {
-    return (
-      <PanelDataErrorView
-        fieldConfig={fieldConfig}
-        panelId={id}
-        data={data}
-        needsTimeField
-      />
-    );
+    return <PanelDataErrorView fieldConfig={fieldConfig} panelId={id} data={data} needsTimeField />;
   }
 
   valueField.config.unit = options.valueField?.unit;
