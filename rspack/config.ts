@@ -8,7 +8,7 @@ import { DIST_DIR } from './constants.ts';
 import ForkTsCheckerWebpackPlugin from 'fork-ts-checker-webpack-plugin';
 import { RspackVirtualModulePlugin } from 'rspack-plugin-virtual-module';
 import { BuildModeRspackPlugin } from './BuildModeRspackPlugin.ts';
-import { defineReactCompilerLoaderOption, reactCompilerLoader } from 'react-compiler-webpack';
+import { reactCompilerConfig } from './react-compiler-config.ts';
 
 const pluginJson = getPluginJson();
 
@@ -114,13 +114,7 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
                 },
               },
             },
-            {
-              loader: reactCompilerLoader,
-              options: defineReactCompilerLoaderOption({
-                target: '17',
-                // React Compiler options goes here
-              }),
-            },
+            reactCompilerConfig,
           ],
         },
         {

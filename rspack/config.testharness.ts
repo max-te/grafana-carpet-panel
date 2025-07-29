@@ -1,7 +1,7 @@
 import { defineConfig } from '@rspack/cli';
 import { rspack, type RspackOptions } from '@rspack/core';
 import path from 'path';
-import { defineReactCompilerLoaderOption, reactCompilerLoader } from 'react-compiler-webpack';
+import { reactCompilerConfig } from './react-compiler-config.ts';
 
 const config = async (env: Record<string, any>, argv: Record<string, any>) => {
   return defineConfig({
@@ -43,13 +43,7 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
                 },
               },
             },
-            {
-              loader: reactCompilerLoader,
-              options: defineReactCompilerLoaderOption({
-                target: '17',
-                // React Compiler options goes here
-              }),
-            },
+            reactCompilerConfig,
           ],
         },
         {
