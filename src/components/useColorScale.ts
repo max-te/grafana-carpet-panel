@@ -22,9 +22,9 @@ export function useColorScale(options: CarpetPanelOptions) {
   
   const colorPalette: ColorFn = useMemo(() => {
     switch (options.color.mode) {
-    case HeatmapColorMode.Scheme:
+    case HeatmapColorMode.Scheme: {
       const colorFnName = (`interpolate${options.color.scheme || 'Spectral'}`) as D3ColorFnName;
-      let colorFn = d3ScaleChromatic[colorFnName];
+      const colorFn = d3ScaleChromatic[colorFnName];
       if (typeof colorFn !== 'function') {
         throw new Error('Invalid color scheme: ' + colorFnName);
       }
@@ -34,8 +34,8 @@ export function useColorScale(options: CarpetPanelOptions) {
       } else {
         return colorFn;
       }
-
-    case HeatmapColorMode.Opacity:
+    }
+    case HeatmapColorMode.Opacity: {
       const fill = tinycolor(theme.visualization.getColorByName(options.color.fill)).toRgb();
       const background = tinycolor(theme.colors.background.primary).toRgb();
 
@@ -62,8 +62,11 @@ export function useColorScale(options: CarpetPanelOptions) {
         alphaColorInterpolate = (x: number) => originalColorFn(1 - x);
       }
       return alphaColorInterpolate;
-    default:
-      throw (options.color.mode satisfies never);
+    }
+    default: {
+      const mode = (options.color.mode satisfies never) as string;
+      throw new Error(`Unexpected color mode: ${mode}`)
+    }
     }
   }, [options.color, theme]);
   return colorPalette;

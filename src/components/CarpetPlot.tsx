@@ -137,18 +137,22 @@ const getMinInterval = (points: { time: number }[]) => {
   return minInterval;
 };
 
+const useStableDateTimeValue = (dt: DateTime): DateTime => {
+  const dtVal = dt.valueOf();
+  return useMemo(() => Object.freeze(dateTime(dtVal)), [dtVal]);
+};
+
 const useTimeScale = (timeRange: TimeRange, width: number): ScaleTime<number, number> => {
-  const dayFrom = useMemo(() => dateTime(timeRange.from).startOf('day').toDate(), [timeRange.from]);
-  const dayTo = useMemo(() => dateTime(timeRange.to).endOf('day').toDate(), [timeRange.to]);
-  const numDays = useMemo(() => 1 + d3.timeDay.count(dayFrom, dayTo), [dayFrom.valueOf(), dayTo.valueOf()]);
+  const dayFromValue = useStableDateTimeValue(timeRange.from);
+  const dayToValue = useStableDateTimeValue(timeRange.to);
+  const dayFrom = useMemo(() => dateTime(dayFromValue).startOf('day').toDate(), [dayFromValue]);
+  const dayTo = useMemo(() => dateTime(dayToValue).endOf('day').toDate(), [dayToValue]);
+  const numDays = useMemo(() => 1 + d3.timeDay.count(dayFrom, dayTo), [dayFrom, dayTo]);
   if (numDays <= 0) {
     throw new Error('Negative time range');
   }
 
-  const xTime = useMemo(
-    () => d3.scaleUtc().domain([dayFrom, dayTo]).range([0, width]),
-    [dayFrom.valueOf(), dayTo.valueOf(), width]
-  );
+  const xTime = useMemo(() => d3.scaleUtc().domain([dayFrom, dayTo]).range([0, width]), [dayFrom, dayTo, width]);
 
   return xTime;
 };
@@ -167,20 +171,17 @@ export const CarpetPlot: React.FC<ChartProps> = ({
 }) => {
   const [hoveredCellData, setHoveredCellData] = useState<CellData | null>(null);
 
-  const handleCellMouseOver = useCallback(
-    ({ evt, currentTarget }: { evt: MouseEvent; currentTarget: Konva.Node }) => {
-      const cellData = currentTarget.getAttr('data-bucket') as CellData;
-      const innerRect = currentTarget.getClientRect();
-      const outerRect = (evt.target as Element).getBoundingClientRect();
-      setHoveredCellData({
-        ...cellData,
-        x: innerRect.x + outerRect.x + innerRect.width,
-        y: innerRect.y + outerRect.y + innerRect.height,
-      });
-      evt.stopPropagation();
-    },
-    []
-  );
+  const handleCellMouseOver = useCallback(({ evt, currentTarget }: { evt: MouseEvent; currentTarget: Konva.Node }) => {
+    const cellData = currentTarget.getAttr('data-bucket') as CellData;
+    const innerRect = currentTarget.getClientRect();
+    const outerRect = (evt.target as Element).getBoundingClientRect();
+    setHoveredCellData({
+      ...cellData,
+      x: innerRect.x + outerRect.x + innerRect.width,
+      y: innerRect.y + outerRect.y + innerRect.height,
+    });
+    evt.stopPropagation();
+  }, []);
   const handleCellMouseOut = useCallback(() => {
     setHoveredCellData(null);
   }, []);
@@ -207,7 +208,13 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   const axesLayer = (
     <Layer listening={false}>
       {showXAxis && (
-        <XAxisIndicator x={yAxisWidth} y={height - xAxisHeight} height={xAxisHeight} width={width - yAxisWidth} scale={xTime} />
+        <XAxisIndicator
+          x={yAxisWidth}
+          y={height - xAxisHeight}
+          height={xAxisHeight}
+          width={width - yAxisWidth}
+          scale={xTime}
+        />
       )}
       {showYAxis && <YAxisIndicator x={yAxisWidth} y={0} height={height - xAxisHeight} width={yAxisWidth} />}
     </Layer>
@@ -266,7 +273,13 @@ export const CarpetPlot: React.FC<ChartProps> = ({
             hoveredCellData ? (
               <SeriesTable
                 // TODO: Check how Grafana does datetime formatting
-                timestamp={dateTime(hoveredCellData.time * 1000).toLocaleString()}
+                timestamp={dateTime(hoveredCellData.time * 1000)
+                  .toDate()
+                  .toLocaleString(undefined, {
+                    timeZone: timeZone,
+                    timeStyle: 'long',
+                    dateStyle: 'medium',
+                  })}
                 series={[
                   {
                     label: valueField.name,
