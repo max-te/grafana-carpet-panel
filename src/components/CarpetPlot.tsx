@@ -54,6 +54,7 @@ function useCells(
   timeZone: string,
   _timeRange: TimeRange,
   // TODO(cleanup): Remove height parameter, use 0-1 coordinates and scale when drawing
+  // Then, derive x-pos from timeRange and remove xTime argument
   height: number
 ): Cell[] {
   'use memo';
@@ -69,15 +70,17 @@ function useCells(
 
     return RANGE_START + ((RANGE_END - RANGE_START) * tSecondsInDay) / daySeconds;
   };
+  
+  let timeStep = getTimeStep(timeField);
 
-  const buckets = valueField.values.flatMap((value, i) => {
+  const cells = valueField.values.flatMap((value, i) => {
+    if (value === null) return [];
     const date = dateTime(timeField.values[i]);
     const time = date.unix();
     const dayStart = dateTime(date).startOf('d');
 
     const x = Math.floor(xTime(dayStart));
     const y = Math.floor(yAxis(time));
-    const bucket = { time, value, x, y, dayStart };
 
     // TODO: Buckets which cross a date boundary should be split for rendering proportionally in either days' column.
     // if (previous !== null && previous.time < dayStart.unix()) {
@@ -91,40 +94,37 @@ function useCells(
     //   previous = bucket;
     //   return [interBucket, bucket];
     // }
-    return [bucket];
-  });
-  const timeStep: number = getMinInterval(buckets);
-  return buckets
-    .map((bucket) => {
-      const { x, y, dayStart } = bucket;
-      const nextDay = dateTime(dayStart).add(1, 'd');
-      const nextDayX = Math.floor(xTime(nextDay));
-      const dayWidth = nextDayX - x;
-      let bucketEnd = bucket.time + timeStep;
-      if (bucketEnd >= nextDay.unix()) {
-        bucketEnd = nextDay.unix() - 1;
-      }
-      const bucketHeight = Math.min(height, yAxis(bucketEnd)) - y;
+    
+    const nextDay = dateTime(dayStart).add(1, 'd');
+    const nextDayX = Math.floor(xTime(nextDay));
+    const dayWidth = nextDayX - x;
+    let cellEndTime = time + timeStep;
+    if (cellEndTime >= nextDay.unix()) {
+      cellEndTime = nextDay.unix() - 1;
+    }
+    const cellHeight = Math.min(height, yAxis(cellEndTime)) - y;
 
-      return {
-        ...bucket,
-        width: dayWidth,
-        height: bucketHeight,
-      };
-    })
-    .filter((cell) => cell.value !== null) as Cell[];
+    return [{
+      time, value, x, y, dayStart,
+      width: dayWidth,
+      height: cellHeight,
+    }];
+  });
+
+  return cells;
 }
 
-function getMinInterval(points: { time: number }[]) {
+
+function getTimeStep(timeField: Field<number>): number {
   let minInterval = Infinity;
-  for (let i = 1; i < points.length; i++) {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const interval = points[i]!.time - points[i - 1]!.time;
+  for (let i = 1; i < timeField.values.length; i++) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Range check above
+    const interval = timeField.values[i]! - timeField.values[i - 1]!;
     if (interval < minInterval) {
       minInterval = interval;
     }
   }
-  return minInterval;
+  return minInterval / 1000;
 }
 
 function useStableDateTimeValue(dt: DateTime): DateTime {
