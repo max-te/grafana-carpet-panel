@@ -13,7 +13,6 @@ type D3ColorFnName = {
 
 function reverseColorFn(colorFn: ColorFn): ColorFn {
   const reversedColorFn = (t: number) => colorFn(1 - t);
-  reversedColorFn.name = 'reverse_' + colorFn.name;
   return reversedColorFn;
 }
 
