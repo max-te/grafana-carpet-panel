@@ -273,9 +273,9 @@ export const CarpetPlot: React.FC<ChartProps> = ({
                   })}
                 series={[
                   {
-                    label: valueField.name,
+                    label: valueField.config.displayName || valueField.config.displayNameFromDS || valueField.name,
                     value: formattedValueToString(display(hoveredCellData.value)),
-                    color: display(hoveredCellData.value).color,
+                    color: colorScale(fieldConfig.max),
                   },
                 ]}
               />
