@@ -21,7 +21,7 @@ export interface HeatmapColorOptions {
   mode: HeatmapColorMode;
   reverse: boolean;
   scale?: HeatmapColorScale;
-  scheme: string;
+  scheme?: string;
 }
 
 export interface CarpetPanelOptions {

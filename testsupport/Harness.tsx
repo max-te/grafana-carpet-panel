@@ -17,6 +17,8 @@ import {
 } from '@grafana/ui';
 import * as testData from './testdata.json';
 import { useKonvaDpr } from '../src/components/useKonvaDpr';
+import { useColorScale } from '../src/components/useColorScale';
+import { HeatmapColorMode } from '../src/types';
 
 export const Harness: React.FC = () => {
   const dpr = useKonvaDpr();
@@ -35,8 +37,13 @@ export const Harness: React.FC = () => {
   const [themeId, setThemeId] = React.useState<'light' | 'dark'>('light');
   const theme = getThemeById(themeId);
 
-  const [colorPaletteName, setColorPaletteName] = React.useState<'viridis' | 'plasma'>('viridis');
-  const colorPalette = colorPaletteName === 'viridis' ? d3.interpolateViridis : d3.interpolatePlasma;
+  const [colorPaletteName, setColorPaletteName] = React.useState<'Viridis' | 'Plasma'>('Viridis');
+  const colorPalette = useColorScale({
+    mode: HeatmapColorMode.Scheme,
+    scheme: colorPaletteName,
+    reverse: false,
+    fill: '',
+  });
 
   const inlineStyle = `
   body {
@@ -111,8 +118,8 @@ export const Harness: React.FC = () => {
           <InlineField label="Color Palette">
             <RadioButtonGroup
               options={[
-                { value: 'viridis', label: 'Viridis' },
-                { value: 'plasma', label: 'Plasma' },
+                { value: 'Viridis', label: 'Viridis' },
+                { value: 'Plasma', label: 'Plasma' },
               ]}
               value={colorPaletteName}
               onChange={setColorPaletteName}
@@ -124,10 +131,10 @@ export const Harness: React.FC = () => {
         </InlineField>
         <InlineFieldRow>
           <InlineField>
-            <Checkbox value={showXAxis} onChange={(e) => setShowXAxis(e.target.checked)} label="show X axis" />
+            <Checkbox value={showXAxis} onChange={(e) => setShowXAxis(e.currentTarget.checked)} label="show X axis" />
           </InlineField>
           <InlineField>
-            <Checkbox value={showYAxis} onChange={(e) => setShowYAxis(e.target.checked)} label="show Y axis" />
+            <Checkbox value={showYAxis} onChange={(e) => setShowYAxis(e.currentTarget.checked)} label="show Y axis" />
           </InlineField>
         </InlineFieldRow>
       </Box>

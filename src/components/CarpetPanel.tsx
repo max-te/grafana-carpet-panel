@@ -32,7 +32,7 @@ export const CarpetPanel: React.FC<Props> = ({
 }) => {
   const dpr = useKonvaDpr();
   const styles = useStyles2(getStyles);
-  const colorScale = useColorScale(options);
+  const colorScale = useColorScale(options.color);
 
   if (data.series.length == 0) {
     return (

@@ -2,6 +2,7 @@ import { FieldType, PanelPlugin, FieldNamePickerBaseNameMode } from '@grafana/da
 import { HeatmapColorMode, HeatmapColorScale, type CarpetPanelOptions } from './types';
 import { CarpetPanel } from './components/CarpetPanel';
 import { colorSchemes } from './palettes';
+import React from 'react';
 
 export const plugin = new PanelPlugin<CarpetPanelOptions>(CarpetPanel).setPanelOptions((builder) => {
   builder
@@ -114,6 +115,7 @@ export const plugin = new PanelPlugin<CarpetPanelOptions>(CarpetPanel).setPanelO
       options: colorSchemes.map((scheme) => ({
         value: scheme.name,
         label: scheme.name,
+        component: () => <GradientViz scheme={scheme.name} />,
       })),
     },
     showIf: (opts) => opts.color.mode !== HeatmapColorMode.Opacity,
@@ -151,3 +153,32 @@ export const plugin = new PanelPlugin<CarpetPanelOptions>(CarpetPanel).setPanelO
 
   return builder;
 });
+
+import { useColorScale } from './components/useColorScale';
+
+const GradientViz = ({ scheme }: { scheme: string }) => {
+  const scale = useColorScale({
+    mode: HeatmapColorMode.Scheme,
+    scheme,
+    scale: HeatmapColorScale.Linear,
+    fill: '',
+    reverse: false,
+  });
+  const NSTOPS = 10;
+  const stops = Array.from({ length: NSTOPS }).map((_, i) => {
+    const t = i / (NSTOPS - 1);
+    return scale(t);
+  });
+  return (
+    <div
+      style={{
+        height: '8px',
+        width: '100%',
+        margin: '2px 0',
+        borderRadius: '3px',
+        opacity: 1,
+        background: `linear-gradient(90deg, ${stops.join(',')})`,
+      }}
+    />
+  );
+};

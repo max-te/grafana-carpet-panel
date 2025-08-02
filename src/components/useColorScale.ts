@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { HeatmapColorMode, HeatmapColorScale, type CarpetPanelOptions } from '../types';
+import { HeatmapColorMode, HeatmapColorScale, type HeatmapColorOptions } from '../types';
 import { useTheme2 } from '@grafana/ui';
 import * as d3ScaleChromatic from 'd3-scale-chromatic';
 import tinycolor from 'tinycolor2';
@@ -15,33 +15,33 @@ function reverseColorFn(colorFn: ColorFn): ColorFn {
   return reversedColorFn;
 }
 
-export function useColorScale(options: CarpetPanelOptions) {
+export function useColorScale(colorOptions: HeatmapColorOptions) {
   const theme = useTheme2();
 
   const colorPalette: ColorFn = useMemo(() => {
-    switch (options.color.mode) {
+    switch (colorOptions.mode) {
       case HeatmapColorMode.Scheme: {
-        const colorFnName = `interpolate${options.color.scheme || 'Spectral'}` as D3ColorFnName;
+        const colorFnName = `interpolate${colorOptions.scheme || 'Spectral'}` as D3ColorFnName;
         const colorFn = d3ScaleChromatic[colorFnName];
         if (typeof colorFn !== 'function') {
           throw new Error('Invalid color scheme: ' + colorFnName);
         }
 
-        if (options.color.reverse) {
+        if (colorOptions.reverse) {
           return reverseColorFn(colorFn);
         } else {
           return colorFn;
         }
       }
       case HeatmapColorMode.Opacity: {
-        const fill = tinycolor(theme.visualization.getColorByName(options.color.fill)).toRgb();
+        const fill = tinycolor(theme.visualization.getColorByName(colorOptions.fill)).toRgb();
         const background = tinycolor(theme.colors.background.primary).toRgb();
 
         const scaleAlpha =
-          options.color.scale === HeatmapColorScale.Exponential
+          colorOptions.scale === HeatmapColorScale.Exponential
             ? d3
                 .scalePow()
-                .exponent(options.color.exponent ?? 1)
+                .exponent(colorOptions.exponent ?? 1)
                 .domain([0, 1])
                 .range([0, 1])
             : d3.scaleLinear().domain([0, 1]).range([0, 1]);
@@ -56,17 +56,17 @@ export function useColorScale(options: CarpetPanelOptions) {
           };
           return `rgba(${blend.r.toFixed(3)}, ${blend.g.toFixed(3)}, ${blend.b.toFixed(3)}, ${blend.a.toFixed(3)}`;
         };
-        if (options.color.reverse) {
+        if (colorOptions.reverse) {
           const originalColorFn = alphaColorInterpolate;
           alphaColorInterpolate = (x: number) => originalColorFn(1 - x);
         }
         return alphaColorInterpolate;
       }
       default: {
-        const mode = options.color.mode satisfies never as string;
+        const mode = colorOptions.mode satisfies never as string;
         throw new Error(`Unexpected color mode: ${mode}`);
       }
     }
-  }, [options.color, theme]);
+  }, [colorOptions, theme]);
   return colorPalette;
 }
