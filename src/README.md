@@ -11,6 +11,7 @@
 The Carpet Panel is a Grafana visualization plugin that displays data as a carpet plot (also known as a time heatmap). It's a spiritual successor to Marcus Olsson's [Hourly Heatmap panel](https://grafana.com/grafana/plugins/marcusolsson-hourly-heatmap-panel/), with improved performance for large time ranges and more consistent spacing between grid cells.
 
 Carpet plots are ideal for visualizing patterns across time periods, such as:
+
 - Daily usage patterns over weeks or months
 - Hourly system metrics across days
 - Recurring patterns in time series data

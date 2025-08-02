@@ -1,4 +1,5 @@
 # Carpet Panel
+
 ![Grafana 11+](https://img.shields.io/badge/Grafana-11+-F2F4F9?style=for-the-badge&logo=grafana&logoColor=orange&labelColor=F2F4F9)
 ![MIT License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)
 

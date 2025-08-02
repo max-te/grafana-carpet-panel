@@ -35,7 +35,7 @@ export interface CarpetPanelOptions {
     showX?: boolean;
     showY?: boolean;
     // TODO: Add configuration for axis labels, tick density, and formatting
-  }
+  };
 
   color: HeatmapColorOptions;
   gapWidth?: number;

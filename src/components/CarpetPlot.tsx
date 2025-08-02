@@ -70,7 +70,7 @@ function useCells(
 
     return RANGE_START + ((RANGE_END - RANGE_START) * tSecondsInDay) / daySeconds;
   };
-  
+
   let timeStep = getTimeStep(timeField);
 
   const cells = valueField.values.flatMap((value, i) => {
@@ -94,7 +94,7 @@ function useCells(
     //   previous = bucket;
     //   return [interBucket, bucket];
     // }
-    
+
     const nextDay = dateTime(dayStart).add(1, 'd');
     const nextDayX = Math.floor(xTime(nextDay));
     const dayWidth = nextDayX - x;
@@ -104,16 +104,21 @@ function useCells(
     }
     const cellHeight = Math.min(height, yAxis(cellEndTime)) - y;
 
-    return [{
-      time, value, x, y, dayStart,
-      width: dayWidth,
-      height: cellHeight,
-    }];
+    return [
+      {
+        time,
+        value,
+        x,
+        y,
+        dayStart,
+        width: dayWidth,
+        height: cellHeight,
+      },
+    ];
   });
 
   return cells;
 }
-
 
 function getTimeStep(timeField: Field<number>): number {
   let minInterval = Infinity;

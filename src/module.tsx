@@ -18,7 +18,7 @@ export const plugin = new PanelPlugin<CarpetPanelOptions>(CarpetPanel).setPanelO
       settings: {
         filter: (field) => field.type === FieldType.number,
         // TODO: Add support for categorical data
-      }
+      },
     })
     .addUnitPicker({
       path: 'valueField.unit',
@@ -147,6 +147,6 @@ export const plugin = new PanelPlugin<CarpetPanelOptions>(CarpetPanel).setPanelO
 
   // TODO: Add options for tooltip customization (format, additional fields, etc.)
   // TODO: Consider adding legend options for better data interpretation
-  
+
   return builder;
 });
