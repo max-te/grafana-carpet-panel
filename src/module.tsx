@@ -1,4 +1,4 @@
-import { FieldType, PanelPlugin } from '@grafana/data';
+import { FieldType, PanelPlugin, FieldNamePickerBaseNameMode } from '@grafana/data';
 import { HeatmapColorMode, HeatmapColorScale, type CarpetPanelOptions } from './types';
 import { CarpetPanel } from './components/CarpetPanel';
 import { colorSchemes } from './palettes';
@@ -16,6 +16,7 @@ export const plugin = new PanelPlugin<CarpetPanelOptions>(CarpetPanel).setPanelO
       path: 'valueField.name',
       name: 'Value field name',
       settings: {
+        baseNameMode: FieldNamePickerBaseNameMode.ExcludeBaseNames,
         filter: (field) => field.type === FieldType.number,
         // TODO: Add support for categorical data
       },

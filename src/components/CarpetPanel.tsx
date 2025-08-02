@@ -1,5 +1,5 @@
 import React from 'react';
-import { FieldType, type PanelProps } from '@grafana/data';
+import { FieldType, type PanelProps, type Field } from '@grafana/data';
 import type { CarpetPanelOptions } from '../types';
 import { css } from '@emotion/css';
 import { useStyles2 } from '@grafana/ui';
@@ -34,8 +34,7 @@ export const CarpetPanel: React.FC<Props> = ({
   const styles = useStyles2(getStyles);
   const colorScale = useColorScale(options);
 
-  const frame = data.series[0]; // TODO: Handle multiple series (?)
-  if (frame === undefined) {
+  if (data.series.length == 0) {
     return (
       <PanelDataErrorView
         fieldConfig={fieldConfig}
@@ -47,15 +46,22 @@ export const CarpetPanel: React.FC<Props> = ({
       />
     );
   }
-  const timeField = options.timeFieldName
-    ? frame.fields.find((f) => f.name === options.timeFieldName || f.config.displayNameFromDS === options.timeFieldName)
-    : frame.fields.find((f) => f.type === FieldType.time);
+  let timeField: Field<number> | undefined = undefined;
+  let valueField: Field<number> | undefined = undefined;
+  for (const frame of data.series) {
+    timeField = options.timeFieldName
+      ? frame.fields.find(
+          (f) => f.name === options.timeFieldName || f.config.displayNameFromDS === options.timeFieldName
+        )
+      : frame.fields.find((f) => f.type === FieldType.time);
 
-  const valueField = options.valueField?.name
-    ? frame.fields.find(
-        (f) => f.name === options.valueField?.name || f.config.displayNameFromDS === options.valueField?.name
-      )
-    : frame.fields.find((f) => f.type === FieldType.number);
+    valueField = options.valueField?.name
+      ? frame.fields.find(
+          (f) => f.name === options.valueField?.name || f.config.displayNameFromDS === options.valueField?.name
+        )
+      : frame.fields.find((f) => f.type === FieldType.number);
+    if (valueField) break;
+  }
 
   if (timeField === undefined || valueField === undefined) {
     return (
