@@ -1,6 +1,7 @@
 import {
   dateTime,
   dateTimeForTimeZone,
+  dateTimeFormat,
   formattedValueToString,
   getDisplayProcessor,
   getFieldConfigWithMinMax,
@@ -237,14 +238,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
           content={
             hoveredCell ? (
               <SeriesTable
-                // TODO: Check how Grafana does datetime formatting
-                timestamp={dateTime(hoveredCell.time * 1000)
-                  .toDate()
-                  .toLocaleString(undefined, {
-                    // timeZone: timeZone,
-                    timeStyle: 'long',
-                    dateStyle: 'medium',
-                  })}
+                timestamp={dateTimeFormat(hoveredCell.time * 1000, { timeZone })}
                 series={[
                   {
                     label: valueField.config.displayName || valueField.config.displayNameFromDS || valueField.name,
