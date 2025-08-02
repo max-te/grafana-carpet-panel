@@ -11,6 +11,18 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
     mode: 'development',
     devServer: {
       watchFiles: 'src',
+      setupMiddlewares: (middlewares, devServer) => {
+        middlewares.push({
+          name: 'fonts',
+          path: '/public/fonts/inter',
+          middleware: async (req, res) => {
+            res.statusCode = 302;
+            res.setHeader('Location', 'https://fonts.gstatic.com/s/inter/v19/UcCo3FwrK3iLTcviYwY.woff2');
+            res.end();
+          },
+        });
+        return middlewares;
+      },
     },
     module: {
       rules: [
