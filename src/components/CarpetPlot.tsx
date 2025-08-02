@@ -162,6 +162,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   const handleCellMouseOut = useCallback(() => {
     setTooltipData(null);
   }, []);
+  // TODO: Sync up with global dashboard hover crosshair
 
   const minMax = getMinMaxAndDelta(valueField);
   const min = minMax.min ?? 0;
