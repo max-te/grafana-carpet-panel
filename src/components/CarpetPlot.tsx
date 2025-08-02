@@ -12,8 +12,8 @@ import {
 } from '@grafana/data';
 import { SeriesTable, useTheme2, VizTooltip } from '@grafana/ui';
 import * as d3 from 'd3';
-import React, { useCallback, useMemo, useState } from 'react';
-import { Rect, Layer } from 'react-konva';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Rect, Layer, Ellipse } from 'react-konva';
 import { Html } from 'react-konva-utils';
 import type Konva from 'konva';
 import { XAxisIndicator, YAxisIndicator } from './AxisLabels';
@@ -35,15 +35,15 @@ interface ChartProps {
   showYAxis?: boolean;
 }
 
-type CellData = {
+type Cell = {
   time: number;
   value: number;
   x: number;
   y: number;
-  dayStart: DateTime;
+  width: number;
+  height: number;
+  split?: number;
 };
-
-type Cell = CellData & { width: number; height: number };
 
 function useCells(
   values: (number | null)[],
@@ -78,40 +78,38 @@ function useCells(
 
     const x = Math.floor(xTime(dayStart));
     const y = Math.floor(yAxis(time));
-
-    // TODO: Buckets which cross a date boundary should be split for rendering proportionally in either days' column.
-    // if (previous !== null && previous.time < dayStart.unix()) {
-    //   const interBucket = {
-    //     time: dayStart.unix(),
-    //     value: previous.value,
-    //     x: x,
-    //     y: yAxis(dayStart)!,
-    //     dayStart: dayStart,
-    //   };
-    //   previous = bucket;
-    //   return [interBucket, bucket];
-    // }
-
     const nextDay = dateTime(dayStart).add(1, 'd');
     const nextDayX = Math.floor(xTime(nextDay));
     const dayWidth = nextDayX - x;
     let cellEndTime = time + timeStep;
-    if (cellEndTime >= nextDay.unix()) {
-      cellEndTime = nextDay.unix() - 1;
-    }
-    const cellHeight = Math.min(height, yAxis(cellEndTime)) - y;
 
-    return [
-      {
+    const TIME_EPS = 60;
+    const cell: Cell = {
+      time,
+      value,
+      x,
+      y,
+      width: dayWidth,
+      height: cellEndTime < nextDay.unix() ? yAxis(cellEndTime) - y : height - y,
+    };
+
+    // Cell crosses date boundary and should be split across two columns
+    // TODO: add really low resolutions a cell *could* span more than a full day
+    if (cellEndTime - nextDay.unix() > TIME_EPS) {
+      cell.split = 1;
+      const nextDayWidth = Math.floor(xTime(dateTime(nextDay).add(1, 'd'))) - nextDayX;
+      const secondCell: Cell = {
         time,
         value,
-        x,
-        y,
-        dayStart,
-        width: dayWidth,
-        height: cellHeight,
-      },
-    ];
+        x: nextDayX,
+        y: 0,
+        width: nextDayWidth,
+        height: yAxis(cellEndTime),
+        split: -1,
+      };
+      return [cell, secondCell];
+    }
+    return [cell];
   });
 
   return cells;
@@ -205,7 +203,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
     <Layer onMouseOut={handleCellMouseOut} x={leftPadding} y={topPadding}>
       {cells.map((cell, idx) => (
         <Rect
-          key={cell.time}
+          key={cell.time + (cell.split ? cell.split.toFixed(0) : '')}
           x={cell.x}
           y={cell.y}
           width={cell.width}
@@ -224,6 +222,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   );
 
   const hoveredCell = tooltipData ? cells[tooltipData?.idx] : undefined;
+  const splitCell = hoveredCell?.split ? cells[(tooltipData?.idx ?? 0) + hoveredCell.split] : undefined;
   const hoverLayer = (
     <Layer listening={false} x={leftPadding} y={topPadding}>
       {hoveredCell ? (
@@ -234,6 +233,18 @@ export const CarpetPlot: React.FC<ChartProps> = ({
           height={hoveredCell.height - 0.5}
           fill={'rgba(120, 120, 130, 0.2)'}
           stroke={hoveredCell.value > (min + max) / 2 ? colorScale(min) : colorScale(max)}
+          dash={[4, 2]}
+          strokeWidth={1}
+        />
+      ) : null}
+      {splitCell ? ( // TODO: unify with above, signify open sides
+        <Rect
+          x={splitCell.x - 0.5}
+          y={splitCell.y}
+          width={splitCell.width + 0.5}
+          height={splitCell.height - 0.5}
+          fill={'rgba(120, 120, 130, 0.2)'}
+          stroke={splitCell.value > (min + max) / 2 ? colorScale(min) : colorScale(max)}
           dash={[4, 2]}
           strokeWidth={1}
         />
