@@ -2,15 +2,18 @@ import { useTheme2 } from '@grafana/ui';
 import type { ScaleTime } from 'd3';
 import React, { Fragment } from 'react';
 import { Line, Text } from 'react-konva';
+import type { TimeRange } from '@grafana/data';
+import { useTimeScale } from './useTimeScale';
 
 export const XAxisIndicator: React.FC<{
   x: number;
   y: number;
   height: number;
   width: number;
-  scale: ScaleTime<number, number>;
-}> = ({ x, y, width, scale }) => {
+  range: TimeRange;
+}> = ({ x, y, width, range }) => {
   const theme = useTheme2();
+  const scale = useTimeScale(range, width);
   const ticks = React.useMemo(() => {
     const ts = scale.ticks();
     ts.forEach((t) => t.setHours(12));

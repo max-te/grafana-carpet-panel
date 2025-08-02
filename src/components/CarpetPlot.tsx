@@ -4,6 +4,7 @@ import {
   formattedValueToString,
   getDisplayProcessor,
   getFieldConfigWithMinMax,
+  getMinMaxAndDelta,
   type DateTime,
   type DateTimeInput,
   type Field,
@@ -11,13 +12,13 @@ import {
   type TimeRange,
 } from '@grafana/data';
 import { SeriesTable, useTheme2, VizTooltip } from '@grafana/ui';
-import type { ScaleTime } from 'd3';
 import * as d3 from 'd3';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Rect, Layer } from 'react-konva';
 import { Html } from 'react-konva-utils';
 import type Konva from 'konva';
 import { XAxisIndicator, YAxisIndicator } from './AxisLabels';
+import { useTimeScale } from './useTimeScale';
 
 type ColorPalette = (t: number) => string;
 interface ChartProps {
@@ -45,19 +46,16 @@ type CellData = {
 
 type Cell = CellData & { width: number; height: number };
 
-// TODO: Consider extracting this hook into a separate file for better code organization and testability
-// eslint-disable-next-line @eslint-react/hooks-extra/no-unnecessary-use-prefix -- react-compiler turns this into a hook
 function useCells(
-  valueField: Field<number | null>,
-  timeField: Field<number>,
-  xTime: ScaleTime<number, number>,
+  values: (number | null)[],
+  timeValues: number[],
   timeZone: string,
-  _timeRange: TimeRange,
-  // TODO(cleanup): Remove height parameter, use 0-1 coordinates and scale when drawing
-  // Then, derive x-pos from timeRange and remove xTime argument
-  height: number
+  timeRange: TimeRange,
+  height: number,
+  width: number
 ): Cell[] {
   'use memo';
+  const xTime = useTimeScale(timeRange, width);
   const yAxis = (t: DateTimeInput) => {
     const RANGE_START = 1;
     const RANGE_END = height;
@@ -71,11 +69,11 @@ function useCells(
     return RANGE_START + ((RANGE_END - RANGE_START) * tSecondsInDay) / daySeconds;
   };
 
-  let timeStep = getTimeStep(timeField);
+  const timeStep = getTimeStep(timeValues);
 
-  const cells = valueField.values.flatMap((value, i) => {
+  const cells = values.flatMap((value, i) => {
     if (value === null) return [];
-    const date = dateTime(timeField.values[i]);
+    const date = dateTime(timeValues[i]);
     const time = date.unix();
     const dayStart = dateTime(date).startOf('d');
 
@@ -120,37 +118,16 @@ function useCells(
   return cells;
 }
 
-function getTimeStep(timeField: Field<number>): number {
+function getTimeStep(timeValues: number[]): number {
   let minInterval = Infinity;
-  for (let i = 1; i < timeField.values.length; i++) {
+  for (let i = 1; i < timeValues.length; i++) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Range check above
-    const interval = timeField.values[i]! - timeField.values[i - 1]!;
+    const interval = timeValues[i]! - timeValues[i - 1]!;
     if (interval < minInterval) {
       minInterval = interval;
     }
   }
   return minInterval / 1000;
-}
-
-function useStableDateTimeValue(dt: DateTime): DateTime {
-  'use no memo';
-  const dtVal = dt.valueOf();
-  return useMemo(() => Object.freeze(dateTime(dtVal)), [dtVal]);
-}
-
-function useTimeScale(timeRange: TimeRange, width: number): ScaleTime<number, number> {
-  const dayFromValue = useStableDateTimeValue(timeRange.from);
-  const dayToValue = useStableDateTimeValue(timeRange.to);
-  const dayFrom = useMemo(() => dateTime(dayFromValue).startOf('day').toDate(), [dayFromValue]);
-  const dayTo = useMemo(() => dateTime(dayToValue).endOf('day').toDate(), [dayToValue]);
-  const numDays = useMemo(() => 1 + d3.timeDay.count(dayFrom, dayTo), [dayFrom, dayTo]);
-  if (numDays <= 0) {
-    throw new Error('Negative time range');
-  }
-
-  const xTime = useMemo(() => d3.scaleUtc().domain([dayFrom, dayTo]).range([0, width]), [dayFrom, dayTo, width]);
-
-  return xTime;
 }
 
 function useColorScale(colorPalette: ColorPalette, min: number, max: number) {
@@ -171,21 +148,21 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   showYAxis,
 }) => {
   'use memo';
-  const [hoveredCellData, setHoveredCellData] = useState<CellData | null>(null);
+  const [tooltipData, setTooltipData] = useState<{ idx: number; x: number; y: number } | null>(null);
 
   const handleCellMouseOver = useCallback(({ evt, currentTarget }: { evt: MouseEvent; currentTarget: Konva.Node }) => {
-    const cellData = currentTarget.getAttr('data-bucket') as CellData;
+    const cellIdx = currentTarget.getAttr('data-idx') as number;
     const innerRect = currentTarget.getClientRect();
     const outerRect = (evt.target as Element).getBoundingClientRect();
-    setHoveredCellData({
-      ...cellData,
+    setTooltipData({
+      idx: cellIdx,
       x: innerRect.x + outerRect.x + innerRect.width,
       y: innerRect.y + outerRect.y + innerRect.height,
     });
     evt.stopPropagation();
   }, []);
   const handleCellMouseOut = useCallback(() => {
-    setHoveredCellData(null);
+    setTooltipData(null);
   }, []);
 
   const yAxisWidth = showYAxis ? 42 : 0;
@@ -193,8 +170,10 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   // TODO: Reintroduce a padding of ca. fontSize/2 around the chart.
   // TODO: Make padding configurable in the panel options?
 
-  const fieldConfig = getFieldConfigWithMinMax(valueField) as FieldConfig & { min: number; max: number };
-  const colorScale = useColorScale(colorPalette, fieldConfig.min, fieldConfig.max);
+  const minMax = getMinMaxAndDelta(valueField);
+  const min = minMax.min ?? 0;
+  const max = minMax.max ?? 1;
+  const colorScale = useColorScale(colorPalette, min, max);
   const theme = useTheme2();
   const display = getDisplayProcessor({
     field: valueField,
@@ -202,28 +181,21 @@ export const CarpetPlot: React.FC<ChartProps> = ({
     timeZone,
   });
 
-  const xTime = useTimeScale(timeRange, width - yAxisWidth);
+  const innerWidth = width - yAxisWidth;
+  const innerHeight = height - xAxisHeight;
+  const cells = useCells(valueField.values, timeField.values, timeZone, timeRange, innerHeight, innerWidth);
 
   const axesLayer = (
     <Layer listening={false}>
       {showXAxis && (
-        <XAxisIndicator
-          x={yAxisWidth}
-          y={height - xAxisHeight}
-          height={xAxisHeight}
-          width={width - yAxisWidth}
-          scale={xTime}
-        />
+        <XAxisIndicator x={yAxisWidth} y={innerHeight} height={xAxisHeight} width={innerWidth} range={timeRange} />
       )}
-      {showYAxis && <YAxisIndicator x={yAxisWidth} y={0} height={height - xAxisHeight} width={yAxisWidth} />}
+      {showYAxis && <YAxisIndicator x={yAxisWidth} y={0} height={innerHeight} width={yAxisWidth} />}
     </Layer>
   );
-
-  const cells = useCells(valueField, timeField, xTime, timeZone, timeRange, height - xAxisHeight);
-
   const heatmapLayer = (
-    <Layer onMouseOut={handleCellMouseOut} x={yAxisWidth} width={width - yAxisWidth} height={height - xAxisHeight}>
-      {cells.map((cell) => (
+    <Layer onMouseOut={handleCellMouseOut} x={yAxisWidth}>
+      {cells.map((cell, idx) => (
         <Rect
           key={cell.time}
           x={cell.x}
@@ -231,7 +203,8 @@ export const CarpetPlot: React.FC<ChartProps> = ({
           width={cell.width}
           height={cell.height}
           fill={colorScale(cell.value)}
-          data-bucket={cell}
+          data-ts={cell.time}
+          data-idx={idx}
           onMouseOver={handleCellMouseOver}
           perfectDrawEnabled={true}
           strokeEnabled={gapWidth > 0}
@@ -242,7 +215,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
     </Layer>
   );
 
-  const hoveredCell = cells.find((b) => b.time === hoveredCellData?.time);
+  const hoveredCell = tooltipData ? cells[tooltipData?.idx] : undefined;
   const hoverLayer = (
     <Layer listening={false} x={yAxisWidth}>
       {hoveredCell ? (
@@ -252,24 +225,20 @@ export const CarpetPlot: React.FC<ChartProps> = ({
           width={hoveredCell.width + 0.5}
           height={hoveredCell.height - 0.5}
           fill={'rgba(120, 120, 130, 0.2)'}
-          stroke={
-            hoveredCell.value > (fieldConfig.min + fieldConfig.max) / 2
-              ? colorScale(fieldConfig.min)
-              : colorScale(fieldConfig.max)
-          }
+          stroke={hoveredCell.value > (min + max) / 2 ? colorScale(min) : colorScale(max)}
           dash={[4, 2]}
           strokeWidth={1}
         />
       ) : null}
       <Html>
         <VizTooltip
-          position={hoveredCellData ?? undefined}
+          position={tooltipData ?? undefined}
           offset={{ x: 5, y: 5 }}
           content={
-            hoveredCellData ? (
+            hoveredCell ? (
               <SeriesTable
                 // TODO: Check how Grafana does datetime formatting
-                timestamp={dateTime(hoveredCellData.time * 1000)
+                timestamp={dateTime(hoveredCell.time * 1000)
                   .toDate()
                   .toLocaleString(undefined, {
                     // timeZone: timeZone,
@@ -279,8 +248,8 @@ export const CarpetPlot: React.FC<ChartProps> = ({
                 series={[
                   {
                     label: valueField.config.displayName || valueField.config.displayNameFromDS || valueField.name,
-                    value: formattedValueToString(display(hoveredCellData.value)),
-                    color: colorScale(fieldConfig.max),
+                    value: formattedValueToString(display(hoveredCell.value)),
+                    color: colorScale(max),
                   },
                 ]}
               />
