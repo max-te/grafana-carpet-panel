@@ -147,6 +147,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   showYAxis,
 }) => {
   'use memo';
+  const theme = useTheme2();
   const [tooltipData, setTooltipData] = useState<{ idx: number; x: number; y: number } | null>(null);
 
   const handleCellMouseOver = useCallback(({ evt, currentTarget }: { evt: MouseEvent; currentTarget: Konva.Node }) => {
@@ -164,36 +165,44 @@ export const CarpetPlot: React.FC<ChartProps> = ({
     setTooltipData(null);
   }, []);
 
-  const yAxisWidth = showYAxis ? 42 : 0;
-  const xAxisHeight = showXAxis ? 16 : 0;
-  // TODO: Reintroduce a padding of ca. fontSize/2 around the chart.
-  // TODO: Make padding configurable in the panel options?
-
   const minMax = getMinMaxAndDelta(valueField);
   const min = minMax.min ?? 0;
   const max = minMax.max ?? 1;
   const colorScale = useColorScale(colorPalette, min, max);
-  const theme = useTheme2();
   const display = getDisplayProcessor({
     field: valueField,
     theme,
     timeZone,
   });
 
-  const innerWidth = width - yAxisWidth;
-  const innerHeight = height - xAxisHeight;
+  const padding = theme.typography.fontSize / 2;
+  const topPadding = showYAxis ? padding : 0;
+
+  const yAxisWidth = theme.typography.fontSize * 3;
+  const leftPadding = showYAxis ? yAxisWidth : padding;
+  const xAxisHeight = theme.typography.fontSize * 1.5;
+  const bottomPadding = showXAxis ? xAxisHeight : showYAxis ? padding : 0;
+
+  const innerWidth = width - leftPadding;
+  const innerHeight = height - bottomPadding - topPadding;
   const cells = useCells(valueField.values, timeField.values, timeZone, timeRange, innerHeight, innerWidth);
 
   const axesLayer = (
     <Layer listening={false}>
       {showXAxis && (
-        <XAxisIndicator x={yAxisWidth} y={innerHeight} height={xAxisHeight} width={innerWidth} range={timeRange} />
+        <XAxisIndicator
+          x={leftPadding}
+          y={innerHeight + topPadding}
+          height={xAxisHeight}
+          width={innerWidth}
+          range={timeRange}
+        />
       )}
-      {showYAxis && <YAxisIndicator x={yAxisWidth} y={0} height={innerHeight} width={yAxisWidth} />}
+      {showYAxis && <YAxisIndicator x={leftPadding} y={topPadding} height={innerHeight} width={yAxisWidth} />}
     </Layer>
   );
   const heatmapLayer = (
-    <Layer onMouseOut={handleCellMouseOut} x={yAxisWidth}>
+    <Layer onMouseOut={handleCellMouseOut} x={leftPadding} y={topPadding}>
       {cells.map((cell, idx) => (
         <Rect
           key={cell.time}
@@ -216,7 +225,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
 
   const hoveredCell = tooltipData ? cells[tooltipData?.idx] : undefined;
   const hoverLayer = (
-    <Layer listening={false} x={yAxisWidth}>
+    <Layer listening={false} x={leftPadding} y={topPadding}>
       {hoveredCell ? (
         <Rect
           x={hoveredCell.x - 0.5}

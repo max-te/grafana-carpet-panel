@@ -76,7 +76,7 @@ export const YAxisIndicator: React.FC<{ x: number; y: number; height: number; wi
         return (
           <Fragment key={label}>
             <Line points={[x, tickY, x - 2, tickY]} stroke={colorGrid} strokeWidth={1} />
-            {hour > 0 && hour % tickMod === 0 && (
+            {hour % tickMod === 0 && (
               <>
                 <Line points={[x, tickY, x - 4, tickY]} stroke={colorGrid} strokeWidth={1} />
                 <Text
