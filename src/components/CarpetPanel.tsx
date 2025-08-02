@@ -48,11 +48,13 @@ export const CarpetPanel: React.FC<Props> = ({
     );
   }
   const timeField = options.timeFieldName
-    ? frame.fields.find((f) => f.name === options.timeFieldName)
+    ? frame.fields.find((f) => f.name === options.timeFieldName || f.config.displayNameFromDS === options.timeFieldName)
     : frame.fields.find((f) => f.type === FieldType.time);
 
   const valueField = options.valueField?.name
-    ? frame.fields.find((f) => f.name === options.valueField?.name)
+    ? frame.fields.find(
+        (f) => f.name === options.valueField?.name || f.config.displayNameFromDS === options.valueField?.name
+      )
     : frame.fields.find((f) => f.type === FieldType.number);
 
   if (timeField === undefined || valueField === undefined) {
