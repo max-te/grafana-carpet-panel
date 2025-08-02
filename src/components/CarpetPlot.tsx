@@ -4,12 +4,10 @@ import {
   dateTimeFormat,
   formattedValueToString,
   getDisplayProcessor,
-  getFieldConfigWithMinMax,
   getMinMaxAndDelta,
   type DateTime,
   type DateTimeInput,
   type Field,
-  type FieldConfig,
   type TimeRange,
 } from '@grafana/data';
 import { SeriesTable, useTheme2, VizTooltip } from '@grafana/ui';

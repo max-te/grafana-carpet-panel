@@ -2,6 +2,7 @@ import { FieldType, PanelPlugin, FieldNamePickerBaseNameMode } from '@grafana/da
 import { HeatmapColorMode, HeatmapColorScale, type CarpetPanelOptions } from './types';
 import { CarpetPanel } from './components/CarpetPanel';
 import { colorSchemes } from './palettes';
+import { useSchemeGradientStops } from './components/useColorScale';
 import React from 'react';
 
 export const plugin = new PanelPlugin<CarpetPanelOptions>(CarpetPanel).setPanelOptions((builder) => {
@@ -154,21 +155,8 @@ export const plugin = new PanelPlugin<CarpetPanelOptions>(CarpetPanel).setPanelO
   return builder;
 });
 
-import { useColorScale } from './components/useColorScale';
-
 const GradientViz = ({ scheme }: { scheme: string }) => {
-  const scale = useColorScale({
-    mode: HeatmapColorMode.Scheme,
-    scheme,
-    scale: HeatmapColorScale.Linear,
-    fill: '',
-    reverse: false,
-  });
-  const NSTOPS = 10;
-  const stops = Array.from({ length: NSTOPS }).map((_, i) => {
-    const t = i / (NSTOPS - 1);
-    return scale(t);
-  });
+  const stops = useSchemeGradientStops(scheme);
   return (
     <div
       style={{
