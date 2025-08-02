@@ -17,7 +17,7 @@ import { Rect, Layer, Ellipse } from 'react-konva';
 import { Html } from 'react-konva-utils';
 import type Konva from 'konva';
 import { XAxisIndicator, YAxisIndicator } from './AxisLabels';
-import { useTimeScale } from './useTimeScale';
+import { makeTimeScale } from './useTimeScale';
 
 type ColorPalette = (t: number) => string;
 interface ChartProps {
@@ -45,7 +45,7 @@ type Cell = {
   split?: number;
 };
 
-function useCells(
+function makeCells(
   values: (number | null)[],
   timeValues: number[],
   timeZone: string,
@@ -53,8 +53,7 @@ function useCells(
   height: number,
   width: number
 ): Cell[] {
-  'use memo';
-  const xTime = useTimeScale(timeRange, width);
+  const xTime = makeTimeScale(timeRange, width);
   const yAxis = (t: DateTimeInput) => {
     const RANGE_START = 1;
     const RANGE_END = height;
@@ -69,18 +68,28 @@ function useCells(
   };
 
   const timeStep = getTimeStep(timeValues);
+  const cells: Cell[] = [];
 
-  const cells = values.flatMap((value, i) => {
-    if (value === null) return [];
+  let dayStart = dateTime(0),
+    nextDay = dayStart;
+  let dayWidth = 0,
+    x = 0,
+    nextDayX = 0;
+  for (let i = 0; i < values.length; i++) {
+    let value = values[i];
+    if (value === null || value === undefined) continue;
     const date = dateTime(timeValues[i]);
     const time = date.unix();
-    const dayStart = dateTime(date).startOf('d');
 
-    const x = Math.floor(xTime(dayStart));
+    while (time >= nextDay.unix()) {
+      dayStart = dayStart === nextDay ? dateTime(date).startOf('d') : nextDay;
+      nextDay = dateTime(dayStart).add(1, 'd');
+      x = nextDayX;
+      nextDayX = Math.floor(xTime(nextDay));
+      dayWidth = nextDayX - x;
+    }
+
     const y = Math.floor(yAxis(time));
-    const nextDay = dateTime(dayStart).add(1, 'd');
-    const nextDayX = Math.floor(xTime(nextDay));
-    const dayWidth = nextDayX - x;
     let cellEndTime = time + timeStep;
 
     const TIME_EPS = 60;
@@ -92,25 +101,30 @@ function useCells(
       width: dayWidth,
       height: cellEndTime < nextDay.unix() ? yAxis(cellEndTime) - y : height - y,
     };
+    cells.push(cell);
 
     // Cell crosses date boundary and should be split across two columns
     // TODO: add really low resolutions a cell *could* span more than a full day
     if (cellEndTime - nextDay.unix() > TIME_EPS) {
       cell.split = 1;
-      const nextDayWidth = Math.floor(xTime(dateTime(nextDay).add(1, 'd'))) - nextDayX;
+      dayStart = nextDay;
+      nextDay = dateTime(dayStart).add(1, 'd');
+      x = nextDayX;
+      nextDayX = Math.floor(xTime(nextDay));
+      dayWidth = nextDayX - x;
+
       const secondCell: Cell = {
         time,
         value,
-        x: nextDayX,
+        x,
         y: 0,
-        width: nextDayWidth,
+        width: dayWidth,
         height: yAxis(cellEndTime),
         split: -1,
       };
-      return [cell, secondCell];
+      cells.push(secondCell);
     }
-    return [cell];
-  });
+  }
 
   return cells;
 }
@@ -144,7 +158,6 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   showXAxis,
   showYAxis,
 }) => {
-  'use memo';
   const theme = useTheme2();
   const [tooltipData, setTooltipData] = useState<{ idx: number; x: number; y: number } | null>(null);
 
@@ -184,7 +197,10 @@ export const CarpetPlot: React.FC<ChartProps> = ({
 
   const innerWidth = width - leftPadding;
   const innerHeight = height - bottomPadding - topPadding;
-  const cells = useCells(valueField.values, timeField.values, timeZone, timeRange, innerHeight, innerWidth);
+  const cells = useMemo(
+    () => makeCells(valueField.values, timeField.values, timeZone, timeRange, innerHeight, innerWidth),
+    [valueField.values, timeField.values, timeZone, timeRange, innerHeight, innerWidth]
+  );
 
   const axesLayer = (
     <Layer listening={false}>

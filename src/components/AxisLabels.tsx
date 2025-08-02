@@ -3,7 +3,7 @@ import type { ScaleTime } from 'd3';
 import React, { Fragment } from 'react';
 import { Line, Text } from 'react-konva';
 import type { TimeRange } from '@grafana/data';
-import { useTimeScale } from './useTimeScale';
+import { makeTimeScale } from './useTimeScale';
 
 export const XAxisIndicator: React.FC<{
   x: number;
@@ -13,7 +13,7 @@ export const XAxisIndicator: React.FC<{
   range: TimeRange;
 }> = ({ x, y, width, range }) => {
   const theme = useTheme2();
-  const scale = useTimeScale(range, width);
+  const scale = React.useMemo(() => makeTimeScale(range, width), [range, width]);
   const ticks = React.useMemo(() => {
     const ts = scale.ticks();
     ts.forEach((t) => t.setHours(12));
