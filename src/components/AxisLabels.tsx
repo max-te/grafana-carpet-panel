@@ -2,8 +2,10 @@ import { useTheme2 } from '@grafana/ui';
 import type { ScaleTime } from 'd3';
 import React, { Fragment } from 'react';
 import { Line, Text } from 'react-konva';
-import type { TimeRange } from '@grafana/data';
+import { dateTimeFormat, type TimeRange } from '@grafana/data';
 import { makeTimeScale } from './useTimeScale';
+
+const AXIS_FONT_SIZE = 12;
 
 export const XAxisIndicator: React.FC<{
   x: number;
@@ -13,10 +15,13 @@ export const XAxisIndicator: React.FC<{
   range: TimeRange;
 }> = ({ x, y, width, range }) => {
   const theme = useTheme2();
+  const isLong = range.to.diff(range.from, 'months') > 6;
+  const format = isLong ? 'YYYY-MM' : 'MM-DD';
   const scale = React.useMemo(() => makeTimeScale(range, width), [range, width]);
   const ticks = React.useMemo(() => {
     const ts = scale.ticks();
     ts.forEach((t) => t.setHours(12));
+    if (isLong) ts.forEach((t) => t.setDate(1));
     return ts;
   }, [scale]);
 
@@ -29,7 +34,7 @@ export const XAxisIndicator: React.FC<{
       <Line points={[x, y, x + width, y]} stroke={colorGrid} strokeWidth={1} />
       {ticks.map((date, idx) => {
         const tickX = scale(date) + x;
-        const label = date.toLocaleDateString(undefined, { month: '2-digit', day: '2-digit' });
+        const label = dateTimeFormat(date, { format });
         return (
           // eslint-disable-next-line @eslint-react/no-array-index-key -- In the Konva context, this is okay. Using the date causes a bug where stale labels remain.
           <Fragment key={idx}>
@@ -42,7 +47,7 @@ export const XAxisIndicator: React.FC<{
               align="center"
               fontFamily={theme.typography.fontFamily}
               width={spacing}
-              fontSize={theme.typography.htmlFontSize ?? 16}
+              fontSize={AXIS_FONT_SIZE}
               wrap="word"
             />
           </Fragment>
@@ -63,16 +68,16 @@ export const YAxisIndicator: React.FC<{ x: number; y: number; height: number; wi
   const theme = useTheme2();
   const colorGrid = 'rgba(120, 120, 130, 0.5)';
   const colorText = theme.colors.text.primary;
-  const fontSize = theme.typography.htmlFontSize ?? 16;
-  const tickMod = Math.ceil(fontSize / (height / 24));
+  const fontSize = AXIS_FONT_SIZE;
+  const tickMod = Math.ceil((fontSize * 1.2) / (height / 24));
   // TODO: Improve tick calculation to find the next divisor of 24 for more natural label spacing
   // TODO: Consider making the hour format configurable (12h vs 24h) based on user locale
   return (
     <>
       <Line points={[x, y, x, y + height]} stroke={colorGrid} strokeWidth={1} />
       {ticks.map((hour) => {
-        const tickY = y + (hour * height) / 24;
-        const label = `${hour.toString()}h`;
+        const tickY = y + (hour * height) / 24 + 0.5;
+        const label = `${hour.toFixed(0)} h`;
         return (
           <Fragment key={label}>
             <Line points={[x, tickY, x - 2, tickY]} stroke={colorGrid} strokeWidth={1} />
@@ -85,9 +90,9 @@ export const YAxisIndicator: React.FC<{ x: number; y: number; height: number; wi
                   y={tickY - fontSize / 2}
                   fill={colorText}
                   align="right"
-                  width={width - 5}
+                  width={width - 6}
                   fontFamily={theme.typography.fontFamily}
-                  fontSize={theme.typography.htmlFontSize ?? 16}
+                  fontSize={fontSize}
                   textBaseline="middle"
                 />
               </>
