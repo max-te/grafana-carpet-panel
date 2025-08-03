@@ -5,15 +5,14 @@ import {
   formattedValueToString,
   getDisplayProcessor,
   getMinMaxAndDelta,
-  type DateTime,
   type DateTimeInput,
   type Field,
   type TimeRange,
 } from '@grafana/data';
 import { SeriesTable, useTheme2, VizTooltip } from '@grafana/ui';
 import * as d3 from 'd3';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Rect, Layer, Ellipse } from 'react-konva';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Rect, Layer } from 'react-konva';
 import { Html } from 'react-konva-utils';
 import type Konva from 'konva';
 import { XAxisIndicator, YAxisIndicator } from './AxisLabels';
@@ -38,10 +37,10 @@ interface ChartProps {
 type Cell = {
   time: number;
   value: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
   split?: number;
 };
 
@@ -50,13 +49,11 @@ function makeCells(
   timeValues: number[],
   timeZone: string,
   timeRange: TimeRange,
-  height: number,
-  width: number
+  height: number = 1,
+  width: number = 1
 ): Cell[] {
   const xTime = makeTimeScale(timeRange, width);
   const yAxis = (t: DateTimeInput) => {
-    const RANGE_START = 1;
-    const RANGE_END = height;
     const timeInMs = typeof t === 'number' ? t * 1000 : t;
     const time = dateTimeForTimeZone(timeZone, timeInMs);
     const dayStart = dateTime(time).startOf('d');
@@ -64,7 +61,7 @@ function makeCells(
     const dayEnd = dateTime(time).endOf('d');
     const daySeconds = dayEnd.diff(dayStart, 's', false);
 
-    return RANGE_START + ((RANGE_END - RANGE_START) * tSecondsInDay) / daySeconds;
+    return (height * tSecondsInDay) / daySeconds;
   };
 
   const timeStep = getTimeStep(timeValues);
@@ -85,21 +82,21 @@ function makeCells(
       dayStart = dayStart === nextDay ? dateTime(date).startOf('d') : nextDay;
       nextDay = dateTime(dayStart).add(1, 'd');
       x = nextDayX;
-      nextDayX = Math.floor(xTime(nextDay));
+      nextDayX = xTime(nextDay);
       dayWidth = nextDayX - x;
     }
 
-    const y = Math.floor(yAxis(time));
+    const y = yAxis(time);
     let cellEndTime = time + timeStep;
 
     const TIME_EPS = 60;
     const cell: Cell = {
       time,
       value,
-      x,
-      y,
-      width: dayWidth,
-      height: cellEndTime < nextDay.unix() ? yAxis(cellEndTime) - y : height - y,
+      left: x,
+      top: y,
+      right: x + dayWidth,
+      bottom: cellEndTime < nextDay.unix() ? yAxis(cellEndTime) : height,
     };
     cells.push(cell);
 
@@ -110,16 +107,16 @@ function makeCells(
       dayStart = nextDay;
       nextDay = dateTime(dayStart).add(1, 'd');
       x = nextDayX;
-      nextDayX = Math.floor(xTime(nextDay));
+      nextDayX = xTime(nextDay);
       dayWidth = nextDayX - x;
 
       const secondCell: Cell = {
         time,
         value,
-        x,
-        y: 0,
-        width: dayWidth,
-        height: yAxis(cellEndTime),
+        left: x,
+        top: 0,
+        right: x + dayWidth,
+        bottom: yAxis(cellEndTime),
         split: -1,
       };
       cells.push(secondCell);
@@ -198,8 +195,8 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   const innerWidth = width - leftPadding;
   const innerHeight = height - bottomPadding - topPadding;
   const cells = useMemo(
-    () => makeCells(valueField.values, timeField.values, timeZone, timeRange, innerHeight, innerWidth),
-    [valueField.values, timeField.values, timeZone, timeRange, innerHeight, innerWidth]
+    () => makeCells(valueField.values, timeField.values, timeZone, timeRange),
+    [valueField.values, timeField.values, timeZone, timeRange]
   );
 
   const axesLayer = (
@@ -221,10 +218,10 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       {cells.map((cell, idx) => (
         <Rect
           key={cell.time + (cell.split ? cell.split.toFixed(0) : '')}
-          x={cell.x}
-          y={cell.y}
-          width={cell.width}
-          height={cell.height}
+          x={Math.floor(cell.left * innerWidth)}
+          y={Math.floor(cell.top * innerHeight)}
+          width={Math.floor(cell.right * innerWidth) - Math.floor(cell.left * innerWidth)}
+          height={Math.floor(cell.bottom * innerHeight) - Math.floor(cell.top * innerHeight)}
           fill={colorScale(cell.value)}
           data-ts={cell.time}
           data-idx={idx}
@@ -244,10 +241,10 @@ export const CarpetPlot: React.FC<ChartProps> = ({
     <Layer listening={false} x={leftPadding} y={topPadding}>
       {hoveredCell ? (
         <Rect
-          x={hoveredCell.x - 0.5}
-          y={hoveredCell.y}
-          width={hoveredCell.width + 0.5}
-          height={hoveredCell.height - 0.5}
+          x={hoveredCell.left * innerWidth - 0.5}
+          y={hoveredCell.top * innerHeight}
+          width={innerWidth * (hoveredCell.right - hoveredCell.left) + 0.5}
+          height={innerHeight * (hoveredCell.bottom - hoveredCell.top) - 0.5}
           fill={'rgba(120, 120, 130, 0.2)'}
           stroke={hoveredCell.value > (min + max) / 2 ? colorScale(min) : colorScale(max)}
           dash={[4, 2]}
@@ -256,10 +253,10 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       ) : null}
       {splitCell ? ( // TODO: unify with above, signify open sides
         <Rect
-          x={splitCell.x - 0.5}
-          y={splitCell.y}
-          width={splitCell.width + 0.5}
-          height={splitCell.height - 0.5}
+          x={splitCell.left - 0.5}
+          y={splitCell.top}
+          width={innerWidth * (splitCell.right - splitCell.left) + 0.5}
+          height={innerHeight * (splitCell.bottom - splitCell.top) - 0.5}
           fill={'rgba(120, 120, 130, 0.2)'}
           stroke={splitCell.value > (min + max) / 2 ? colorScale(min) : colorScale(max)}
           dash={[4, 2]}
