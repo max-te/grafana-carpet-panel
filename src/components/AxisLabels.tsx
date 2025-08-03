@@ -1,12 +1,11 @@
 import { useTheme2 } from '@grafana/ui';
 import type { ScaleTime } from 'd3';
 import React, { Fragment } from 'react';
-import { Line, Text } from 'react-konva';
+import { Line, Text, Shape } from 'react-konva';
 import { dateTimeFormat, type TimeRange } from '@grafana/data';
 import { makeTimeScale } from './useTimeScale';
 
 const AXIS_FONT_SIZE = 12;
-
 export const XAxisIndicator: React.FC<{
   x: number;
   y: number;
@@ -29,6 +28,7 @@ export const XAxisIndicator: React.FC<{
   const spacing = width / ticks.length;
   const colorGrid = 'rgba(120, 120, 130, 0.5)';
   const colorText = theme.colors.text.primary;
+  const fontSize = AXIS_FONT_SIZE;
   return (
     <>
       <Line points={[x, y, x + width, y]} stroke={colorGrid} strokeWidth={1} />
@@ -39,22 +39,33 @@ export const XAxisIndicator: React.FC<{
           // eslint-disable-next-line @eslint-react/no-array-index-key -- In the Konva context, this is okay. Using the date causes a bug where stale labels remain.
           <Fragment key={idx}>
             <Line points={[tickX, y, tickX, y + 4]} stroke={colorGrid} strokeWidth={1} />
-            <Text
+            <Shape
               text={label}
-              x={tickX - spacing / 2}
-              y={y + 5}
+              x={tickX}
+              y={y + 5 + fontSize}
+              fontBaseline="top"
               fill={colorText}
               align="center"
               fontFamily={theme.typography.fontFamily}
               width={spacing}
-              fontSize={AXIS_FONT_SIZE}
+              fontSize={fontSize}
               wrap="word"
+              sceneFunc={textRenderFunc}
             />
           </Fragment>
         );
       })}
     </>
   );
+};
+
+type ShapeFunc = Parameters<typeof Shape>[0]['sceneFunc'];
+const textRenderFunc: ShapeFunc = (context, shape) => {
+  context.textAlign = shape.attrs.align;
+  context.textBaseline = shape.attrs.textBaseline;
+  context.font = `${shape.attrs.fontSize}px ${shape.attrs.fontFamily}`;
+  context.fillStyle = shape.fill();
+  context.fillText(shape.attrs.text, 0, 0, shape.width());
 };
 
 export const YAxisIndicator: React.FC<{ x: number; y: number; height: number; width: number }> = ({
@@ -77,23 +88,24 @@ export const YAxisIndicator: React.FC<{ x: number; y: number; height: number; wi
       <Line points={[x, y, x, y + height]} stroke={colorGrid} strokeWidth={1} />
       {ticks.map((hour) => {
         const tickY = y + (hour * height) / 24 + 0.5;
-        const label = `${hour.toFixed(0)} h`;
+        const label = `${hour.toFixed(0)}:00`;
         return (
           <Fragment key={label}>
             <Line points={[x, tickY, x - 2, tickY]} stroke={colorGrid} strokeWidth={1} />
             {hour % tickMod === 0 && (
               <>
                 <Line points={[x, tickY, x - 4, tickY]} stroke={colorGrid} strokeWidth={1} />
-                <Text
+                <Shape
                   text={label}
-                  x={x - width}
-                  y={tickY - fontSize / 2}
+                  x={x - 6}
+                  y={tickY}
                   fill={colorText}
                   align="right"
                   width={width - 6}
                   fontFamily={theme.typography.fontFamily}
                   fontSize={fontSize}
                   textBaseline="middle"
+                  sceneFunc={textRenderFunc}
                 />
               </>
             )}
