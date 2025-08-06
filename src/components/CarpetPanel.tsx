@@ -11,14 +11,6 @@ import { useKonvaDpr } from './useKonvaDpr';
 
 type Props = PanelProps<CarpetPanelOptions>;
 
-const getStyles = () => {
-  return {
-    wrapper: css`
-      position: relative;
-    `,
-  };
-};
-
 export const CarpetPanel: React.FC<Props> = ({
   options,
   data,
@@ -30,7 +22,6 @@ export const CarpetPanel: React.FC<Props> = ({
   timeZone,
 }) => {
   const dpr = useKonvaDpr();
-  const styles = useStyles2(getStyles);
   const colorScale = useColorScale(options.color);
 
   if (data.series.length == 0) {
@@ -82,27 +73,19 @@ export const CarpetPanel: React.FC<Props> = ({
   valueField.config.max = options.color.max;
 
   return (
-    <div
-      className={styles.wrapper}
-      style={{
-        width: `${width.toFixed(0)}px`,
-        height: `${height.toFixed(0)}px`,
-      }}
-    >
-      <Stage width={width} height={height} key={dpr}>
-        <CarpetPlot
-          width={width}
-          height={height}
-          timeRange={timeRange}
-          timeField={timeField}
-          valueField={valueField}
-          colorPalette={colorScale}
-          timeZone={timeZone}
-          gapWidth={options.gapWidth ?? 0}
-          showXAxis={options.axes?.showX}
-          showYAxis={options.axes?.showY}
-        />
-      </Stage>
-    </div>
+    <Stage width={width} height={height} key={dpr}>
+      <CarpetPlot
+        width={width}
+        height={height}
+        timeRange={timeRange}
+        timeField={timeField}
+        valueField={valueField}
+        colorPalette={colorScale}
+        timeZone={timeZone}
+        gapWidth={options.gapWidth ?? 0}
+        showXAxis={options.axes?.showX}
+        showYAxis={options.axes?.showY}
+      />
+    </Stage>
   );
 };

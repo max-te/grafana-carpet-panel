@@ -81,18 +81,9 @@ export const Harness: React.FC = () => {
       <GlobalStyles />
       <style>{inlineStyle}</style>
       <PanelContainer style={{ padding: theme.spacing(), width: 'min-content', height: 'min-content', margin: 'auto' }}>
-        <div
-          style={{
-            position: 'relative',
-            width: `${width.toFixed(0)}px`,
-            height: `${height.toFixed(0)}px`,
-            overflow: 'hidden',
-          }}
-        >
-          <Stage width={width} height={height} key={dpr}>
-            <CarpetPlot {...chartProps} />
-          </Stage>
-        </div>
+        <Stage width={width} height={height} key={dpr}>
+          <CarpetPlot {...chartProps} />
+        </Stage>
       </PanelContainer>
       <Space v={2} />
       <Box backgroundColor={'primary'} borderColor={'strong'} borderStyle={'solid'} padding={0.5}>
