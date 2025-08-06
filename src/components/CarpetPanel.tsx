@@ -14,7 +14,6 @@ type Props = PanelProps<CarpetPanelOptions>;
 const getStyles = () => {
   return {
     wrapper: css`
-      font-family: 'Inter','Helvetica','Arial',sans-serif;
       position: relative;
     `,
   };

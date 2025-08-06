@@ -1,9 +1,9 @@
 import { useTheme2 } from '@grafana/ui';
-import type { ScaleTime } from 'd3';
 import React, { Fragment } from 'react';
-import { Line, Text, Shape } from 'react-konva';
+import { Line, Shape } from 'react-konva';
 import { dateTimeFormat, type TimeRange } from '@grafana/data';
 import { makeTimeScale } from './useTimeScale';
+import { useFontEvents } from './useFontEvents';
 
 const AXIS_FONT_SIZE = 12;
 export const XAxisIndicator: React.FC<{
@@ -13,6 +13,7 @@ export const XAxisIndicator: React.FC<{
   width: number;
   range: TimeRange;
 }> = ({ x, y, width, range }) => {
+  useFontEvents();
   const theme = useTheme2();
   const isLong = range.to.diff(range.from, 'months') > 6;
   const format = isLong ? 'YYYY-MM' : 'MM-DD';
@@ -75,6 +76,7 @@ export const YAxisIndicator: React.FC<{ x: number; y: number; height: number; wi
   height,
 }) => {
   'use memo';
+  useFontEvents();
   const ticks = Array.from({ length: 25 }, (_, i) => i);
   const theme = useTheme2();
   const colorGrid = 'rgba(120, 120, 130, 0.5)';
