@@ -20,14 +20,14 @@ import { useKonvaDpr } from '../src/components/useKonvaDpr';
 import { useColorScale } from '../src/components/useColorScale';
 import { HeatmapColorMode } from '../src/types';
 
+const timeRange: TimeRange = {
+  from: dateTime(testData.request.range.from),
+  to: dateTime(testData.request.range.to),
+  raw: testData.request.range.raw,
+};
+
 export const Harness: React.FC = () => {
   const dpr = useKonvaDpr();
-
-  const timeRange: TimeRange = {
-    from: dateTime(testData.request.range.from),
-    to: dateTime(testData.request.range.to),
-    raw: testData.request.range.raw,
-  };
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const timeField: Field<number> = testData.series[0]!.fields[0] as Field<number>;
 
