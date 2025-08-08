@@ -11,7 +11,7 @@ import {
 } from '@grafana/data';
 import { SeriesTable, useTheme2, VizTooltip } from '@grafana/ui';
 import * as d3 from 'd3';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Rect, Layer } from 'react-konva';
 import { Html } from 'react-konva-utils';
 import type Konva from 'konva';
@@ -32,6 +32,7 @@ interface ChartProps {
 
   showXAxis?: boolean;
   showYAxis?: boolean;
+  onHover?: (cell: Cell | null) => void;
 }
 
 type Cell = {
@@ -154,6 +155,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   gapWidth,
   showXAxis,
   showYAxis,
+  onHover,
 }) => {
   const theme = useTheme2();
   const [tooltipData, setTooltipData] = useState<{ idx: number; x: number; y: number } | null>(null);
@@ -236,6 +238,9 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   );
 
   const hoveredCell = tooltipData ? cells[tooltipData?.idx] : undefined;
+  useEffect(() => {
+    onHover?.(hoveredCell ?? null);
+  }, [onHover, hoveredCell]);
   const splitCell = hoveredCell?.split ? cells[(tooltipData?.idx ?? 0) + hoveredCell.split] : undefined;
   const hoverLayer = (
     <Layer listening={false} x={leftPadding} y={topPadding}>

@@ -17,7 +17,7 @@
   },
   "editable": true,
   "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
+  "graphTooltip": 1,
   "id": 1,
   "links": [],
   "panels": [
@@ -39,6 +39,19 @@
       "id": 1,
       "interval": "1h",
       "options": {
+        "axes": {
+          "showX": true,
+          "showY": false
+        },
+        "color": {
+          "exponent": 1,
+          "fill": "green",
+          "mode": "scheme",
+          "reverse": false,
+          "scale": "linear",
+          "scheme": "Spectral"
+        },
+        "gapWidth": 0,
         "text": "Default value of text input option"
       },
       "pluginVersion": "0.1.0",
@@ -72,6 +85,19 @@
       },
       "id": 2,
       "options": {
+        "axes": {
+          "showX": true,
+          "showY": false
+        },
+        "color": {
+          "exponent": 1,
+          "fill": "green",
+          "mode": "scheme",
+          "reverse": false,
+          "scale": "linear",
+          "scheme": "Spectral"
+        },
+        "gapWidth": 0,
         "text": "Default value of text input option"
       },
       "pluginVersion": "0.1.0",
@@ -88,23 +114,110 @@
       ],
       "title": "Sample Panel Title",
       "type": "maxte-carpet-panel"
+    },
+    {
+      "datasource": {
+        "type": "grafana-testdata-datasource",
+        "uid": "trlxrdZVk"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.0",
+      "targets": [
+        {
+          "refId": "A"
+        }
+      ],
+      "title": "New panel",
+      "type": "timeseries"
     }
   ],
   "preload": false,
   "refresh": "",
-  "schemaVersion": 40,
+  "schemaVersion": 41,
   "tags": [],
   "templating": {
     "list": []
   },
   "time": {
-    "from": "now-7d",
-    "to": "now"
+    "from": "2025-04-10T17:59:33.712Z",
+    "to": "2025-06-21T04:49:26.190Z"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Provisioned carpet-panel dashboard",
   "uid": "a538aeff-5a8a-42a5-901c-938d896fdd6f",
-  "version": 3,
-  "weekStart": ""
+  "version": 1
 }
