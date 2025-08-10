@@ -70,7 +70,7 @@ export const Harness: React.FC = () => {
     valueField,
     timeZone: 'Europe/Berlin',
     timeRange,
-    colorPalette,
+    colorPalette: colorPalette.call,
     gapWidth,
     showXAxis,
     showYAxis,
