@@ -267,22 +267,23 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   }, [onHover, hoveredCell]);
   const highlightedCells: Cell[] = [];
   if (hoveredCell) {
-    highlightedCells.push(hoveredCell);
-    if (hoveredCell.split) {
-      const splitCell = cells[(tooltipData?.idx ?? 0) + hoveredCell.split];
-      if (splitCell) highlightedCells.push(splitCell);
-    }
     if (selectionStart) {
       const start = Math.min(hoveredCell.time, selectionStart);
       const end = Math.max(hoveredCell.time, selectionStart);
       highlightedCells.push(...cells.filter((c) => c.time >= start && c.time <= end));
+    } else {
+      highlightedCells.push(hoveredCell);
+      if (hoveredCell.split) {
+        const splitCell = cells[(tooltipData?.idx ?? 0) + hoveredCell.split];
+        if (splitCell) highlightedCells.push(splitCell);
+      }
     }
   }
   const hoverLayer = (
     <Layer listening={false} x={leftPadding} y={topPadding}>
       {highlightedCells.map((cell) => (
         <Rect
-          key={cell.time.toFixed(0) + '-' + (cell.split ?? 0).toFixed(0)}
+          key={cell.time.toFixed(0) + (cell.split ? cell.split.toFixed(0) : '')}
           x={cell.left * innerWidth - 0.5}
           y={cell.top * innerHeight}
           width={innerWidth * (cell.right - cell.left) + 0.5}
