@@ -2,10 +2,10 @@ import { type Field, type TimeRange, dateTime, ThemeContext, getThemeById } from
 import { Stage } from 'react-konva';
 import { CarpetPlot } from '../src/components/CarpetPlot';
 type ChartProps = React.ComponentProps<typeof CarpetPlot>;
-import React, { StrictMode } from 'react';
-import * as d3 from 'd3';
+import React from 'react';
 import {
   Box,
+  ErrorBoundaryAlert,
   GlobalStyles,
   PanelContainer,
   RadioButtonGroup,
@@ -74,6 +74,12 @@ export const Harness: React.FC = () => {
     gapWidth,
     showXAxis,
     showYAxis,
+    onHover(cell) {
+      console.debug('Hover Event', cell);
+    },
+    onChangeTimeRange(range) {
+      console.debug('Change Time Range', range);
+    },
   };
 
   return (
@@ -81,9 +87,11 @@ export const Harness: React.FC = () => {
       <GlobalStyles />
       <style>{inlineStyle}</style>
       <PanelContainer style={{ padding: theme.spacing(), width: 'min-content', height: 'min-content', margin: 'auto' }}>
-        <Stage width={width} height={height} key={dpr}>
-          <CarpetPlot {...chartProps} />
-        </Stage>
+        <ErrorBoundaryAlert>
+          <Stage width={width} height={height} key={dpr}>
+            <CarpetPlot {...chartProps} />
+          </Stage>
+        </ErrorBoundaryAlert>
       </PanelContainer>
       <Space v={2} />
       <Box backgroundColor={'primary'} borderColor={'strong'} borderStyle={'solid'} padding={0.5}>

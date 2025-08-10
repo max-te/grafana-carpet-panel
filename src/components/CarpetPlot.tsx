@@ -5,6 +5,7 @@ import {
   formattedValueToString,
   getDisplayProcessor,
   getMinMaxAndDelta,
+  type AbsoluteTimeRange,
   type DateTimeInput,
   type Field,
   type TimeRange,
@@ -14,9 +15,9 @@ import * as d3 from 'd3';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Rect, Layer } from 'react-konva';
 import { Html } from 'react-konva-utils';
-import type Konva from 'konva';
 import { XAxisIndicator, YAxisIndicator } from './AxisLabels';
 import { makeTimeScale } from './useTimeScale';
+import type { KonvaEventObject } from 'konva/lib/Node';
 
 type ColorPalette = (t: number) => string;
 interface ChartProps {
@@ -33,6 +34,7 @@ interface ChartProps {
   showXAxis?: boolean;
   showYAxis?: boolean;
   onHover?: (cell: Cell | null) => void;
+  onChangeTimeRange?: (timeRange: AbsoluteTimeRange) => void;
 }
 
 type Cell = {
@@ -74,7 +76,7 @@ function makeCells(
     x = 0,
     nextDayX = 0;
   for (let i = 0; i < values.length; i++) {
-    let value = values[i];
+    const value = values[i];
     if (value === null || value === undefined) continue;
     const date = dateTime(timeValues[i]);
     const time = date.unix();
@@ -88,7 +90,7 @@ function makeCells(
     }
 
     const y = yAxis(time);
-    let cellEndTime = time + timeStep;
+    const cellEndTime = time + timeStep;
 
     const TIME_EPS = 60;
     const cell: Cell = {
@@ -156,11 +158,14 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   showXAxis,
   showYAxis,
   onHover,
+  onChangeTimeRange,
 }) => {
   const theme = useTheme2();
   const [tooltipData, setTooltipData] = useState<{ idx: number; x: number; y: number } | null>(null);
+  const [selectionStart, setSelectionStart] = useState<number | null>(null);
 
-  const handleCellMouseOver = useCallback(({ evt, currentTarget }: { evt: MouseEvent; currentTarget: Konva.Node }) => {
+  const handleCellMouseOver = useCallback(({ evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
+    evt.stopPropagation();
     const cellIdx = currentTarget.getAttr('data-idx') as number;
     const innerRect = currentTarget.getClientRect();
     const outerRect = (evt.target as Element).getBoundingClientRect();
@@ -169,12 +174,29 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       x: innerRect.x + outerRect.x + innerRect.width,
       y: innerRect.y + outerRect.y + innerRect.height,
     });
-    evt.stopPropagation();
+    if (evt.buttons !== 1) setSelectionStart(null);
   }, []);
   const handleCellMouseOut = useCallback(() => {
     setTooltipData(null);
   }, []);
-  // TODO: Sync up with global dashboard hover crosshair
+  const handleCellMouseDown = useCallback(({ evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
+    evt.stopPropagation();
+    const cellTs = currentTarget.getAttr('data-ts') as number;
+    setSelectionStart(cellTs);
+  }, []);
+  const handleCellMouseUp = useCallback(({ evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
+    evt.stopPropagation();
+    const end = currentTarget.getAttr('data-ts') as number;
+    setSelectionStart((start) => {
+      if (typeof start === 'number' && typeof end === 'number' && start != end) {
+        onChangeTimeRange?.({
+          from: Math.min(start, end) * 1000,
+          to: Math.max(start, end) * 1000,
+        });
+      }
+      return null;
+    });
+  }, []);
 
   const minMax = getMinMaxAndDelta(valueField);
   const min = minMax.min ?? 0;
@@ -219,7 +241,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
     <Layer onMouseOut={handleCellMouseOut} x={leftPadding} y={topPadding}>
       {cells.map((cell, idx) => (
         <Rect
-          key={cell.time + (cell.split ? cell.split.toFixed(0) : '')}
+          key={cell.time.toFixed(0) + (cell.split ? cell.split.toFixed(0) : '')}
           x={Math.floor(cell.left * innerWidth)}
           y={Math.floor(cell.top * innerHeight)}
           width={Math.floor(cell.right * innerWidth) - Math.floor(cell.left * innerWidth)}
@@ -228,6 +250,8 @@ export const CarpetPlot: React.FC<ChartProps> = ({
           data-ts={cell.time}
           data-idx={idx}
           onMouseOver={handleCellMouseOver}
+          onMouseDown={handleCellMouseDown}
+          onMouseUp={handleCellMouseUp}
           perfectDrawEnabled={true}
           strokeEnabled={gapWidth > 0}
           strokeWidth={gapWidth}
@@ -237,37 +261,38 @@ export const CarpetPlot: React.FC<ChartProps> = ({
     </Layer>
   );
 
-  const hoveredCell = tooltipData ? cells[tooltipData?.idx] : undefined;
+  const hoveredCell = tooltipData ? cells[tooltipData.idx] : undefined;
   useEffect(() => {
     onHover?.(hoveredCell ?? null);
   }, [onHover, hoveredCell]);
-  const splitCell = hoveredCell?.split ? cells[(tooltipData?.idx ?? 0) + hoveredCell.split] : undefined;
+  const highlightedCells: Cell[] = [];
+  if (hoveredCell) {
+    highlightedCells.push(hoveredCell);
+    if (hoveredCell.split) {
+      const splitCell = cells[(tooltipData?.idx ?? 0) + hoveredCell.split];
+      if (splitCell) highlightedCells.push(splitCell);
+    }
+    if (selectionStart) {
+      const start = Math.min(hoveredCell.time, selectionStart);
+      const end = Math.max(hoveredCell.time, selectionStart);
+      highlightedCells.push(...cells.filter((c) => c.time >= start && c.time <= end));
+    }
+  }
   const hoverLayer = (
     <Layer listening={false} x={leftPadding} y={topPadding}>
-      {hoveredCell ? (
+      {highlightedCells.map((cell) => (
         <Rect
-          x={hoveredCell.left * innerWidth - 0.5}
-          y={hoveredCell.top * innerHeight}
-          width={innerWidth * (hoveredCell.right - hoveredCell.left) + 0.5}
-          height={innerHeight * (hoveredCell.bottom - hoveredCell.top) - 0.5}
+          key={cell.time.toFixed(0) + '-' + (cell.split ?? 0).toFixed(0)}
+          x={cell.left * innerWidth - 0.5}
+          y={cell.top * innerHeight}
+          width={innerWidth * (cell.right - cell.left) + 0.5}
+          height={innerHeight * (cell.bottom - cell.top) - 0.5}
           fill={'rgba(120, 120, 130, 0.2)'}
-          stroke={hoveredCell.value > (min + max) / 2 ? colorScale(min) : colorScale(max)}
+          stroke={cell.value > (min + max) / 2 ? colorScale(min) : colorScale(max)}
           dash={[4, 2]}
           strokeWidth={1}
         />
-      ) : null}
-      {splitCell ? ( // TODO: unify with above, signify open sides
-        <Rect
-          x={splitCell.left - 0.5}
-          y={splitCell.top}
-          width={innerWidth * (splitCell.right - splitCell.left) + 0.5}
-          height={innerHeight * (splitCell.bottom - splitCell.top) - 0.5}
-          fill={'rgba(120, 120, 130, 0.2)'}
-          stroke={splitCell.value > (min + max) / 2 ? colorScale(min) : colorScale(max)}
-          dash={[4, 2]}
-          strokeWidth={1}
-        />
-      ) : null}
+      ))}
       <Html>
         <VizTooltip
           position={tooltipData ?? undefined}

@@ -1,15 +1,7 @@
-import React, { useCallback, useEffect, type MutableRefObject, type RefObject } from 'react';
-import {
-  FieldType,
-  type PanelProps,
-  type Field,
-  DataHoverEvent,
-  DataHoverClearEvent,
-  type DataFrame,
-} from '@grafana/data';
+import React, { useCallback } from 'react';
+import { FieldType, type PanelProps, type Field, DataHoverEvent, DataHoverClearEvent } from '@grafana/data';
 import type { CarpetPanelOptions } from '../types';
-import { css } from '@emotion/css';
-import { usePanelContext, useStyles2 } from '@grafana/ui';
+import { usePanelContext } from '@grafana/ui';
 import { PanelDataErrorView } from '@grafana/runtime';
 import { Stage } from 'react-konva';
 import { CarpetPlot } from './CarpetPlot';
@@ -47,6 +39,7 @@ export const CarpetPanel: React.FC<Props> = ({
   id,
   timeRange,
   timeZone,
+  onChangeTimeRange,
 }) => {
   const dpr = useKonvaDpr();
   const colorScale = useColorScale(options.color);
@@ -119,6 +112,7 @@ export const CarpetPanel: React.FC<Props> = ({
         showXAxis={options.axes?.showX}
         showYAxis={options.axes?.showY}
         onHover={onHover}
+        onChangeTimeRange={onChangeTimeRange}
       />
     </Stage>
   );
