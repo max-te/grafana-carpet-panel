@@ -46,7 +46,9 @@ export const CarpetPanel: React.FC<Props> = ({
   const { setGlobalHover } = useDashboardHoverEvents();
 
   const onHover = React.useCallback(
-    (cell: { time: number } | null) => setGlobalHover(cell?.time ? cell.time * 1000 : null),
+    (cell: { time: number } | null) => {
+      setGlobalHover(cell?.time ? cell.time * 1000 : null);
+    },
     [setGlobalHover]
   );
 
