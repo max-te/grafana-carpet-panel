@@ -14,6 +14,8 @@ import {
   InlineField,
   InlineFieldRow,
   Checkbox,
+  Legend,
+  Text,
 } from '@grafana/ui';
 import * as testData from './testdata.json';
 import { useKonvaDpr } from '../src/components/useKonvaDpr';
@@ -62,6 +64,8 @@ export const Harness: React.FC = () => {
   const [gapWidth, setGapWidth] = React.useState<number>(0);
   const [showXAxis, setShowXAxis] = React.useState<boolean>(true);
   const [showYAxis, setShowYAxis] = React.useState<boolean>(true);
+  const [lastHover, setLastHover] = React.useState<string>('null');
+  const [timeRangeUpdate, updateTimeRange] = React.useState<{ from: number; to: number } | null>(null);
 
   const chartProps: ChartProps = {
     width,
@@ -76,9 +80,11 @@ export const Harness: React.FC = () => {
     showYAxis,
     onHover(cell) {
       console.debug('Hover Event', cell);
+      setLastHover(JSON.stringify(cell));
     },
     onChangeTimeRange(range) {
       console.debug('Change Time Range', range);
+      updateTimeRange(range);
     },
   };
 
@@ -86,7 +92,10 @@ export const Harness: React.FC = () => {
     <ThemeContext.Provider value={theme}>
       <GlobalStyles />
       <style>{inlineStyle}</style>
-      <PanelContainer style={{ padding: theme.spacing(), width: 'min-content', height: 'min-content', margin: 'auto' }}>
+      <PanelContainer
+        style={{ padding: theme.spacing(), width: 'min-content', height: 'min-content', margin: ' 5px auto' }}
+      >
+        <Legend>Panel test</Legend>
         <ErrorBoundaryAlert>
           <Stage width={width} height={height} key={dpr}>
             <CarpetPlot {...chartProps} />
@@ -94,7 +103,20 @@ export const Harness: React.FC = () => {
         </ErrorBoundaryAlert>
       </PanelContainer>
       <Space v={2} />
-      <Box backgroundColor={'primary'} borderColor={'strong'} borderStyle={'solid'} padding={0.5}>
+      <Box backgroundColor={'secondary'} padding={1} margin={1}>
+        <Text>
+          Last hover event: <code>{lastHover}</code>
+        </Text>
+      </Box>
+      {timeRangeUpdate && (
+        <Box backgroundColor={'info'} padding={1} margin={1}>
+          <Text>
+            Time range updated: {timeRangeUpdate.from} - {timeRangeUpdate.to}
+          </Text>
+        </Box>
+      )}
+      <Box backgroundColor={'primary'} borderColor={'strong'} borderStyle={'solid'} padding={1} margin={1}>
+        <Legend>Panel options</Legend>
         <InlineField label="Width" grow>
           <Slider value={width} onChange={setWidth} min={100} max={1000} />
         </InlineField>
