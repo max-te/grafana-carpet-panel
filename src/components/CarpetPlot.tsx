@@ -274,7 +274,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       handleCellMouseOver,
       handleCellMouseUp,
       gapWidth,
-      theme,
+      theme.colors.background.primary,
       colorScale,
       leftPadding,
       topPadding,

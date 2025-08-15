@@ -7,7 +7,7 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
   return defineConfig({
     entry: path.resolve(process.cwd(), 'testsupport/index.tsx'),
     context: path.join(process.cwd(), 'testsupport'),
-    devtool: 'eval-source-map',
+    devtool: 'inline-source-map',
     mode: 'development',
     devServer: {
       watchFiles: 'src',

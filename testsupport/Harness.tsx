@@ -28,24 +28,28 @@ const timeRange: TimeRange = {
   raw: testData.request.range.raw,
 };
 
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+const timeField: Field<number> = testData.series[0]!.fields[0] as Field<number>;
+
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+const valueField = testData.series[0]!.fields[1] as Field<number>;
+
 export const Harness: React.FC = () => {
   const dpr = useKonvaDpr();
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const timeField: Field<number> = testData.series[0]!.fields[0] as Field<number>;
-
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const valueField = testData.series[0]!.fields[1] as Field<number>;
-
   const [themeId, setThemeId] = React.useState<'light' | 'dark'>('light');
   const theme = getThemeById(themeId);
 
   const [colorPaletteName, setColorPaletteName] = React.useState<'Viridis' | 'Plasma'>('Viridis');
-  const colorPalette = useColorScale({
-    mode: HeatmapColorMode.Scheme,
-    scheme: colorPaletteName,
-    reverse: false,
-    fill: '',
-  });
+  const colorOptions = React.useMemo(
+    () => ({
+      mode: HeatmapColorMode.Scheme,
+      scheme: colorPaletteName,
+      reverse: false,
+      fill: '',
+    }),
+    [colorPaletteName]
+  );
+  const colorPalette = useColorScale(colorOptions);
 
   const inlineStyle = `
   body {

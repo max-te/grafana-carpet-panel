@@ -81,7 +81,17 @@ export function useColorScale(colorOptions: HeatmapColorOptions) {
         throw new Error(`Unexpected color mode: ${mode}`);
       }
     }
-  }, [colorOptions, theme]);
+  }, [
+    colorOptions.exponent,
+    colorOptions.fill,
+    colorOptions.max,
+    colorOptions.min,
+    colorOptions.mode,
+    colorOptions.reverse,
+    colorOptions.scale,
+    colorOptions.scheme,
+    theme,
+  ]);
   return colorPalette;
 }
 
