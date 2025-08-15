@@ -1,5 +1,12 @@
-import React, { useCallback } from 'react';
-import { FieldType, type PanelProps, type Field, DataHoverEvent, DataHoverClearEvent } from '@grafana/data';
+import React, { useCallback, useEffect } from 'react';
+import {
+  FieldType,
+  type PanelProps,
+  type Field,
+  DataHoverEvent,
+  DataHoverClearEvent,
+  DashboardCursorSync,
+} from '@grafana/data';
 import type { CarpetPanelOptions } from '../types';
 import { usePanelContext } from '@grafana/ui';
 import { PanelDataErrorView } from '@grafana/runtime';
@@ -11,22 +18,44 @@ import { useKonvaDpr } from './useKonvaDpr';
 type Props = PanelProps<CarpetPanelOptions>;
 
 const useDashboardHoverEvents = () => {
-  const { eventBus } = usePanelContext();
+  const { eventBus, sync } = usePanelContext();
+  const syncMode = sync ? sync() : DashboardCursorSync.Off;
+  const [incomingHover, setIncomingHover] = React.useState<number | null>(null);
   const setGlobalHover = useCallback(
     (time: number | null) => {
-      if (time) {
-        const event = new DataHoverEvent({
-          point: { time: time },
-        });
-        eventBus.publish(event);
-      } else {
-        eventBus.publish(new DataHoverClearEvent());
+      if (syncMode !== DashboardCursorSync.Off) {
+        if (time) {
+          const event = new DataHoverEvent({
+            point: { time: time },
+          });
+          eventBus.publish(event);
+        } else {
+          eventBus.publish(new DataHoverClearEvent());
+        }
       }
     },
-    [eventBus]
+    [eventBus, syncMode]
   );
+  useEffect(() => {
+    const sub = eventBus.getStream(DataHoverEvent).subscribe((ev) => {
+      setIncomingHover(ev.payload.point.time ?? null);
+    });
+    return () => {
+      sub.unsubscribe();
+    };
+  });
+
+  useEffect(() => {
+    const sub = eventBus.getStream(DataHoverClearEvent).subscribe(() => {
+      setIncomingHover(null);
+    });
+    return () => {
+      sub.unsubscribe();
+    };
+  });
   return {
     setGlobalHover,
+    incomingHover: syncMode === DashboardCursorSync.Off ? null : incomingHover,
   };
 };
 
@@ -43,7 +72,7 @@ export const CarpetPanel: React.FC<Props> = ({
 }) => {
   const dpr = useKonvaDpr();
   const colorScale = useColorScale(options.color);
-  const { setGlobalHover } = useDashboardHoverEvents();
+  const { setGlobalHover, incomingHover } = useDashboardHoverEvents();
 
   const onHover = React.useCallback(
     (cell: { time: number } | null) => {
@@ -115,6 +144,7 @@ export const CarpetPanel: React.FC<Props> = ({
         showYAxis={options.axes?.showY}
         onHover={onHover}
         onChangeTimeRange={onChangeTimeRange}
+        externalHoverTime={incomingHover ? incomingHover / 1000 : undefined}
       />
     </Stage>
   );

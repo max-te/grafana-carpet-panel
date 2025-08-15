@@ -35,10 +35,12 @@ interface ChartProps {
   showYAxis?: boolean;
   onHover?: (cell: Cell | null) => void;
   onChangeTimeRange?: (timeRange: AbsoluteTimeRange) => void;
+  externalHoverTime?: number;
 }
 
 type Cell = {
   time: number;
+  endTime: number;
   value: number;
   left: number;
   top: number;
@@ -95,6 +97,7 @@ function makeCells(
     const TIME_EPS = 60;
     const cell: Cell = {
       time,
+      endTime: cellEndTime,
       value,
       left: x,
       top: y,
@@ -115,6 +118,7 @@ function makeCells(
 
       const secondCell: Cell = {
         time,
+        endTime: cellEndTime,
         value,
         left: x,
         top: 0,
@@ -159,6 +163,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   showYAxis,
   onHover,
   onChangeTimeRange,
+  externalHoverTime,
 }) => {
   const theme = useTheme2();
   const [tooltipData, setTooltipData] = useState<{ idx: number; x: number; y: number } | null>(null);
@@ -277,6 +282,12 @@ export const CarpetPlot: React.FC<ChartProps> = ({
         const splitCell = cells[(tooltipData?.idx ?? 0) + hoveredCell.split];
         if (splitCell) highlightedCells.push(splitCell);
       }
+    }
+  } else if (externalHoverTime) {
+    const nextCell = cells.find((c) => c.endTime >= externalHoverTime && c.time <= externalHoverTime);
+    if (nextCell) {
+      highlightedCells.push(nextCell);
+      // TODO: shared tooltip (needs position of cell in client rect)
     }
   }
   const hoverLayer = (
