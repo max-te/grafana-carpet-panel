@@ -12,7 +12,7 @@ export const XAxisIndicator: React.FC<{
   height: number;
   width: number;
   range: TimeRange;
-}> = ({ x, y, width, range }) => {
+}> = React.memo(({ x, y, width, range }) => {
   useFontEvents();
   const theme = useTheme2();
   const isLong = range.to.diff(range.from, 'months') > 6;
@@ -58,7 +58,7 @@ export const XAxisIndicator: React.FC<{
       })}
     </>
   );
-};
+});
 
 type ShapeFunc = Parameters<typeof Shape>[0]['sceneFunc'];
 const textRenderFunc: ShapeFunc = (context, shape) => {

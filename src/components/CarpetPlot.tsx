@@ -242,28 +242,43 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       {showYAxis && <YAxisIndicator x={leftPadding} y={topPadding} height={innerHeight} width={yAxisWidth} />}
     </Layer>
   );
-  const heatmapLayer = (
-    <Layer onMouseOut={handleCellMouseOut} x={leftPadding} y={topPadding}>
-      {cells.map((cell, idx) => (
-        <Rect
-          key={cell.time.toFixed(0) + (cell.split ? cell.split.toFixed(0) : '')}
-          x={Math.floor(cell.left * innerWidth)}
-          y={Math.floor(cell.top * innerHeight)}
-          width={Math.floor(cell.right * innerWidth) - Math.floor(cell.left * innerWidth)}
-          height={Math.floor(cell.bottom * innerHeight) - Math.floor(cell.top * innerHeight)}
-          fill={colorScale(cell.value)}
-          data-ts={cell.time}
-          data-idx={idx}
-          onMouseOver={handleCellMouseOver}
-          onMouseDown={handleCellMouseDown}
-          onMouseUp={handleCellMouseUp}
-          perfectDrawEnabled={true}
-          strokeEnabled={gapWidth > 0}
-          strokeWidth={gapWidth}
-          stroke={theme.colors.background.primary}
-        />
-      ))}
-    </Layer>
+  const heatmapLayer = useMemo(
+    () => (
+      <Layer onMouseOut={handleCellMouseOut} x={leftPadding} y={topPadding}>
+        {cells.map((cell, idx) => (
+          <Rect
+            key={cell.time.toFixed(0) + (cell.split ? cell.split.toFixed(0) : '')}
+            x={Math.floor(cell.left * innerWidth)}
+            y={Math.floor(cell.top * innerHeight)}
+            width={Math.floor(cell.right * innerWidth) - Math.floor(cell.left * innerWidth)}
+            height={Math.floor(cell.bottom * innerHeight) - Math.floor(cell.top * innerHeight)}
+            fill={colorScale(cell.value)}
+            data-ts={cell.time}
+            data-idx={idx}
+            onMouseOver={handleCellMouseOver}
+            onMouseDown={handleCellMouseDown}
+            onMouseUp={handleCellMouseUp}
+            perfectDrawEnabled={true}
+            strokeEnabled={gapWidth > 0}
+            strokeWidth={gapWidth}
+            stroke={theme.colors.background.primary}
+          />
+        ))}
+      </Layer>
+    ),
+    [
+      cells,
+      innerWidth,
+      innerHeight,
+      handleCellMouseDown,
+      handleCellMouseOver,
+      handleCellMouseUp,
+      gapWidth,
+      theme,
+      colorScale,
+      leftPadding,
+      topPadding,
+    ]
   );
 
   const hoveredCell = tooltipData ? cells[tooltipData.idx] : undefined;
