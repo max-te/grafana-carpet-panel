@@ -73,6 +73,8 @@ export const CarpetPanel: React.FC<Props> = ({
   const dpr = useKonvaDpr();
   const colorScale = useColorScale(options.color);
   const { setGlobalHover, incomingHover } = useDashboardHoverEvents();
+  width = Math.trunc(width)
+  height = Math.trunc(height)
 
   const onHover = React.useCallback(
     (cell: { time: number } | null) => {

@@ -122,10 +122,10 @@ export const Harness: React.FC = () => {
       <Box backgroundColor={'primary'} borderColor={'strong'} borderStyle={'solid'} padding={1} margin={1}>
         <Legend>Panel options</Legend>
         <InlineField label="Width" grow>
-          <Slider value={width} onChange={setWidth} min={100} max={1000} />
+          <Slider value={width} onChange={setWidth} min={100} max={1000} step={0.1} />
         </InlineField>
         <InlineField label="Height" grow>
-          <Slider value={height} onChange={setHeight} min={32} max={400} />
+          <Slider value={height} onChange={setHeight} min={32} max={400} step={0.1}  />
         </InlineField>
 
         <InlineFieldRow>
