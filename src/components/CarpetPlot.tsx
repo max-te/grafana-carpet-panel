@@ -80,7 +80,7 @@ function makeCells(
   for (let i = 0; i < values.length; i++) {
     const value = values[i];
     if (value === null || value === undefined) continue;
-    const date = dateTime(timeValues[i]);
+    const date = dateTimeForTimeZone(timeZone, timeValues[i]);
     const time = date.unix();
 
     while (time >= nextDay.unix()) {
