@@ -99,7 +99,7 @@ export const Harness: React.FC = () => {
       <PanelContainer
         style={{ padding: theme.spacing(), width: 'min-content', height: 'min-content', margin: ' 5px auto' }}
       >
-        <Legend>Panel test</Legend>
+        <Legend>Paneltest</Legend>
         <ErrorBoundaryAlert>
           <Stage width={width} height={height} key={dpr}>
             <CarpetPlot {...chartProps} />

@@ -29,10 +29,6 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
     context: path.join(process.cwd(), 'src'),
     devtool: env.production ? 'source-map' : 'eval-source-map',
     mode: env.production ? 'production' : 'development',
-    devServer: {
-      watchFiles: 'src',
-    },
-
     externals: [
       { 'amd-module': 'module' },
       'lodash',

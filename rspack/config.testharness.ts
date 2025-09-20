@@ -5,12 +5,14 @@ import { reactCompilerConfig } from './react-compiler-config.ts';
 
 const config = async (env: Record<string, any>, argv: Record<string, any>) => {
   return defineConfig({
-    entry: path.resolve(process.cwd(), 'testsupport/index.tsx'),
-    context: path.join(process.cwd(), 'testsupport'),
+    entry: './testsupport/index.tsx',
+    context: path.resolve(import.meta.dirname, '..'),
     devtool: 'inline-source-map',
     mode: 'development',
+    watchOptions: {
+      poll: true,
+    },
     devServer: {
-      watchFiles: 'src',
       setupMiddlewares: (middlewares, devServer) => {
         middlewares.push({
           name: 'fonts',
@@ -26,16 +28,6 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
     },
     module: {
       rules: [
-        {
-          resolve: {
-            alias: {
-              'react-loading-skeleton': path.resolve(
-                import.meta.dirname,
-                '../node_modules/react-loading-skeleton/dist/index.js'
-              ),
-            },
-          },
-        },
         {
           exclude: /(node_modules)/,
           test: /\.[tj]sx?$/,
@@ -82,18 +74,13 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
         },
       ],
     },
-    output: {
-      filename: 'index.js',
-      clean: true,
-    },
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx'],
-      modules: [path.resolve(process.cwd(), 'testsupport'), 'node_modules'],
+      tsConfig: "./tsconfig.json"
     },
     plugins: [
       new rspack.HtmlRspackPlugin({
-        template: path.resolve(process.cwd(), 'testsupport/index.html'),
-        filename: 'index.html',
+        template: './testsupport/index.html',
       }),
     ],
   }) satisfies RspackOptions;
