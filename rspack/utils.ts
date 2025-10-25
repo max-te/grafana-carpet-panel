@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import process from 'node:process';
 import os from 'node:os';
 import path from 'node:path';
-import { Glob } from 'bun';
+// import { Glob } from 'bun';
 import { SOURCE_DIR } from './constants.ts';
 
 export function isWSL() {
@@ -34,7 +34,14 @@ export function hasReadme() {
 }
 
 async function glob(pattern: string, opts?: { absolute: boolean }) {
-  return Array.fromAsync(new Glob(pattern).scan(opts));
+  return new Promise((resolve, reject) => {
+    fs.glob(pattern, (err, matches) => {
+      if (err) reject(err);
+      if (opts?.absolute) resolve(matches.map((p) =>  path.resolve(process.cwd(), p)))
+      else resolve(matches)
+    }
+    )
+  })
 }
 
 // Support bundling nested plugins by finding all plugin.json files in src directory

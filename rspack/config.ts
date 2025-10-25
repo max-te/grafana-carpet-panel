@@ -3,7 +3,7 @@ import { rspack, type SwcLoaderOptions, type RspackOptions } from '@rspack/core'
 import ReplaceInFileWebpackPlugin from 'replace-in-file-webpack-plugin';
 import ESLintPlugin from 'eslint-webpack-plugin';
 import { getPackageJson, getPluginJson, hasReadme, getEntries } from './utils.ts';
-import path from 'path';
+import path from 'node:path';
 import { DIST_DIR } from './constants.ts';
 import { TsCheckerRspackPlugin } from 'ts-checker-rspack-plugin';
 import { RspackVirtualModulePlugin } from 'rspack-plugin-virtual-module';
@@ -72,12 +72,12 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
       rules: [
         {
           resolve: {
-            alias: {
+            alias: env.development ? {
               'react-reconciler$': path.resolve(
                 import.meta.dirname,
-                '../node_modules/react-reconciler/cjs/react-reconciler.production.min.js'
+                '../node_modules/react-reconciler/cjs/react-reconciler.production.js'
               ),
-            },
+            } : {},
           },
         },
         // This must come first in the rules array otherwise it breaks sourcemaps.

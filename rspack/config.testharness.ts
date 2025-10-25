@@ -1,6 +1,6 @@
 import { defineConfig } from '@rspack/cli';
 import { rspack, type RspackOptions } from '@rspack/core';
-import path from 'path';
+import path from 'node:path';
 import { reactCompilerConfig } from './react-compiler-config.ts';
 
 const config = async (env: Record<string, any>, argv: Record<string, any>) => {

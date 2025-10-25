@@ -27,7 +27,7 @@ function useDevicePixelRatio(options?: DevicePixelRatioOptions) {
     }
     const currentDprLower = Math.trunc(currentDpr * 10) / 10;
     const currentDprUpper = currentDprLower + 0.1;
-    const mediaMatcher = window.matchMedia(`screen and (min-resolution: ${currentDprLower.toFixed(1)}dppx) and (max-resolution: ${currentDprUpper.toFixed(1)}dppx)`)
+    const mediaMatcher = globalThis.matchMedia(`screen and (min-resolution: ${currentDprLower.toFixed(1)}dppx) and (max-resolution: ${currentDprUpper.toFixed(1)}dppx)`)
     mediaMatcher.addEventListener('change', updateDpr)
 
     return () => {
