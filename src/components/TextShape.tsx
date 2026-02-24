@@ -4,7 +4,7 @@ import { Shape } from 'react-konva';
 type ShapeAttrs = Parameters<typeof Shape>[0];
 type SpecificShapeAttrs = {
   // NodeConfig has an annoying `[index: string]: any` which we drop here
-  [K in keyof ShapeAttrs as (string extends K ? never: K)]: ShapeAttrs[K]
+  [K in keyof ShapeAttrs as (string extends K ? never : K)]: ShapeAttrs[K]
 };
 
 type TextShapeAttrs = {
@@ -15,12 +15,11 @@ type TextShapeAttrs = {
   fontSize: number;
 } & Omit<SpecificShapeAttrs, 'sceneFunc'>
 
-export function TextShape(props: TextShapeAttrs) {
-  return <Shape
-    {...props}
+export const TextShape: React.FC<TextShapeAttrs> = (props) =>
+  <Shape
     sceneFunc={textRenderFunc}
+    {...props}
   />
-}
 
 const textRenderFunc: ShapeAttrs['sceneFunc'] = (context, shape) => {
   const attrs = shape.attrs as TextShapeAttrs;
