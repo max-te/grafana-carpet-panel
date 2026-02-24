@@ -1,9 +1,10 @@
 import { useTheme2 } from '@grafana/ui';
 import React, { Fragment } from 'react';
-import { Line, Shape } from 'react-konva';
+import { Line } from 'react-konva';
 import { dateTimeFormat, type TimeRange } from '@grafana/data';
 import { makeTimeScale } from './useTimeScale';
 import { useFontEvents } from './useFontEvents';
+import { TextShape } from './TextShape';
 
 const AXIS_FONT_SIZE = 12;
 export const XAxisIndicator: React.FC<{
@@ -40,18 +41,16 @@ export const XAxisIndicator: React.FC<{
           // eslint-disable-next-line @eslint-react/no-array-index-key -- In the Konva context, this is okay. Using the date causes a bug where stale labels remain.
           <Fragment key={idx}>
             <Line points={[tickX, y, tickX, y + 4]} stroke={colorGrid} strokeWidth={1} />
-            <Shape
+            <TextShape
               text={label}
               x={tickX}
-              y={y + 5 + fontSize}
-              fontBaseline="top"
+              y={y + 7}
               fill={colorText}
-              align="center"
-              fontFamily={theme.typography.fontFamily}
               width={spacing}
+              align="center"
+              baseline="top"
+              fontFamily={theme.typography.fontFamily}
               fontSize={fontSize}
-              wrap="word"
-              sceneFunc={textRenderFunc}
             />
           </Fragment>
         );
@@ -59,15 +58,6 @@ export const XAxisIndicator: React.FC<{
     </>
   );
 });
-
-type ShapeFunc = Parameters<typeof Shape>[0]['sceneFunc'];
-const textRenderFunc: ShapeFunc = (context, shape) => {
-  context.textAlign = shape.attrs.align;
-  context.textBaseline = shape.attrs.textBaseline;
-  context.font = `${shape.attrs.fontSize}px ${shape.attrs.fontFamily}`;
-  context.fillStyle = shape.fill();
-  context.fillText(shape.attrs.text, 0, 0, shape.width());
-};
 
 export const YAxisIndicator: React.FC<{ x: number; y: number; height: number; width: number }> = ({
   x,
@@ -97,17 +87,16 @@ export const YAxisIndicator: React.FC<{ x: number; y: number; height: number; wi
             {hour % tickMod === 0 && (
               <>
                 <Line points={[x, tickY, x - 4, tickY]} stroke={colorGrid} strokeWidth={1} />
-                <Shape
+                <TextShape
                   text={label}
                   x={x - 6}
                   y={tickY}
                   fill={colorText}
-                  align="right"
                   width={width - 6}
+                  align="right"
+                  baseline="middle"
                   fontFamily={theme.typography.fontFamily}
                   fontSize={fontSize}
-                  textBaseline="middle"
-                  sceneFunc={textRenderFunc}
                 />
               </>
             )}
