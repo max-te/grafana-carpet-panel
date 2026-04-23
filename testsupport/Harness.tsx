@@ -33,6 +33,11 @@ const timeField: Field<number> = testData.series[0]!.fields[0] as Field<number>;
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const valueField = testData.series[0]!.fields[1] as Field<number>;
 
+const minHeight = 32;
+const maxHeight = 400;
+const minWidth = 100;
+const maxWidth = 1000;
+
 export const Harness: React.FC = () => {
   const dpr = useKonvaDpr();
   const [themeId, setThemeId] = React.useState<'light' | 'dark'>('light');
@@ -64,6 +69,36 @@ export const Harness: React.FC = () => {
 
   const [width, setWidth] = React.useState<number>(1000);
   const [height, setHeight] = React.useState<number>(360);
+  const [isResizing, setIsResizing] = React.useState(false);
+  const resizeStartRef = React.useRef<{ startX: number; startY: number; startWidth: number; startHeight: number } | null>(null);
+
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    resizeStartRef.current = { startX: e.clientX, startY: e.clientY, startWidth: width, startHeight: height };
+  };
+
+  React.useEffect(() => {
+    if (!isResizing) return;
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (!resizeStartRef.current) return;
+      const dx = moveEvent.clientX - resizeStartRef.current.startX;
+      const dy = moveEvent.clientY - resizeStartRef.current.startY;
+      setWidth(Math.max(minWidth, Math.min(maxWidth, resizeStartRef.current.startWidth + 2*dx))); // double effect due to centering
+      setHeight(Math.max(minHeight, Math.min(maxHeight, resizeStartRef.current.startHeight + dy)));
+    };
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      resizeStartRef.current = null;
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
+
   const [gapWidth, setGapWidth] = React.useState<number>(0);
   const [showXAxis, setShowXAxis] = React.useState<boolean>(true);
   const [showYAxis, setShowYAxis] = React.useState<boolean>(true);
@@ -105,11 +140,26 @@ export const Harness: React.FC = () => {
       >
         <Box padding={1} borderColor={"medium"} borderStyle={'solid'}>
           <Legend>Paneltest</Legend>
-          <ErrorBoundaryAlert>
-            <Stage width={width} height={height} key={dpr}>
-              <CarpetPlot {...chartProps} />
-            </Stage>
-          </ErrorBoundaryAlert>
+          <div style={{ position: 'relative' }}>
+            <ErrorBoundaryAlert>
+              <Stage width={width} height={height} key={dpr}>
+                <CarpetPlot {...chartProps} />
+              </Stage>
+            </ErrorBoundaryAlert>
+            <div
+              onMouseDown={handleResizeStart}
+              style={{
+                position: 'absolute',
+                bottom: -8,
+                right: -8,
+                width: 16,
+                height: 16,
+                cursor: 'nwse-resize',
+                background: 'linear-gradient(135deg, transparent 50%, #999 50%)',
+                borderRadius: '0 0 4px 0',
+              }}
+            />
+          </div>
         </Box>
       </Box>
       <Space v={2} />
@@ -127,13 +177,6 @@ export const Harness: React.FC = () => {
       )}
       <Box backgroundColor={'primary'} borderColor={'strong'} borderStyle={'solid'} padding={1} margin={1}>
         <Legend>Panel options</Legend>
-        <InlineField label="Width" grow>
-          <Slider inputId='w' value={width} onChange={setWidth} min={100} max={1000} step={0.1} />
-        </InlineField>
-        <InlineField label="Height" grow>
-          <Slider inputId='h' value={height} onChange={setHeight} min={32} max={400} step={0.1} />
-        </InlineField>
-
         <InlineFieldRow>
           <InlineField label="Theme">
             <RadioButtonGroup
@@ -158,7 +201,7 @@ export const Harness: React.FC = () => {
           </InlineField>
         </InlineFieldRow>
         <InlineField label="Gap" grow>
-          <Slider value={gapWidth} onChange={setGapWidth} min={0} max={10} step={0.5} />
+          <Slider inputId='gap' value={gapWidth} onChange={setGapWidth} min={0} max={10} step={0.5} />
         </InlineField>
         <InlineFieldRow>
           <InlineField>
