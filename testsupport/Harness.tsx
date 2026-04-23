@@ -7,7 +7,6 @@ import {
   Box,
   ErrorBoundaryAlert,
   GlobalStyles,
-  PanelContainer,
   RadioButtonGroup,
   Slider,
   Space,
@@ -96,16 +95,23 @@ export const Harness: React.FC = () => {
     <ThemeContext.Provider value={theme}>
       <GlobalStyles />
       <style>{inlineStyle}</style>
-      <PanelContainer
-        style={{ padding: theme.spacing(), width: 'min-content', height: 'min-content', margin: ' 5px auto' }}
+      <Box
+        padding={1}
+        display="flex"
+        justifyContent={"center"}
+        width={'100%'}
+        height={'min-content'}
+        marginY={1}
       >
-        <Legend>Paneltest</Legend>
-        <ErrorBoundaryAlert>
-          <Stage width={width} height={height} key={dpr}>
-            <CarpetPlot {...chartProps} />
-          </Stage>
-        </ErrorBoundaryAlert>
-      </PanelContainer>
+        <Box padding={1} borderColor={"medium"} borderStyle={'solid'}>
+          <Legend>Paneltest</Legend>
+          <ErrorBoundaryAlert>
+            <Stage width={width} height={height} key={dpr}>
+              <CarpetPlot {...chartProps} />
+            </Stage>
+          </ErrorBoundaryAlert>
+        </Box>
+      </Box>
       <Space v={2} />
       <Box backgroundColor={'secondary'} padding={1} margin={1}>
         <Text>
@@ -122,10 +128,10 @@ export const Harness: React.FC = () => {
       <Box backgroundColor={'primary'} borderColor={'strong'} borderStyle={'solid'} padding={1} margin={1}>
         <Legend>Panel options</Legend>
         <InlineField label="Width" grow>
-          <Slider value={width} onChange={setWidth} min={100} max={1000} step={0.1} />
+          <Slider inputId='w' value={width} onChange={setWidth} min={100} max={1000} step={0.1} />
         </InlineField>
         <InlineField label="Height" grow>
-          <Slider value={height} onChange={setHeight} min={32} max={400} step={0.1}  />
+          <Slider inputId='h' value={height} onChange={setHeight} min={32} max={400} step={0.1} />
         </InlineField>
 
         <InlineFieldRow>
