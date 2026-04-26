@@ -25,7 +25,7 @@ const textRenderFunc: ShapeAttrs['sceneFunc'] = (context, shape) => {
   const attrs = shape.attrs as TextShapeAttrs;
   context.textAlign = attrs.align ?? "left";
   context.textBaseline = attrs.baseline ?? "alphabetic";
-  context.font = `${attrs.fontSize}px ${attrs.fontFamily}`;
+  context.font = `${attrs.fontSize.toFixed()}px ${attrs.fontFamily}`;
   context.fillStyle = shape.fill();
   context.fillText(attrs.text, 0, 0, shape.width());
 };
