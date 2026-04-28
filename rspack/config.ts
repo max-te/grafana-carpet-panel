@@ -6,13 +6,12 @@ import { getPackageJson, getPluginJson, hasReadme, getEntries } from './utils.ts
 import path from 'path';
 import { DIST_DIR } from './constants.ts';
 import { TsCheckerRspackPlugin } from 'ts-checker-rspack-plugin';
-import { RspackVirtualModulePlugin } from 'rspack-plugin-virtual-module';
 import { BuildModeRspackPlugin } from './BuildModeRspackPlugin.ts';
 import { reactCompilerConfig } from './react-compiler-config.ts';
 
 const pluginJson = getPluginJson();
 
-const virtualPublicPath = new RspackVirtualModulePlugin({
+const virtualPublicPath = new rspack.experiments.VirtualModulesPlugin({
   'node_modules/grafana-public-path.js': `
 import amdMetaModule from 'amd-module';
 
