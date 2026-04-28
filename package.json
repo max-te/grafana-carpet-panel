@@ -14,14 +14,16 @@
     "format": "biome format --write .",
     "lint": "eslint src",
     "devserver": "bunx --bun rspack serve -w -m development --config rspack/config.testharness.ts",
-    "test": "playwright test",
-    "test:update": "playwright test --update-snapshots"
+    "test": "bun test tests/makeCells.test.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:update": "playwright test --update-snapshots"
   },
   "dependencies": {
     "@emotion/css": "^11.13.5",
     "@grafana/data": "12.4.0",
     "@grafana/runtime": "12.4.0",
     "@grafana/ui": "12.4.0",
+    "@js-temporal/polyfill": "^0.5.1",
     "@types/tinycolor2": "^1.4.6",
     "d3": "^7.9.0",
     "react": "18.3.1",
@@ -39,6 +41,7 @@
     "@eslint-react/eslint-plugin": "^1.41.0",
     "@grafana/eslint-config": "^8.0.0",
     "@grafana/tsconfig": "^2.0.0",
+    "@happy-dom/global-registrator": "^20.9.0",
     "@playwright/test": "^1.54.1",
     "@rspack/cli": "^1.7.6",
     "@rspack/core": "^1.7.6",

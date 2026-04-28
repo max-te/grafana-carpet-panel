@@ -13,12 +13,13 @@ export const XAxisIndicator: React.FC<{
   height: number;
   width: number;
   range: TimeRange;
-}> = React.memo(({ x, y, width, range }) => {
+  timeZone: string;
+}> = React.memo(({ x, y, width, range, timeZone }) => {
   useFontEvents();
   const theme = useTheme2();
   const isLong = range.to.diff(range.from, 'months') > 6;
   const format = isLong ? 'YYYY-MM' : 'MM-DD';
-  const scale = React.useMemo(() => makeTimeScale(range, width), [range, width]);
+  const scale = React.useMemo(() => makeTimeScale(range, width, timeZone), [range, width, timeZone]);
   const ticks = React.useMemo(() => {
     const ts = scale.ticks();
     ts.forEach((t) => t.setHours(12));

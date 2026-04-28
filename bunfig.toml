@@ -1,0 +1,3 @@
+[test]
+pathIgnorePatterns = ["tests/e2e/**"]
+preload = ["./tests/dom-setup.ts"]
