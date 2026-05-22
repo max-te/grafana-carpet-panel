@@ -1,12 +1,15 @@
 import type { ScaleTime } from 'd3';
 import * as d3 from 'd3';
-import { dateTimeForTimeZone, type TimeRange } from '@grafana/data';
+import { type TimeRange } from '@grafana/data';
+import { Temporal } from '@js-temporal/polyfill';
 
 export function makeTimeScale(timeRange: TimeRange, width: number, timeZone: string): ScaleTime<number, number> {
   const dayFromValue = timeRange.from.valueOf();
   const dayToValue = timeRange.to.valueOf();
-  const dayFrom = dateTimeForTimeZone(timeZone, dayFromValue).startOf('day').toDate();
-  const dayTo = dateTimeForTimeZone(timeZone, dayToValue).endOf('day').toDate();
+  const fromZdt = Temporal.Instant.fromEpochMilliseconds(dayFromValue).toZonedDateTimeISO(timeZone);
+  const toZdt = Temporal.Instant.fromEpochMilliseconds(dayToValue).toZonedDateTimeISO(timeZone);
+  const dayFrom = new Date(fromZdt.startOfDay().epochMilliseconds);
+  const dayTo = new Date(toZdt.startOfDay().add({ days: 1 }).epochMilliseconds - 1);
   const numDays = 1 + d3.timeDay.count(dayFrom, dayTo);
   if (numDays <= 0) {
     throw new Error('Negative time range');

@@ -1,9 +1,5 @@
-import {
-  dateTime,
-  dateTimeForTimeZone,
-  type DateTimeInput,
-  type TimeRange,
-} from '@grafana/data';
+import { type TimeRange } from '@grafana/data';
+import { Temporal } from '@js-temporal/polyfill';
 import { makeTimeScale } from './useTimeScale';
 
 export type Cell = {
@@ -38,36 +34,39 @@ export function makeCells(
   width: number = 1
 ): Cell[] {
   const xTime = makeTimeScale(timeRange, width, timeZone);
-  const yAxis = (t: DateTimeInput) => {
-    const timeInMs = typeof t === 'number' ? t * 1000 : t;
-    const time = dateTimeForTimeZone(timeZone, timeInMs);
-    const dayStart = dateTime(time).startOf('d');
-    const tSecondsInDay = time.diff(dayStart, 's', false);
-    const dayEnd = dateTime(time).endOf('d');
-    const daySeconds = dayEnd.diff(dayStart, 's', false);
-
-    return (height * tSecondsInDay) / daySeconds;
+  const yAxis = (unixSeconds: number) => {
+    const zdt = Temporal.Instant.fromEpochMilliseconds(unixSeconds * 1000).toZonedDateTimeISO(timeZone);
+    const startOfDay = zdt.startOfDay();
+    const secondsInDay = Math.floor(
+      zdt.since(startOfDay, { largestUnit: 'seconds' }).total({ unit: 'seconds' })
+    );
+    const endOfDay = startOfDay.add({ days: 1 }).subtract({ milliseconds: 1 });
+    const totalDaySeconds = Math.floor(
+      endOfDay.since(startOfDay, { largestUnit: 'seconds' }).total({ unit: 'seconds' })
+    );
+    return (height * secondsInDay) / totalDaySeconds;
   };
 
   const timeStep = getTimeStep(timeValues);
   const cells: Cell[] = [];
 
-  let dayStart = dateTime(0),
-    nextDay = dayStart;
+  const epochZdt = Temporal.Instant.fromEpochMilliseconds(0).toZonedDateTimeISO(timeZone);
+  let dayStart = epochZdt.startOfDay();
+  let nextDay = dayStart;
   let dayWidth = 0,
     x = 0,
     nextDayX = 0;
   for (let i = 0; i < values.length; i++) {
     const value = values[i];
     if (value === null || value === undefined) continue;
-    const date = dateTimeForTimeZone(timeZone, timeValues[i]);
-    const time = date.unix();
+    const date = Temporal.Instant.fromEpochMilliseconds(timeValues[i]!).toZonedDateTimeISO(timeZone);
+    const time = Math.floor(date.epochMilliseconds / 1000);
 
-    while (time >= nextDay.unix()) {
-      dayStart = dayStart === nextDay ? dateTime(date).startOf('d') : nextDay;
-      nextDay = dateTime(dayStart).add(1, 'd');
+    while (time >= Math.floor(nextDay.epochMilliseconds / 1000)) {
+      dayStart = dayStart === nextDay ? date.startOfDay() : nextDay;
+      nextDay = dayStart.add({ days: 1 });
       x = nextDayX;
-      nextDayX = xTime(nextDay);
+      nextDayX = xTime(new Date(nextDay.epochMilliseconds));
       dayWidth = nextDayX - x;
     }
 
@@ -75,6 +74,7 @@ export function makeCells(
     const cellEndTime = time + timeStep;
 
     const TIME_EPS = 60;
+    const nextDayUnix = Math.floor(nextDay.epochMilliseconds / 1000);
     const cell: Cell = {
       time,
       endTime: cellEndTime,
@@ -82,17 +82,17 @@ export function makeCells(
       left: x,
       top: y,
       right: x + dayWidth,
-      bottom: cellEndTime < nextDay.unix() ? yAxis(cellEndTime) : height,
+      bottom: cellEndTime < nextDayUnix ? yAxis(cellEndTime) : height,
     };
     cells.push(cell);
 
     // TODO: at really low resolutions a cell *could* span more than a full day
-    if (cellEndTime - nextDay.unix() > TIME_EPS) {
+    if (cellEndTime - nextDayUnix > TIME_EPS) {
       cell.split = 1;
       dayStart = nextDay;
-      nextDay = dateTime(dayStart).add(1, 'd');
+      nextDay = dayStart.add({ days: 1 });
       x = nextDayX;
-      nextDayX = xTime(nextDay);
+      nextDayX = xTime(new Date(nextDay.epochMilliseconds));
       dayWidth = nextDayX - x;
 
       const secondCell: Cell = {

@@ -2,6 +2,7 @@ import { useTheme2 } from '@grafana/ui';
 import React, { Fragment } from 'react';
 import { Line } from 'react-konva';
 import { dateTimeFormat, type TimeRange } from '@grafana/data';
+import { Temporal } from '@js-temporal/polyfill';
 import { makeTimeScale } from './useTimeScale';
 import { useFontEvents } from './useFontEvents';
 import { TextShape } from './TextShape';
@@ -17,7 +18,10 @@ export const XAxisIndicator: React.FC<{
 }> = React.memo(({ x, y, width, range, timeZone }) => {
   useFontEvents();
   const theme = useTheme2();
-  const isLong = range.to.diff(range.from, 'months') > 6;
+  const fromZdt = Temporal.Instant.fromEpochMilliseconds(range.from.valueOf()).toZonedDateTimeISO(timeZone);
+  const toZdt = Temporal.Instant.fromEpochMilliseconds(range.to.valueOf()).toZonedDateTimeISO(timeZone);
+  const totalMonths = toZdt.since(fromZdt, { largestUnit: 'months' }).total({ unit: 'months', relativeTo: fromZdt });
+  const isLong = totalMonths > 6;
   const format = isLong ? 'YYYY-MM' : 'MM-DD';
   const scale = React.useMemo(() => makeTimeScale(range, width, timeZone), [range, width, timeZone]);
   const ticks = React.useMemo(() => {
