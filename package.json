@@ -14,7 +14,8 @@
     "format": "biome format --write .",
     "lint": "eslint src",
     "devserver": "bunx --bun rspack serve -w -m development --config rspack/config.testharness.ts",
-    "test": "bun test tests/makeCells.test.ts",
+    "test": "bun run --sequential test:unit test:e2e",
+    "test:unit": "bun test tests/makeCells.test.ts",
     "test:e2e": "playwright test",
     "test:e2e:update": "playwright test --update-snapshots"
   },
