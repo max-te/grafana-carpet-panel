@@ -66,7 +66,7 @@ export function makeCells(
       dayStart = dayStart === nextDay ? date.startOfDay() : nextDay;
       nextDay = dayStart.add({ days: 1 });
       x = nextDayX;
-      nextDayX = xTime(new Date(nextDay.epochMilliseconds));
+      nextDayX = xTime(nextDay.epochMilliseconds);
       dayWidth = nextDayX - x;
     }
 
@@ -92,7 +92,7 @@ export function makeCells(
       dayStart = nextDay;
       nextDay = dayStart.add({ days: 1 });
       x = nextDayX;
-      nextDayX = xTime(new Date(nextDay.epochMilliseconds));
+      nextDayX = xTime(nextDay.epochMilliseconds);
       dayWidth = nextDayX - x;
 
       const secondCell: Cell = {
