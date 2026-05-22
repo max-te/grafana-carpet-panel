@@ -50,8 +50,8 @@ export function makeCells(
   const timeStep = getTimeStep(timeValues);
   const cells: Cell[] = [];
 
-  const epochZdt = Temporal.Instant.fromEpochMilliseconds(0).toZonedDateTimeISO(tz);
-  let dayStart = epochZdt.startOfDay();
+  const startDate = Temporal.Instant.fromEpochMilliseconds(timeRange.from.unix() * 1000).toZonedDateTimeISO(tz);
+  let dayStart = startDate.startOfDay();
   let nextDay = dayStart;
   let dayWidth = 0,
     x = 0,

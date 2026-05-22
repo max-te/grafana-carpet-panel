@@ -64,6 +64,26 @@ describe('makeCells', () => {
     expect(splitCells.length).toBeGreaterThan(0);
   });
 
+  it('should handle pre-epoch dates', () => {
+    // Dec 31, 1969 22:00 UTC → Jan 1, 1970 02:00 UTC (spans epoch)
+    const times = [
+      Date.UTC(1969, 11, 31, 22, 0, 0),
+      Date.UTC(1970, 0, 1, 2, 0, 0),
+    ];
+    const values = [1, 2];
+    const tr = {
+      from: dateTime(Date.UTC(1969, 11, 31, 20, 0, 0)),
+      to: dateTime(Date.UTC(1970, 0, 1, 4, 0, 0)),
+      raw: { from: '1969-12-31T20:00:00Z', to: '1970-01-01T04:00:00Z' },
+    };
+
+    const cells = makeCells(values, times, 'utc', tr, 100, 200);
+
+    expect(cells.length).toBeGreaterThan(0);
+    expect(cells.every((c) => c.right > c.left)).toBe(true);
+    expect(cells.every((c) => c.bottom >= c.top)).toBe(true);
+  });
+
   it('should match snapshot with testdata', () => {
     const cells = makeCells(valueValues, timeValues, timeZone, timeRange, height, width);
 
