@@ -37,13 +37,9 @@ export function makeCells(
   const yAxis = (unixSeconds: number) => {
     const zdt = Temporal.Instant.fromEpochMilliseconds(unixSeconds * 1000).toZonedDateTimeISO(timeZone);
     const startOfDay = zdt.startOfDay();
-    const secondsInDay = Math.floor(
-      zdt.since(startOfDay, { largestUnit: 'seconds' }).total({ unit: 'seconds' })
-    );
+    const secondsInDay = zdt.since(startOfDay, { largestUnit: 'seconds' }).total({ unit: 'seconds' });
     const endOfDay = startOfDay.add({ days: 1 }).subtract({ milliseconds: 1 });
-    const totalDaySeconds = Math.floor(
-      endOfDay.since(startOfDay, { largestUnit: 'seconds' }).total({ unit: 'seconds' })
-    );
+    const totalDaySeconds = endOfDay.since(startOfDay, { largestUnit: 'seconds' }).total({ unit: 'seconds' });
     return (height * secondsInDay) / totalDaySeconds;
   };
 
@@ -60,9 +56,9 @@ export function makeCells(
     const value = values[i];
     if (value === null || value === undefined) continue;
     const date = Temporal.Instant.fromEpochMilliseconds(timeValues[i]!).toZonedDateTimeISO(timeZone);
-    const time = Math.floor(date.epochMilliseconds / 1000);
+    const time = date.epochMilliseconds / 1000;
 
-    while (time >= Math.floor(nextDay.epochMilliseconds / 1000)) {
+    while (time >= nextDay.epochMilliseconds / 1000) {
       dayStart = dayStart === nextDay ? date.startOfDay() : nextDay;
       nextDay = dayStart.add({ days: 1 });
       x = nextDayX;
@@ -74,7 +70,7 @@ export function makeCells(
     const cellEndTime = time + timeStep;
 
     const TIME_EPS = 60;
-    const nextDayUnix = Math.floor(nextDay.epochMilliseconds / 1000);
+    const nextDayUnix = nextDay.epochMilliseconds / 1000;
     const cell: Cell = {
       time,
       endTime: cellEndTime,
