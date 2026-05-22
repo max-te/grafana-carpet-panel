@@ -1,6 +1,7 @@
 import { type TimeRange } from '@grafana/data';
 import { Temporal } from '@js-temporal/polyfill';
 import { makeTimeScale } from './useTimeScale';
+import { resolveTimeZone } from './timeZone';
 
 export type Cell = {
   time: number;
@@ -33,9 +34,10 @@ export function makeCells(
   height: number = 1,
   width: number = 1
 ): Cell[] {
-  const xTime = makeTimeScale(timeRange, width, timeZone);
+  const tz = resolveTimeZone(timeZone);
+  const xTime = makeTimeScale(timeRange, width, tz);
   const yAxis = (unixSeconds: number) => {
-    const zdt = Temporal.Instant.fromEpochMilliseconds(unixSeconds * 1000).toZonedDateTimeISO(timeZone);
+    const zdt = Temporal.Instant.fromEpochMilliseconds(unixSeconds * 1000).toZonedDateTimeISO(tz);
     const startOfDay = zdt.startOfDay();
     const secondsInDay = zdt.since(startOfDay, { largestUnit: 'seconds' }).total({ unit: 'seconds' });
     const totalDaySeconds = startOfDay
@@ -48,7 +50,7 @@ export function makeCells(
   const timeStep = getTimeStep(timeValues);
   const cells: Cell[] = [];
 
-  const epochZdt = Temporal.Instant.fromEpochMilliseconds(0).toZonedDateTimeISO(timeZone);
+  const epochZdt = Temporal.Instant.fromEpochMilliseconds(0).toZonedDateTimeISO(tz);
   let dayStart = epochZdt.startOfDay();
   let nextDay = dayStart;
   let dayWidth = 0,
@@ -57,7 +59,7 @@ export function makeCells(
   for (let i = 0; i < values.length; i++) {
     const value = values[i];
     if (value === null || value === undefined) continue;
-    const date = Temporal.Instant.fromEpochMilliseconds(timeValues[i]!).toZonedDateTimeISO(timeZone);
+    const date = Temporal.Instant.fromEpochMilliseconds(timeValues[i]!).toZonedDateTimeISO(tz);
     const time = date.epochMilliseconds / 1000;
 
     while (time >= nextDay.epochMilliseconds / 1000) {
