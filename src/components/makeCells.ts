@@ -38,8 +38,10 @@ export function makeCells(
     const zdt = Temporal.Instant.fromEpochMilliseconds(unixSeconds * 1000).toZonedDateTimeISO(timeZone);
     const startOfDay = zdt.startOfDay();
     const secondsInDay = zdt.since(startOfDay, { largestUnit: 'seconds' }).total({ unit: 'seconds' });
-    const endOfDay = startOfDay.add({ days: 1 }).subtract({ milliseconds: 1 });
-    const totalDaySeconds = endOfDay.since(startOfDay, { largestUnit: 'seconds' }).total({ unit: 'seconds' });
+    const totalDaySeconds = startOfDay
+      .add({ days: 1 })
+      .since(startOfDay, { largestUnit: 'seconds' })
+      .total({ unit: 'seconds' });
     return (height * secondsInDay) / totalDaySeconds;
   };
 
