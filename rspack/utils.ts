@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import process from 'node:process';
 import os from 'node:os';
 import path from 'node:path';
-import { Glob } from 'bun';
+import { readdirSync, statSync, existsSync } from 'node:fs';
 import { SOURCE_DIR } from './constants.ts';
 
 export function isWSL() {
@@ -33,33 +33,59 @@ export function hasReadme() {
   return fs.existsSync(path.resolve(process.cwd(), SOURCE_DIR, 'README.md'));
 }
 
-async function glob(pattern: string, opts?: { absolute: boolean }) {
-  return Array.fromAsync(new Glob(pattern).scan(opts));
+function findPluginJsonFiles(): string[] {
+  const results: string[] = [];
+  function walk(dir: string): void {
+    let entries: string[];
+    try {
+      entries = readdirSync(dir);
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      if (entry === 'node_modules' || entry.startsWith('.')) continue;
+      const fullPath = path.join(dir, entry);
+      try {
+        if (statSync(fullPath).isDirectory()) {
+          walk(fullPath);
+        } else if (entry === 'plugin.json') {
+          const rel = path.relative(process.cwd(), fullPath);
+          const parts = rel.split(/[/\\]/);
+          if (parts.includes('src')) results.push(fullPath);
+        }
+      } catch {
+        // skip unreadable entries
+      }
+    }
+  }
+  walk(process.cwd());
+  return results;
+}
+
+const MODULE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx'];
+
+function findModuleFile(folder: string): string | undefined {
+  for (const ext of MODULE_EXTENSIONS) {
+    const file = path.join(folder, `module${ext}`);
+    if (existsSync(file)) return file;
+  }
+  return undefined;
 }
 
 // Support bundling nested plugins by finding all plugin.json files in src directory
 // then checking for a sibling module.[jt]sx? file.
 export async function getEntries(): Promise<Record<string, string>> {
-  const pluginsJson = await glob('**/src/**/plugin.json', { absolute: true });
+  const pluginsJson = findPluginJsonFiles();
 
-  const plugins = await Promise.all(
-    pluginsJson.map((pluginJson) => {
-      const folder = path.dirname(pluginJson);
-      return glob(`${folder}/module.{ts,tsx,js,jsx}`, { absolute: true });
-    })
-  );
-
-  return plugins.reduce(
-    (result, modules) => {
-      return modules.reduce((result, module) => {
-        const pluginPath = path.dirname(module);
-        const pluginName = path.relative(process.cwd(), pluginPath).replace(/src\/?/i, '');
-        const entryName = pluginName === '' ? 'module' : `${pluginName}/module`;
-
-        result[entryName] = module;
-        return result;
-      }, result);
-    },
-    {} as Record<string, string>
-  );
+  const entries: Record<string, string> = {};
+  for (const pluginJson of pluginsJson) {
+    const folder = path.dirname(pluginJson);
+    const moduleFile = findModuleFile(folder);
+    if (!moduleFile) continue;
+    const pluginPath = path.dirname(moduleFile);
+    const pluginName = path.relative(process.cwd(), pluginPath).replace(/src\/?/i, '');
+    const entryName = pluginName === '' ? 'module' : `${pluginName}/module`;
+    entries[entryName] = moduleFile;
+  }
+  return entries;
 }

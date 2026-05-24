@@ -1,7 +1,7 @@
 playwright-report
 test-results
 
-# dependencies (bun install)
+# dependencies
 node_modules
 
 # output

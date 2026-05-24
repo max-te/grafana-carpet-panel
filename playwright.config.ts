@@ -24,7 +24,7 @@ export default defineConfig({
   ],
   // Run your local dev server before starting the tests.
   webServer: {
-    command: 'bun run devserver',
+    command: 'pnpm run devserver',
     url: 'http://localhost:8080',
     reuseExistingServer: !process.env.CI,
   },

@@ -69,16 +69,6 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
 
     module: {
       rules: [
-        {
-          resolve: {
-            alias: {
-              'react-reconciler$': path.resolve(
-                import.meta.dirname,
-                '../node_modules/react-reconciler/cjs/react-reconciler.production.min.js'
-              ),
-            },
-          },
-        },
         // This must come first in the rules array otherwise it breaks sourcemaps.
         {
           test: /src\/(?:.*\/)?module\.tsx?$/,

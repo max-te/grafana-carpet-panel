@@ -76,7 +76,7 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
     },
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx'],
-      tsConfig: "./tsconfig.json"
+      tsConfig: './tsconfig.json',
     },
     plugins: [
       new rspack.HtmlRspackPlugin({

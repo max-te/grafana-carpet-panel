@@ -10,10 +10,9 @@ It is build with [Konva](https://konvajs.org/) and [react-konva](https://www.npm
 ![Screenshot](src/img/screenshot.png)
 
 ## Building
-
-This project uses [Bun](https://bun.sh/) as a package manager and build tool together with [Rspack](https://rspack.dev/) as a bundler.
+This project uses [Node](https://nodejs.org/) as a runtime with [pnpm](https://pnpm.io/) as a package manager and [Rspack](https://rspack.dev/) as a bundler.
 This build setup is a custom port of the Grafana plugin template which uses node and webpack.
-Install dependencies with `bun install` and build with `bun run build` the output will be in `dist/`.
+Install dependencies with `pnpm install` and build with `pnpm run build` the output will be in `dist/`.
 
 ## Installation
 
@@ -25,9 +24,9 @@ Add the plugin from the `dist/` folder to your Grafana instance's `plugins` fold
 
 ### Docker
 
-Run `bun run server` to start a Grafana development server Docker container with the plugin from `dist/` and a sample dashboard;
-run `bun run watch` parallelly to build the plugin on changes.
+Run `pnpm run server` to start a Grafana development server Docker container with the plugin from `dist/` and a sample dashboard;
+run `pnpm run watch` parallelly to build the plugin on changes.
 
 ### Test page
 
-For a simpler development test setup you can instead run `bun run devserver` which serves a small test harness mocking grafana data. This has the advantage of running React in development mode, however you will not get the full functionality of the panel.
+For a simpler development test setup you can instead run `pnpm run devserver` which serves a small test harness mocking grafana data. This has the advantage of running React in development mode, however you will not get the full functionality of the panel.

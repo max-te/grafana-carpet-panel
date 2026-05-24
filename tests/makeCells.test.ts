@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect } from 'vitest';
 import { dateTime } from '@grafana/data';
 import type { Field, TimeRange } from '@grafana/data';
 import * as testData from '../testsupport/testdata.json';
@@ -44,10 +44,7 @@ describe('makeCells', () => {
   });
 
   it('should create cells spanning date boundaries with split', () => {
-    const times = [
-      dateTime('2024-01-01T22:00:00Z').valueOf(),
-      dateTime('2024-01-02T02:00:00Z').valueOf(),
-    ];
+    const times = [dateTime('2024-01-01T22:00:00Z').valueOf(), dateTime('2024-01-02T02:00:00Z').valueOf()];
     const values = [1, 2];
     const tr = {
       from: dateTime('2024-01-01T20:00:00Z'),
@@ -66,10 +63,7 @@ describe('makeCells', () => {
 
   it('should handle pre-epoch dates', () => {
     // Dec 31, 1969 22:00 UTC → Jan 1, 1970 02:00 UTC (spans epoch)
-    const times = [
-      Date.UTC(1969, 11, 31, 22, 0, 0),
-      Date.UTC(1970, 0, 1, 2, 0, 0),
-    ];
+    const times = [Date.UTC(1969, 11, 31, 22, 0, 0), Date.UTC(1970, 0, 1, 2, 0, 0)];
     const values = [1, 2];
     const tr = {
       from: dateTime(Date.UTC(1969, 11, 31, 20, 0, 0)),
@@ -80,8 +74,10 @@ describe('makeCells', () => {
     const cells = makeCells(values, times, 'utc', tr, 100, 200);
 
     expect(cells.length).toBeGreaterThan(0);
-    expect(cells.every((c) => c.right > c.left)).toBe(true);
-    expect(cells.every((c) => c.bottom >= c.top)).toBe(true);
+    for (const c of cells) {
+      expect(c.right).toBeGreaterThan(c.left);
+      expect(c.bottom).toBeGreaterThanOrEqual(c.top);
+    }
   });
 
   it('should match snapshot with testdata', () => {
