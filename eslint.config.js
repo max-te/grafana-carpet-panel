@@ -1,12 +1,11 @@
-import eslint from '@eslint/js';
+import grafanaConfig from '@grafana/eslint-config';
 import tseslint from 'typescript-eslint';
 import eslintReact from '@eslint-react/eslint-plugin';
 import reactCompiler from 'eslint-plugin-react-compiler';
+import eslint from '@eslint/js';
 
-/**
- * @type {import("typescript-eslint").ConfigArray}
- **/
-const config = tseslint.config(
+export default tseslint.config(
+  ...grafanaConfig,
   {
     plugins: {
       'react-compiler': reactCompiler,
@@ -26,13 +25,14 @@ const config = tseslint.config(
         tsconfigRootDir: import.meta.dirname,
       },
     },
-    // ESLint
     rules: {},
   },
-  // TypeScript
+  {
+    rules: {
+      'react/prop-types': 'off',
+    },
+  },
   {
     rules: {},
   }
 );
-
-export default config;

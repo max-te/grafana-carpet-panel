@@ -29,9 +29,11 @@ export const XAxisIndicator: React.FC<{
   const ticks = React.useMemo(() => {
     const ts = scale.ticks();
     ts.forEach((t) => t.setHours(12));
-    if (isLong) ts.forEach((t) => t.setDate(1));
+    if (isLong) {
+      ts.forEach((t) => t.setDate(1));
+    }
     return ts;
-  }, [scale]);
+  }, [scale, isLong]);
 
   // TODO: Implement adaptive tick density based on available width to prevent label overlap
   const spacing = width / ticks.length;
@@ -65,6 +67,7 @@ export const XAxisIndicator: React.FC<{
     </>
   );
 });
+XAxisIndicator.displayName = 'XAxisIndicator';
 
 export const YAxisIndicator: React.FC<{ x: number; y: number; height: number; width: number }> = ({
   x,

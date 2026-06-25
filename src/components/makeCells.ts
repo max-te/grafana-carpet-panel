@@ -27,12 +27,12 @@ function getTimeStep(timeValues: number[]): number {
 }
 
 export function makeCells(
-  values: (number | null)[],
+  values: Array<number | null>,
   timeValues: number[],
   timeZone: string,
   timeRange: TimeRange,
-  height: number = 1,
-  width: number = 1
+  height = 1,
+  width = 1
 ): Cell[] {
   const tz = resolveTimeZone(timeZone);
   const xTime = makeTimeScale(timeRange, width, tz);
@@ -58,7 +58,9 @@ export function makeCells(
     nextDayX = 0;
   for (let i = 0; i < values.length; i++) {
     const value = values[i];
-    if (value === null || value === undefined) continue;
+    if (value === null || value === undefined) {
+      continue;
+    }
     // timeValues and values share length
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const date = Temporal.Instant.fromEpochMilliseconds(timeValues[i]!).toZonedDateTimeISO(tz);

@@ -69,7 +69,9 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       x: innerRect.x + outerRect.x + innerRect.width,
       y: innerRect.y + outerRect.y + innerRect.height,
     });
-    if (evt.buttons !== 1) setSelectionStart(null);
+    if (evt.buttons !== 1) {
+      setSelectionStart(null);
+    }
   }, []);
   const handleCellMouseOut = useCallback(() => {
     setTooltipData(null);
@@ -79,19 +81,22 @@ export const CarpetPlot: React.FC<ChartProps> = ({
     const cellTs = currentTarget.getAttr('data-ts') as number;
     setSelectionStart(cellTs);
   }, []);
-  const handleCellMouseUp = useCallback(({ evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
-    evt.stopPropagation();
-    const end = currentTarget.getAttr('data-ts') as number;
-    setSelectionStart((start) => {
-      if (typeof start === 'number' && typeof end === 'number' && start != end) {
-        onChangeTimeRange?.({
-          from: Math.min(start, end) * 1000,
-          to: Math.max(start, end) * 1000,
-        });
-      }
-      return null;
-    });
-  }, []);
+  const handleCellMouseUp = useCallback(
+    ({ evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
+      evt.stopPropagation();
+      const end = currentTarget.getAttr('data-ts') as number;
+      setSelectionStart((start) => {
+        if (typeof start === 'number' && typeof end === 'number' && start !== end) {
+          onChangeTimeRange?.({
+            from: Math.min(start, end) * 1000,
+            to: Math.max(start, end) * 1000,
+          });
+        }
+        return null;
+      });
+    },
+    [onChangeTimeRange]
+  );
 
   const minMax = getMinMaxAndDelta(valueField);
   const min = minMax.min ?? 0;
@@ -164,6 +169,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       handleCellMouseDown,
       handleCellMouseOver,
       handleCellMouseUp,
+      handleCellMouseOut,
       gapWidth,
       theme.colors.background.primary,
       colorScale,
@@ -186,7 +192,9 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       highlightedCells.push(hoveredCell);
       if (hoveredCell.split) {
         const splitCell = cells[(tooltipData?.idx ?? 0) + hoveredCell.split];
-        if (splitCell) highlightedCells.push(splitCell);
+        if (splitCell) {
+          highlightedCells.push(splitCell);
+        }
       }
     }
   } else if (externalHoverTime) {

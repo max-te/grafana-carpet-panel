@@ -84,8 +84,6 @@ export function useColorScale(colorOptions: HeatmapColorOptions) {
   }, [
     colorOptions.exponent,
     colorOptions.fill,
-    colorOptions.max,
-    colorOptions.min,
     colorOptions.mode,
     colorOptions.reverse,
     colorOptions.scale,

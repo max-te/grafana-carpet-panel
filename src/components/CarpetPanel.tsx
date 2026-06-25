@@ -73,8 +73,8 @@ export const CarpetPanel: React.FC<Props> = ({
   const dpr = useKonvaDpr();
   const colorScale = useColorScale(options.color);
   const { setGlobalHover, incomingHover } = useDashboardHoverEvents();
-  width = Math.trunc(width)
-  height = Math.trunc(height)
+  width = Math.trunc(width);
+  height = Math.trunc(height);
 
   const onHover = React.useCallback(
     (cell: { time: number } | null) => {
@@ -83,7 +83,7 @@ export const CarpetPanel: React.FC<Props> = ({
     [setGlobalHover]
   );
 
-  if (data.series.length == 0) {
+  if (data.series.length === 0) {
     return (
       <PanelDataErrorView
         fieldConfig={fieldConfig}
@@ -109,7 +109,9 @@ export const CarpetPanel: React.FC<Props> = ({
           (f) => f.name === options.valueField?.name || f.config.displayNameFromDS === options.valueField?.name
         )
       : frame.fields.find((f) => f.type === FieldType.number);
-    if (valueField) break;
+    if (valueField) {
+      break;
+    }
   }
 
   if (timeField === undefined || valueField === undefined) {
