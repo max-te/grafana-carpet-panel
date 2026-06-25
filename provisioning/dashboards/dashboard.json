@@ -194,7 +194,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "0.13.0",
       "targets": [
         {
           "refId": "A"
