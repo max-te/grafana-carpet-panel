@@ -59,6 +59,8 @@ export function makeCells(
   for (let i = 0; i < values.length; i++) {
     const value = values[i];
     if (value === null || value === undefined) continue;
+    // timeValues and values share length
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const date = Temporal.Instant.fromEpochMilliseconds(timeValues[i]!).toZonedDateTimeISO(tz);
     const time = date.epochMilliseconds / 1000;
 

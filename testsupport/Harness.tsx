@@ -70,7 +70,12 @@ export const Harness: React.FC = () => {
   const [width, setWidth] = React.useState<number>(1000);
   const [height, setHeight] = React.useState<number>(360);
   const [isResizing, setIsResizing] = React.useState(false);
-  const resizeStartRef = React.useRef<{ startX: number; startY: number; startWidth: number; startHeight: number } | null>(null);
+  const resizeStartRef = React.useRef<{
+    startX: number;
+    startY: number;
+    startWidth: number;
+    startHeight: number;
+  } | null>(null);
 
   const handleResizeStart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -84,7 +89,7 @@ export const Harness: React.FC = () => {
       if (!resizeStartRef.current) return;
       const dx = moveEvent.clientX - resizeStartRef.current.startX;
       const dy = moveEvent.clientY - resizeStartRef.current.startY;
-      setWidth(Math.max(minWidth, Math.min(maxWidth, resizeStartRef.current.startWidth + 2*dx))); // double effect due to centering
+      setWidth(Math.max(minWidth, Math.min(maxWidth, resizeStartRef.current.startWidth + 2 * dx))); // double effect due to centering
       setHeight(Math.max(minHeight, Math.min(maxHeight, resizeStartRef.current.startHeight + dy)));
     };
     const handleMouseUp = () => {
@@ -130,15 +135,8 @@ export const Harness: React.FC = () => {
     <ThemeContext.Provider value={theme}>
       <GlobalStyles />
       <style>{inlineStyle}</style>
-      <Box
-        padding={1}
-        display="flex"
-        justifyContent={"center"}
-        width={'100%'}
-        height={'min-content'}
-        marginY={1}
-      >
-        <Box padding={1} borderColor={"medium"} borderStyle={'solid'}>
+      <Box padding={1} display="flex" justifyContent={'center'} width={'100%'} height={'min-content'} marginY={1}>
+        <Box padding={1} borderColor={'medium'} borderStyle={'solid'}>
           <Legend>Paneltest</Legend>
           <div style={{ position: 'relative' }}>
             <ErrorBoundaryAlert>
@@ -201,7 +199,7 @@ export const Harness: React.FC = () => {
           </InlineField>
         </InlineFieldRow>
         <InlineField label="Gap" grow>
-          <Slider inputId='gap' value={gapWidth} onChange={setGapWidth} min={0} max={10} step={0.5} />
+          <Slider inputId="gap" value={gapWidth} onChange={setGapWidth} min={0} max={10} step={0.5} />
         </InlineField>
         <InlineFieldRow>
           <InlineField>

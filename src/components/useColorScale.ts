@@ -77,8 +77,8 @@ export function useColorScale(colorOptions: HeatmapColorOptions) {
         }
       }
       default: {
-        const mode = colorOptions.mode satisfies never as string;
-        throw new Error(`Unexpected color mode: ${mode}`);
+        const _exhaustive: never = colorOptions.mode;
+        throw new Error(`Unexpected color mode: ${_exhaustive as unknown as string}`);
       }
     }
   }, [

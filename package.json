@@ -1,7 +1,7 @@
 {
   "name": "maxte-carpet-panel",
   "type": "module",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "scripts": {
     "build": "rspack build --env production --config rspack/config.ts",
     "dev": "rspack build --env development --config rspack/config.ts",
@@ -35,16 +35,17 @@
   },
   "devDependencies": {
     "@babel/types": "^7.28.2",
-    "@biomejs/biome": "^2.1.3",
+    "@biomejs/biome": "^2.5.1",
     "@emotion/core": "10.0.27",
     "@eslint-react/eslint-plugin": "^1.41.0",
     "@eslint/js": "^9.24.0",
     "@grafana/eslint-config": "^8.0.0",
     "@grafana/tsconfig": "^2.0.0",
-    "@playwright/test": "^1.54.1",
-    "@rspack/cli": "^1.7.6",
-    "@rspack/core": "^1.7.6",
+    "@playwright/test": "^1.61.1",
+    "@rspack/cli": "^1.7.12",
+    "@rspack/core": "^1.7.12",
     "@types/d3": "^7.4.3",
+    "@types/d3-scale-chromatic": "^3.1.0",
     "@types/eslint": "^9.6.1",
     "@types/node": "^20.8.7",
     "@types/react": "^18.0.0",
@@ -56,14 +57,14 @@
     "eslint-plugin-deprecation": "^2.0.0",
     "eslint-plugin-react-compiler": "^19.0.0-beta-af1b7da-20250417",
     "eslint-webpack-plugin": "^4.0.1",
-    "happy-dom": "^20.9.0",
+    "happy-dom": "^20.10.6",
     "react-compiler-webpack": "^0.2.0",
     "replace-in-file-webpack-plugin": "^1.0.6",
     "style-loader": "^4.0.0",
-    "ts-checker-rspack-plugin": "^1.1.4",
+    "ts-checker-rspack-plugin": "^1.4.0",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "4.8.4",
-    "typescript-eslint": "^8.29.1",
-    "vitest": "^4.1.7"
+    "typescript": "^5.8.0",
+    "typescript-eslint": "^8.62.0",
+    "vitest": "^4.1.9"
   }
 }

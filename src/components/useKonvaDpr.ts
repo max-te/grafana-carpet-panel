@@ -11,29 +11,31 @@ export function useKonvaDpr(): number {
 }
 
 function useDevicePixelRatio(options?: DevicePixelRatioOptions) {
-  const dpr = getDevicePixelRatio(options)
-  const [currentDpr, setCurrentDpr] = useState(dpr)
-  const {defaultDpr, maxDpr, round} = options || {}
+  const dpr = getDevicePixelRatio(options);
+  const [currentDpr, setCurrentDpr] = useState(dpr);
+  const { defaultDpr, maxDpr, round } = options || {};
 
   useEffect(() => {
-    const canListen = typeof window !== 'undefined' && 'matchMedia' in window
+    const canListen = typeof window !== 'undefined' && 'matchMedia' in window;
     if (!canListen) {
-      console.error('cannot listen to dpr events')
-      return
+      console.error('cannot listen to dpr events');
+      return;
     }
 
     const updateDpr = () => {
-      setCurrentDpr(getDevicePixelRatio({defaultDpr, maxDpr, round}))
-    }
+      setCurrentDpr(getDevicePixelRatio({ defaultDpr, maxDpr, round }));
+    };
     const currentDprLower = Math.trunc(currentDpr * 10) / 10;
     const currentDprUpper = currentDprLower + 0.1;
-    const mediaMatcher = window.matchMedia(`screen and (min-resolution: ${currentDprLower.toFixed(1)}dppx) and (max-resolution: ${currentDprUpper.toFixed(1)}dppx)`)
-    mediaMatcher.addEventListener('change', updateDpr)
+    const mediaMatcher = window.matchMedia(
+      `screen and (min-resolution: ${currentDprLower.toFixed(1)}dppx) and (max-resolution: ${currentDprUpper.toFixed(1)}dppx)`
+    );
+    mediaMatcher.addEventListener('change', updateDpr);
 
     return () => {
-        mediaMatcher.removeEventListener('change', updateDpr)
-    }
-  }, [currentDpr, defaultDpr, maxDpr, round])
+      mediaMatcher.removeEventListener('change', updateDpr);
+    };
+  }, [currentDpr, defaultDpr, maxDpr, round]);
 
-  return currentDpr
+  return currentDpr;
 }
