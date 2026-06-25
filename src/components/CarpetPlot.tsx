@@ -73,7 +73,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       setSelectionStart(null);
     }
   }, []);
-  const handleCellMouseOut = useCallback(() => {
+  const handleLayerMouseLeave = useCallback(() => {
     setTooltipData(null);
   }, []);
   const handleCellMouseDown = useCallback(({ evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
@@ -140,7 +140,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   );
   const heatmapLayer = useMemo(
     () => (
-      <Layer onMouseOut={handleCellMouseOut} x={leftPadding} y={topPadding}>
+      <Layer onMouseLeave={handleLayerMouseLeave} x={leftPadding} y={topPadding}>
         {cells.map((cell, idx) => (
           <Rect
             key={cell.time.toFixed(0) + (cell.split ? cell.split.toFixed(0) : '')}
@@ -169,7 +169,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       handleCellMouseDown,
       handleCellMouseOver,
       handleCellMouseUp,
-      handleCellMouseOut,
+      handleLayerMouseLeave,
       gapWidth,
       theme.colors.background.primary,
       colorScale,

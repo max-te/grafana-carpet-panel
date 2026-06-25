@@ -11,6 +11,10 @@
 - **Config**: Remove `.npmrc` — `react-data-grid` exotic subdep resolved upstream
   in @grafana/ui@13.1.0 (grafana/grafana#124873).
 
+### Bugfixes
+
+- **Tooltip**: The tooltip now keeps a stable offset when moving across the graph instead of reappearing on each cell.
+
 ### Maintenance
 
 - **TS**: Upgrade TypeScript 4.8.4 → ^5.8.0 — resolves all `@typescript-eslint/no-unsafe-*`
