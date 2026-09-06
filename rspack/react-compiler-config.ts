@@ -33,7 +33,7 @@ export const reactCompilerConfig = {
             err.name = event.detail.severity;
             err.stack =
               `${event.detail.severity}: ${event.detail.reason}` +
-              `\n    at ${event.detail.loc ? formatSite(file, event.detail.loc) : file}` +
+              `\n    at ${'loc' in event.detail && event.detail.loc ? formatSite(file, event.detail.loc) : file}` +
               (event.fnLoc ? `\n    at ${formatSite(file, event.fnLoc)}` : '');
             consola.warn(err);
 
