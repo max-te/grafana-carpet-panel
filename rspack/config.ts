@@ -42,6 +42,8 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
       '@grafana/slate-react',
       'react',
       'react-dom',
+      // react-konva-utils' <Html> pulls in this subpath
+      'react-dom/client',
       'react-redux',
       'redux',
       'rxjs',

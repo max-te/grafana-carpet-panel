@@ -1,4 +1,2 @@
 allowBuilds:
   protobufjs: true
-minimumReleaseAgeExclude:
-  - '@grafana/ui@13.1.0'
