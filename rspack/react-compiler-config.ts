@@ -19,7 +19,7 @@ function formatSite(file: string, loc?: SourceLocation | null): string {
 export const reactCompilerConfig = {
   loader: reactCompilerLoader,
   options: {
-    target: '17',
+    target: '19',
     panicThreshold: 'all_errors',
     compilationMode: 'annotation',
     logger: {

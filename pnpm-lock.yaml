@@ -100,8 +100,8 @@ importers:
         specifier: ^1.4.6
         version: 1.4.6
       babel-plugin-react-compiler:
-        specifier: ^1.0.0
-        version: 1.0.0
+        specifier: ^19.1.0-rc.3
+        version: 19.1.0-rc.1-rc-af1b7da-20250421
       consola:
         specifier: ^3.4.2
         version: 3.4.2
@@ -128,7 +128,7 @@ importers:
         version: 20.11.0
       react-compiler-webpack:
         specifier: ^1.0.0
-        version: 1.0.1(babel-plugin-react-compiler@1.0.0)(supports-color@8.1.1)
+        version: 1.0.1(babel-plugin-react-compiler@19.1.0-rc.1-rc-af1b7da-20250421)(supports-color@8.1.1)
       replace-in-file-webpack-plugin:
         specifier: ^1.0.6
         version: 1.0.6
@@ -1939,8 +1939,9 @@ packages:
     resolution: {integrity: sha512-Cg7TFGpIr01vOQNODXOOaGz2NpCU5gl8x1qJFbb6hbZxR7XrcE2vtbAsTAbJ7/xwJtUuJEw8K8Zr/AE0LHlesg==}
     engines: {node: '>=10', npm: '>=6'}
 
-  babel-plugin-react-compiler@1.0.0:
-    resolution: {integrity: sha512-Ixm8tFfoKKIPYdCCKYTsqv+Fd4IJ0DQqMyEimo+pxUOMUR9cVPlwTrFt9Avu+3cb6Zp3mAzl+t1MrG2fxxKsxw==}
+  babel-plugin-react-compiler@19.1.0-rc.1-rc-af1b7da-20250421:
+    resolution: {integrity: sha512-E3kaokBhWDLf7ZD8fuYjYn0ZJHYZ+3EHtAWCdX2hl4lpu1z9S/Xr99sxhx2bTCVB41oIesz9FtM8f4INsrZaOw==}
+    deprecated: Wrong version name was published
 
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
@@ -2600,6 +2601,7 @@ packages:
   eslint@9.39.5:
     resolution: {integrity: sha512-DgZS62aPLXKlnxILS/AYCoRvHaZeXceIzlXPkkGGzJWSow1aEk0lbTlxUSlyjC8jcaKxAdOnTDz+o1JFSBsyjw==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+    deprecated: This version is no longer supported. Please see https://eslint.org/version-support for other options.
     hasBin: true
     peerDependencies:
       jiti: '*'
@@ -7222,7 +7224,7 @@ snapshots:
       cosmiconfig: 7.1.0
       resolve: 1.22.12
 
-  babel-plugin-react-compiler@1.0.0:
+  babel-plugin-react-compiler@19.1.0-rc.1-rc-af1b7da-20250421:
     dependencies:
       '@babel/types': 7.29.7
 
@@ -9288,12 +9290,12 @@ snapshots:
     dependencies:
       react: 19.2.4
 
-  react-compiler-webpack@1.0.1(babel-plugin-react-compiler@1.0.0)(supports-color@8.1.1):
+  react-compiler-webpack@1.0.1(babel-plugin-react-compiler@19.1.0-rc.1-rc-af1b7da-20250421)(supports-color@8.1.1):
     dependencies:
       '@babel/core': 7.29.7(supports-color@8.1.1)
       '@babel/plugin-syntax-jsx': 7.29.7(@babel/core@7.29.7(supports-color@8.1.1))
       '@babel/plugin-syntax-typescript': 7.29.7(@babel/core@7.29.7(supports-color@8.1.1))
-      babel-plugin-react-compiler: 1.0.0
+      babel-plugin-react-compiler: 19.1.0-rc.1-rc-af1b7da-20250421
     transitivePeerDependencies:
       - supports-color
 
