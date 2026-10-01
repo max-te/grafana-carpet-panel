@@ -5,9 +5,20 @@ import {
   getMinMaxAndDelta,
   type AbsoluteTimeRange,
   type Field,
+  type GrafanaTheme2,
   type TimeRange,
 } from '@grafana/data';
-import { SeriesTable, useTheme2, VizTooltip } from '@grafana/ui';
+import {
+  useStyles2,
+  useTheme2,
+  VizTooltip,
+  VizTooltipColorIndicator,
+  VizTooltipColorPlacement,
+  VizTooltipContent,
+  VizTooltipHeader,
+  VizTooltipWrapper,
+} from '@grafana/ui';
+import { css } from '@emotion/css';
 import * as d3 from 'd3';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Rect, Layer } from 'react-konva';
@@ -35,6 +46,11 @@ interface ChartProps {
   externalHoverTime?: number;
 }
 
+const getStyles = (theme: GrafanaTheme2) => ({
+  // Header and content bring their own padding; cancel VizTooltip's container padding
+  tooltip: css({ margin: theme.spacing(-1) }),
+});
+
 function useColorScale(colorPalette: ColorPalette, min: number, max: number) {
   const colorScale = useMemo(() => d3.scaleSequential(colorPalette).domain([min, max]), [min, max, colorPalette]);
   return colorScale;
@@ -56,6 +72,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   externalHoverTime,
 }) => {
   const theme = useTheme2();
+  const styles = useStyles2(getStyles);
   const [tooltipData, setTooltipData] = useState<{ idx: number; time: number; x: number; y: number } | null>(null);
   const [selectionStart, setSelectionStart] = useState<Pick<Cell, 'time' | 'endTime'> | null>(null);
 
@@ -232,16 +249,20 @@ export const CarpetPlot: React.FC<ChartProps> = ({
           offset={{ x: 5, y: 5 }}
           content={
             hoveredCell ? (
-              <SeriesTable
-                timestamp={dateTimeFormat(hoveredCell.time * 1000, { timeZone })}
-                series={[
-                  {
-                    label: valueField.config.displayName || valueField.config.displayNameFromDS || valueField.name,
-                    value: formattedValueToString(display(hoveredCell.value)),
-                    color: colorScale(max),
-                  },
-                ]}
-              />
+              <VizTooltipWrapper className={styles.tooltip}>
+                <VizTooltipHeader item={{ label: '', value: dateTimeFormat(hoveredCell.time * 1000, { timeZone }) }} />
+                <VizTooltipContent
+                  items={[
+                    {
+                      label: valueField.config.displayName || valueField.config.displayNameFromDS || valueField.name,
+                      value: formattedValueToString(display(hoveredCell.value)),
+                      color: colorScale(hoveredCell.value),
+                      colorIndicator: VizTooltipColorIndicator.value,
+                      colorPlacement: VizTooltipColorPlacement.trailing,
+                    },
+                  ]}
+                />
+              </VizTooltipWrapper>
             ) : undefined
           }
         />
