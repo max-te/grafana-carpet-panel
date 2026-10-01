@@ -1,4 +1,4 @@
-import { type TimeRange } from '@grafana/data';
+import type { TimeRange } from '@grafana/data';
 import { Temporal } from '@js-temporal/polyfill';
 import { makeTimeScale } from './useTimeScale';
 import { resolveTimeZone } from './timeZone';
