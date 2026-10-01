@@ -14,16 +14,18 @@ export type Cell = {
   split?: number;
 };
 
+const FALLBACK_TIME_STEP = 3600;
+
 function getTimeStep(timeValues: number[]): number {
   let minInterval = Infinity;
   for (let i = 1; i < timeValues.length; i++) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- range checked above
     const interval = timeValues[i]! - timeValues[i - 1]!;
-    if (interval < minInterval) {
+    if (interval > 0 && interval < minInterval) {
       minInterval = interval;
     }
   }
-  return minInterval / 1000;
+  return Number.isFinite(minInterval) ? minInterval / 1000 : FALLBACK_TIME_STEP;
 }
 
 export function makeCells(
@@ -69,7 +71,7 @@ export function makeCells(
     while (time >= nextDay.epochMilliseconds / 1000) {
       dayStart = dayStart === nextDay ? date.startOfDay() : nextDay;
       nextDay = dayStart.add({ days: 1 });
-      x = nextDayX;
+      x = xTime(dayStart.epochMilliseconds);
       nextDayX = xTime(nextDay.epochMilliseconds);
       dayWidth = nextDayX - x;
     }

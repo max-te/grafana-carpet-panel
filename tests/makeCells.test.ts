@@ -80,6 +80,50 @@ describe('makeCells', () => {
     }
   });
 
+  it('should place the first day column at its date when data starts late', () => {
+    const start = dateTime('2024-01-03T00:00:00Z').valueOf();
+    const times = [start, start + 3600_000];
+    const tr = {
+      from: dateTime('2024-01-01T00:00:00Z'),
+      to: dateTime('2024-01-04T12:00:00Z'),
+      raw: { from: '2024-01-01T00:00:00Z', to: '2024-01-04T12:00:00Z' },
+    };
+
+    const cells = makeCells([1, 2], times, 'utc', tr);
+
+    for (const c of cells) {
+      expect(c.left).toBeCloseTo(0.5);
+      expect(c.right).toBeCloseTo(0.75);
+    }
+  });
+
+  it('should handle a single data point', () => {
+    const tr = {
+      from: dateTime('2024-01-01T00:00:00Z'),
+      to: dateTime('2024-01-02T00:00:00Z'),
+      raw: { from: '2024-01-01T00:00:00Z', to: '2024-01-02T00:00:00Z' },
+    };
+
+    const cells = makeCells([1], [dateTime('2024-01-01T10:00:00Z').valueOf()], 'utc', tr);
+
+    expect(cells.length).toBe(1);
+  });
+
+  it('should ignore duplicate timestamps when deriving the cell height', () => {
+    const start = dateTime('2024-01-01T10:00:00Z').valueOf();
+    const tr = {
+      from: dateTime('2024-01-01T00:00:00Z'),
+      to: dateTime('2024-01-02T00:00:00Z'),
+      raw: { from: '2024-01-01T00:00:00Z', to: '2024-01-02T00:00:00Z' },
+    };
+
+    const cells = makeCells([1, 2, 3], [start, start, start + 3600_000], 'utc', tr);
+
+    for (const c of cells) {
+      expect(c.bottom - c.top).toBeCloseTo(1 / 24);
+    }
+  });
+
   it('should match snapshot with testdata', () => {
     const cells = makeCells(valueValues, timeValues, timeZone, timeRange, height, width);
 
