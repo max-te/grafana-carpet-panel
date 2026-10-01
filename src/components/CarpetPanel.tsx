@@ -129,9 +129,15 @@ export const CarpetPanel: React.FC<Props> = ({
     return <PanelDataErrorView fieldConfig={fieldConfig} panelId={id} data={data} needsTimeField />;
   }
 
-  valueField.config.unit = options.valueField?.unit;
-  valueField.config.min = options.color.min;
-  valueField.config.max = options.color.max;
+  const displayedValueField: Field<number> = {
+    ...valueField,
+    config: {
+      ...valueField.config,
+      unit: options.valueField?.unit || valueField.config.unit,
+      min: options.color.min,
+      max: options.color.max,
+    },
+  };
 
   return (
     <Stage width={width} height={height} key={dpr}>
@@ -140,7 +146,7 @@ export const CarpetPanel: React.FC<Props> = ({
         height={height}
         timeRange={timeRange}
         timeField={timeField}
-        valueField={valueField}
+        valueField={displayedValueField}
         colorPalette={colorScale.call}
         timeZone={timeZone}
         gapWidth={options.gapWidth ?? 0}
