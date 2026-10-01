@@ -57,7 +57,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
 }) => {
   const theme = useTheme2();
   const [tooltipData, setTooltipData] = useState<{ idx: number; x: number; y: number } | null>(null);
-  const [selectionStart, setSelectionStart] = useState<number | null>(null);
+  const [selectionStart, setSelectionStart] = useState<Pick<Cell, 'time' | 'endTime'> | null>(null);
 
   const handleCellMouseOver = useCallback(({ evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
     evt.stopPropagation();
@@ -78,18 +78,23 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   }, []);
   const handleCellMouseDown = useCallback(({ evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
     evt.stopPropagation();
-    const cellTs = currentTarget.getAttr('data-ts') as number;
-    setSelectionStart(cellTs);
+    setSelectionStart({
+      time: currentTarget.getAttr('data-ts') as number,
+      endTime: currentTarget.getAttr('data-end-ts') as number,
+    });
   }, []);
   const handleCellMouseUp = useCallback(
     ({ evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
       evt.stopPropagation();
-      const end = currentTarget.getAttr('data-ts') as number;
+      const end = {
+        time: currentTarget.getAttr('data-ts') as number,
+        endTime: currentTarget.getAttr('data-end-ts') as number,
+      };
       setSelectionStart((start) => {
-        if (typeof start === 'number' && typeof end === 'number' && start !== end) {
+        if (start && start.time !== end.time) {
           onChangeTimeRange?.({
-            from: Math.min(start, end) * 1000,
-            to: Math.max(start, end) * 1000,
+            from: Math.min(start.time, end.time) * 1000,
+            to: Math.max(start.endTime, end.endTime) * 1000,
           });
         }
         return null;
@@ -150,6 +155,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
             height={Math.floor(cell.bottom * innerHeight) - Math.floor(cell.top * innerHeight)}
             fill={colorScale(cell.value)}
             data-ts={cell.time}
+            data-end-ts={cell.endTime}
             data-idx={idx}
             onMouseOver={handleCellMouseOver}
             onMouseDown={handleCellMouseDown}
@@ -185,8 +191,8 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   const highlightedCells: Cell[] = [];
   if (hoveredCell) {
     if (selectionStart) {
-      const start = Math.min(hoveredCell.time, selectionStart);
-      const end = Math.max(hoveredCell.time, selectionStart);
+      const start = Math.min(hoveredCell.time, selectionStart.time);
+      const end = Math.max(hoveredCell.time, selectionStart.time);
       highlightedCells.push(...cells.filter((c) => c.time >= start && c.time <= end));
     } else {
       highlightedCells.push(hoveredCell);
