@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { dateTime } from '@grafana/data';
-import type { Field, TimeRange } from '@grafana/data';
+import { dateTime, type Field, type TimeRange } from '@grafana/data';
 import * as testData from '../testsupport/testdata.json';
 import { makeCells } from '../src/components/makeCells';
 
@@ -10,7 +9,9 @@ const timeRange: TimeRange = {
   raw: testData.request.range.raw,
 };
 
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const timeField: Field<number> = testData.series[0]!.fields[0] as Field<number>;
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const valueField = testData.series[0]!.fields[1] as Field<number>;
 
 const timeValues = timeField.values;
@@ -30,7 +31,7 @@ describe('makeCells', () => {
   });
 
   it('should handle null values by skipping them', () => {
-    const valuesWithNull = [1, 2, null, 3, 4] as (number | null)[];
+    const valuesWithNull = [1, 2, null, 3, 4] as Array<number | null>;
     const times = [1000, 2000, 3000, 4000, 5000];
     const tr = {
       from: dateTime(1000),

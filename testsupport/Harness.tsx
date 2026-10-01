@@ -38,7 +38,7 @@ const maxHeight = 400;
 const minWidth = 100;
 const maxWidth = 1000;
 
-// Must render inside ThemeContext.Provider so the palette follows the selected theme
+// Must render inside ThemeContext so the palette follows the selected theme
 const ThemedCarpetPlot: React.FC<Omit<ChartProps, 'colorPalette'> & { colorOptions: HeatmapColorOptions }> = ({
   colorOptions,
   ...chartProps
@@ -92,9 +92,13 @@ export const Harness: React.FC = () => {
   };
 
   React.useEffect(() => {
-    if (!isResizing) return;
+    if (!isResizing) {
+      return;
+    }
     const handleMouseMove = (moveEvent: MouseEvent) => {
-      if (!resizeStartRef.current) return;
+      if (!resizeStartRef.current) {
+        return;
+      }
       const dx = moveEvent.clientX - resizeStartRef.current.startX;
       const dy = moveEvent.clientY - resizeStartRef.current.startY;
       setWidth(Math.max(minWidth, Math.min(maxWidth, resizeStartRef.current.startWidth + 2 * dx))); // double effect due to centering
@@ -116,7 +120,7 @@ export const Harness: React.FC = () => {
   const [showXAxis, setShowXAxis] = React.useState<boolean>(true);
   const [showYAxis, setShowYAxis] = React.useState<boolean>(true);
   const [lastHover, setLastHover] = React.useState<string>('null');
-  const [timeRangeUpdate, updateTimeRange] = React.useState<{ from: number; to: number } | null>(null);
+  const [timeRangeUpdate, setTimeRangeUpdate] = React.useState<{ from: number; to: number } | null>(null);
 
   const chartProps: Omit<ChartProps, 'colorPalette'> = {
     width,
@@ -129,17 +133,17 @@ export const Harness: React.FC = () => {
     showXAxis,
     showYAxis,
     onHover(cell) {
-      console.debug('Hover Event', cell);
+      console.info('Hover Event', cell);
       setLastHover(JSON.stringify(cell));
     },
     onChangeTimeRange(range) {
-      console.debug('Change Time Range', range);
-      updateTimeRange(range);
+      console.info('Change Time Range', range);
+      setTimeRangeUpdate(range);
     },
   };
 
   return (
-    <ThemeContext.Provider value={theme}>
+    <ThemeContext value={theme}>
       <GlobalStyles />
       <style>{inlineStyle}</style>
       <Box padding={1} display="flex" justifyContent={'center'} width={'100%'} height={'min-content'} marginY={1}>
@@ -210,13 +214,25 @@ export const Harness: React.FC = () => {
         </InlineField>
         <InlineFieldRow>
           <InlineField>
-            <Checkbox value={showXAxis} onChange={(e) => setShowXAxis(e.currentTarget.checked)} label="show X axis" />
+            <Checkbox
+              value={showXAxis}
+              onChange={(e) => {
+                setShowXAxis(e.currentTarget.checked);
+              }}
+              label="show X axis"
+            />
           </InlineField>
           <InlineField>
-            <Checkbox value={showYAxis} onChange={(e) => setShowYAxis(e.currentTarget.checked)} label="show Y axis" />
+            <Checkbox
+              value={showYAxis}
+              onChange={(e) => {
+                setShowYAxis(e.currentTarget.checked);
+              }}
+              label="show Y axis"
+            />
           </InlineField>
         </InlineFieldRow>
       </Box>
-    </ThemeContext.Provider>
+    </ThemeContext>
   );
 };

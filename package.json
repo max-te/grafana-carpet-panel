@@ -8,7 +8,7 @@
     "watch": "rspack build --env development --config rspack/config.ts --watch",
     "server": "docker compose up --build",
     "format": "biome format --write .",
-    "lint": "eslint src",
+    "lint": "eslint src testsupport tests",
     "typecheck": "tsc --noEmit",
     "devserver": "pnpm exec rspack serve -w -m development --config rspack/config.testharness.ts",
     "test": "pnpm run test:unit && pnpm run test:e2e",
