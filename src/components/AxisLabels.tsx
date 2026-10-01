@@ -1,9 +1,10 @@
 import { useTheme2 } from '@grafana/ui';
 import React, { Fragment } from 'react';
 import { Line } from 'react-konva';
-import { dateTimeFormat, type TimeRange } from '@grafana/data';
+import type { TimeRange } from '@grafana/data';
 import { Temporal } from '@js-temporal/polyfill';
 import { makeTimeScale } from './useTimeScale';
+import { makeDayTicks } from './dayTicks';
 import { resolveTimeZone } from './timeZone';
 import { useFontEvents } from './useFontEvents';
 import { TextShape } from './TextShape';
@@ -24,16 +25,9 @@ export const XAxisIndicator: React.FC<{
   const toZdt = Temporal.Instant.fromEpochMilliseconds(range.to.valueOf()).toZonedDateTimeISO(tz);
   const totalMonths = toZdt.since(fromZdt, { largestUnit: 'months' }).total({ unit: 'months', relativeTo: fromZdt });
   const isLong = totalMonths > 6;
-  const format = isLong ? 'YYYY-MM' : 'MM-DD';
+  const formatDay = (day: Temporal.PlainDate) => (isLong ? day.toPlainYearMonth() : day.toPlainMonthDay()).toString();
   const scale = React.useMemo(() => makeTimeScale(range, width, timeZone), [range, width, timeZone]);
-  const ticks = React.useMemo(() => {
-    const ts = scale.ticks();
-    ts.forEach((t) => t.setHours(12));
-    if (isLong) {
-      ts.forEach((t) => t.setDate(1));
-    }
-    return ts;
-  }, [scale, isLong]);
+  const ticks = React.useMemo(() => makeDayTicks(range, timeZone), [range, timeZone]);
 
   // TODO: Implement adaptive tick density based on available width to prevent label overlap
   const spacing = width / ticks.length;
@@ -43,9 +37,11 @@ export const XAxisIndicator: React.FC<{
   return (
     <>
       <Line points={[x, y, x + width, y]} stroke={colorGrid} strokeWidth={1} />
-      {ticks.map((date, idx) => {
-        const tickX = scale(date) + x;
-        const label = dateTimeFormat(date, { format });
+      {ticks.map((day, idx) => {
+        const dayStart = day.toZonedDateTime(tz).epochMilliseconds;
+        const nextDayStart = day.add({ days: 1 }).toZonedDateTime(tz).epochMilliseconds;
+        const tickX = (scale(dayStart) + scale(nextDayStart)) / 2 + x;
+        const label = formatDay(day);
         return (
           // eslint-disable-next-line @eslint-react/no-array-index-key -- In the Konva context, this is okay. Using the date causes a bug where stale labels remain.
           <Fragment key={idx}>

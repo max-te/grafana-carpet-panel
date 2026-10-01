@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "devserver": "pnpm exec rspack serve -w -m development --config rspack/config.testharness.ts",
     "test": "pnpm run test:unit && pnpm run test:e2e",
-    "test:unit": "vitest run tests/makeCells.test.ts",
+    "test:unit": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:update": "playwright test --update-snapshots"
   },
