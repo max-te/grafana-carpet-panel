@@ -91,17 +91,15 @@ export const CarpetPlot: React.FC<ChartProps> = ({
         time: currentTarget.getAttr('data-ts') as number,
         endTime: currentTarget.getAttr('data-end-ts') as number,
       };
-      setSelectionStart((start) => {
-        if (start && start.time !== end.time) {
-          onChangeTimeRange?.({
-            from: Math.min(start.time, end.time) * 1000,
-            to: Math.max(start.endTime, end.endTime) * 1000,
-          });
-        }
-        return null;
-      });
+      if (selectionStart && selectionStart.time !== end.time) {
+        onChangeTimeRange?.({
+          from: Math.min(selectionStart.time, end.time) * 1000,
+          to: Math.max(selectionStart.endTime, end.endTime) * 1000,
+        });
+      }
+      setSelectionStart(null);
     },
-    [onChangeTimeRange]
+    [onChangeTimeRange, selectionStart]
   );
 
   const minMax = getMinMaxAndDelta(valueField);
