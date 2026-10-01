@@ -66,7 +66,7 @@ export function useColorScale(colorOptions: HeatmapColorOptions) {
               b: fill.b * alphaValue + (1 - alphaValue) * background.b,
               a: background.a,
             };
-            return `rgba(${blend.r.toFixed(3)}, ${blend.g.toFixed(3)}, ${blend.b.toFixed(3)}, ${blend.a.toFixed(3)}`;
+            return `rgba(${blend.r.toFixed(3)}, ${blend.g.toFixed(3)}, ${blend.b.toFixed(3)}, ${blend.a.toFixed(3)})`;
           },
         };
         alphaColorInterpolate.stops = 2;
