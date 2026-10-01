@@ -7,5 +7,5 @@ export function useFontEvents() {
     return () => {
       document.fonts.removeEventListener('loadingdone', forceUpdate);
     };
-  });
+  }, []);
 }

@@ -43,7 +43,7 @@ const useDashboardHoverEvents = () => {
     return () => {
       sub.unsubscribe();
     };
-  });
+  }, [eventBus]);
 
   useEffect(() => {
     const sub = eventBus.getStream(DataHoverClearEvent).subscribe(() => {
@@ -52,7 +52,7 @@ const useDashboardHoverEvents = () => {
     return () => {
       sub.unsubscribe();
     };
-  });
+  }, [eventBus]);
   return {
     setGlobalHover,
     incomingHover: syncMode === DashboardCursorSync.Off ? null : incomingHover,
