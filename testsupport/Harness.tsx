@@ -117,6 +117,7 @@ export const Harness: React.FC = () => {
   }, [isResizing]);
 
   const [gapWidth, setGapWidth] = React.useState<number>(0);
+  const [hatchGaps, setHatchGaps] = React.useState<boolean>(true);
   const [showXAxis, setShowXAxis] = React.useState<boolean>(true);
   const [showYAxis, setShowYAxis] = React.useState<boolean>(true);
   const [lastHover, setLastHover] = React.useState<string>('null');
@@ -130,6 +131,7 @@ export const Harness: React.FC = () => {
     timeZone: 'Europe/Berlin',
     timeRange,
     gapWidth,
+    hatchGaps,
     showXAxis,
     showYAxis,
     onHover(cell) {
@@ -213,6 +215,15 @@ export const Harness: React.FC = () => {
           <Slider inputId="gap" value={gapWidth} onChange={setGapWidth} min={0} max={10} step={0.5} />
         </InlineField>
         <InlineFieldRow>
+          <InlineField>
+            <Checkbox
+              value={hatchGaps}
+              onChange={(e) => {
+                setHatchGaps(e.currentTarget.checked);
+              }}
+              label="hatch data gaps"
+            />
+          </InlineField>
           <InlineField>
             <Checkbox
               value={showXAxis}

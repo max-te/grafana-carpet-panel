@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { dateTime, type Field, type TimeRange } from '@grafana/data';
 import * as testData from '../testsupport/testdata.json';
-import { makeCells } from '../src/components/makeCells';
+import { makeCells, makeTimeRangeArea, type Area } from '../src/components/makeCells';
 
 const timeRange: TimeRange = {
   from: dateTime(testData.request.range.from),
@@ -129,5 +129,40 @@ describe('makeCells', () => {
     const cells = makeCells(valueValues, timeValues, timeZone, timeRange, height, width);
 
     expect(cells).toMatchSnapshot();
+  });
+});
+
+describe('makeTimeRangeArea', () => {
+  const expectArea = (actual: Area[], expected: Area[]) => {
+    expect(actual).toHaveLength(expected.length);
+    actual.forEach((box, i) => {
+      for (const side of ['left', 'top', 'right', 'bottom'] as const) {
+        expect(box[side]).toBeCloseTo(expected[i]?.[side] ?? NaN);
+      }
+    });
+  };
+
+  it('should cover a partial first day, full middle days and a partial last day', () => {
+    const tr = {
+      from: dateTime('2024-01-01T06:00:00Z'),
+      to: dateTime('2024-01-04T12:00:00Z'),
+      raw: { from: '2024-01-01T06:00:00Z', to: '2024-01-04T12:00:00Z' },
+    };
+
+    expectArea(makeTimeRangeArea('utc', tr), [
+      { left: 0, top: 0.25, right: 0.25, bottom: 1 },
+      { left: 0.25, top: 0, right: 0.75, bottom: 1 },
+      { left: 0.75, top: 0, right: 1, bottom: 0.5 },
+    ]);
+  });
+
+  it('should cover a range within a single day with one box', () => {
+    const tr = {
+      from: dateTime('2024-01-01T06:00:00Z'),
+      to: dateTime('2024-01-01T18:00:00Z'),
+      raw: { from: '2024-01-01T06:00:00Z', to: '2024-01-01T18:00:00Z' },
+    };
+
+    expectArea(makeTimeRangeArea('utc', tr), [{ left: 0, top: 0.25, right: 1, bottom: 0.75 }]);
   });
 });

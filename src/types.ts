@@ -39,6 +39,7 @@ export interface CarpetPanelOptions {
 
   color: HeatmapColorOptions;
   gapWidth?: number;
+  hatchGaps?: boolean;
   // TODO: Add tooltip configuration options (show/hide, format, etc.)
   // TODO: Add legend configuration options
 }

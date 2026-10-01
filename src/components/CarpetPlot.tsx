@@ -24,11 +24,13 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Rect, Layer, Shape } from 'react-konva';
 import { Html } from 'react-konva-utils';
 import { XAxisIndicator, YAxisIndicator } from './AxisLabels';
-import { makeCells, type Cell } from './makeCells';
+import { makeCells, makeTimeRangeArea, type Cell } from './makeCells';
 import { traceOutline } from './traceOutline';
 import type { KonvaEventObject } from 'konva/lib/Node';
 
 type ColorPalette = (t: number) => string;
+
+const HATCH_SPACING = 6;
 interface ChartProps {
   width: number;
   height: number;
@@ -39,6 +41,7 @@ interface ChartProps {
   timeRange: TimeRange;
   colorPalette: ColorPalette;
   gapWidth: number;
+  hatchGaps?: boolean;
 
   showXAxis?: boolean;
   showYAxis?: boolean;
@@ -66,6 +69,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   colorPalette,
   timeZone,
   gapWidth,
+  hatchGaps,
   showXAxis,
   showYAxis,
   onHover,
@@ -144,6 +148,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
     () => makeCells(valueField.values, timeField.values, timeZone, timeRange),
     [valueField.values, timeField.values, timeZone, timeRange]
   );
+  const timeRangeArea = useMemo(() => makeTimeRangeArea(timeZone, timeRange), [timeZone, timeRange]);
 
   const axesLayer = (
     <Layer listening={false}>
@@ -163,6 +168,30 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   const heatmapLayer = useMemo(
     () => (
       <Layer onMouseLeave={handleLayerMouseLeave} x={leftPadding} y={topPadding}>
+        {/* Hatches the whole time range; cells paint over it, leaving data gaps hatched */}
+        <Shape
+          visible={hatchGaps}
+          listening={false}
+          sceneFunc={(context, shape) => {
+            context.save();
+            context.beginPath();
+            for (const box of timeRangeArea) {
+              const x0 = Math.floor(box.left * innerWidth);
+              const y0 = Math.floor(box.top * innerHeight);
+              context.rect(x0, y0, Math.floor(box.right * innerWidth) - x0, Math.floor(box.bottom * innerHeight) - y0);
+            }
+            context.clip();
+            context.beginPath();
+            for (let x = -innerHeight; x < innerWidth; x += HATCH_SPACING) {
+              context.moveTo(x, innerHeight);
+              context.lineTo(x + innerHeight, 0);
+            }
+            context.strokeShape(shape);
+            context.restore();
+          }}
+          stroke={theme.colors.border.medium}
+          strokeWidth={1}
+        />
         {cells.map((cell, idx) => (
           <Rect
             key={cell.time.toFixed(0) + (cell.split ? cell.split.toFixed(0) : '')}
@@ -187,6 +216,9 @@ export const CarpetPlot: React.FC<ChartProps> = ({
     ),
     [
       cells,
+      timeRangeArea,
+      hatchGaps,
+      theme.colors.border.medium,
       innerWidth,
       innerHeight,
       handleCellMouseDown,

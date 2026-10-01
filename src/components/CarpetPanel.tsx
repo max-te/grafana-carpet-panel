@@ -150,6 +150,7 @@ export const CarpetPanel: React.FC<Props> = ({
         colorPalette={colorScale.call}
         timeZone={timeZone}
         gapWidth={options.gapWidth ?? 0}
+        hatchGaps={options.hatchGaps ?? true}
         showXAxis={options.axes?.showX}
         showYAxis={options.axes?.showY}
         onHover={onHover}

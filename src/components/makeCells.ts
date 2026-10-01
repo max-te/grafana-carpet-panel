@@ -14,7 +14,48 @@ export type Cell = {
   split?: number;
 };
 
+export type Area = Pick<Cell, 'left' | 'top' | 'right' | 'bottom'>;
+
 const FALLBACK_TIME_STEP = 3600;
+
+/** Maps unix seconds to their position within the day, scaled to `height`. */
+function makeTimeOfDayScale(tz: string, height: number) {
+  return (unixSeconds: number) => {
+    const zdt = Temporal.Instant.fromEpochMilliseconds(unixSeconds * 1000).toZonedDateTimeISO(tz);
+    const startOfDay = zdt.startOfDay();
+    const secondsInDay = zdt.since(startOfDay, { largestUnit: 'seconds' }).total({ unit: 'seconds' });
+    const totalDaySeconds = startOfDay
+      .add({ days: 1 })
+      .since(startOfDay, { largestUnit: 'seconds' })
+      .total({ unit: 'seconds' });
+    return (height * secondsInDay) / totalDaySeconds;
+  };
+}
+
+/** The region of the plot covered by the time range, as up to three boxes. */
+export function makeTimeRangeArea(timeZone: string, timeRange: TimeRange): Area[] {
+  const tz = resolveTimeZone(timeZone);
+  const xTime = makeTimeScale(timeRange, 1, tz);
+  const yAxis = makeTimeOfDayScale(tz, 1);
+  const from = Temporal.Instant.fromEpochMilliseconds(timeRange.from.valueOf()).toZonedDateTimeISO(tz);
+  const to = Temporal.Instant.fromEpochMilliseconds(timeRange.to.valueOf()).toZonedDateTimeISO(tz);
+  const fromDayLeft = xTime(from.startOfDay().epochMilliseconds);
+  const fromDayRight = xTime(from.startOfDay().add({ days: 1 }).epochMilliseconds);
+  const toDayLeft = xTime(to.startOfDay().epochMilliseconds);
+  const toDayRight = xTime(to.startOfDay().add({ days: 1 }).epochMilliseconds);
+  const top = yAxis(from.epochMilliseconds / 1000);
+  const bottom = yAxis(to.epochMilliseconds / 1000);
+
+  if (fromDayLeft === toDayLeft) {
+    return [{ left: fromDayLeft, top, right: fromDayRight, bottom }];
+  }
+  const area: Area[] = [{ left: fromDayLeft, top, right: fromDayRight, bottom: 1 }];
+  if (fromDayRight < toDayLeft) {
+    area.push({ left: fromDayRight, top: 0, right: toDayLeft, bottom: 1 });
+  }
+  area.push({ left: toDayLeft, top: 0, right: toDayRight, bottom });
+  return area;
+}
 
 function getTimeStep(timeValues: number[]): number {
   let minInterval = Infinity;
@@ -38,16 +79,7 @@ export function makeCells(
 ): Cell[] {
   const tz = resolveTimeZone(timeZone);
   const xTime = makeTimeScale(timeRange, width, tz);
-  const yAxis = (unixSeconds: number) => {
-    const zdt = Temporal.Instant.fromEpochMilliseconds(unixSeconds * 1000).toZonedDateTimeISO(tz);
-    const startOfDay = zdt.startOfDay();
-    const secondsInDay = zdt.since(startOfDay, { largestUnit: 'seconds' }).total({ unit: 'seconds' });
-    const totalDaySeconds = startOfDay
-      .add({ days: 1 })
-      .since(startOfDay, { largestUnit: 'seconds' })
-      .total({ unit: 'seconds' });
-    return (height * secondsInDay) / totalDaySeconds;
-  };
+  const yAxis = makeTimeOfDayScale(tz, height);
 
   const timeStep = getTimeStep(timeValues);
   const cells: Cell[] = [];

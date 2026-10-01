@@ -28,3 +28,11 @@ test('drag selection matches snapshot', async ({ page }) => {
   await page.getByTestId('data-testid viz-tooltip-wrapper').waitFor({ state: 'visible' });
   await expect(canvas).toHaveScreenshot('example-drag.png');
 });
+
+test('unhatched gaps match snapshot', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForSelector('.konvajs-content');
+  await page.evaluate(async () => await document.fonts.load('12px Inter'));
+  await page.getByText('hatch data gaps').click();
+  await expect(page.locator('.konvajs-content')).toHaveScreenshot('example-unhatched.png');
+});

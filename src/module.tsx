@@ -38,6 +38,12 @@ export const plugin = new PanelPlugin<CarpetPanelOptions>(CarpetPanel).setPanelO
         max: 10,
         step: 0.5,
       },
+    })
+    .addBooleanSwitch({
+      path: 'hatchGaps',
+      name: 'Hatch data gaps',
+      defaultValue: true,
+      description: 'Hatch the parts of the time range without data',
     });
 
   builder
