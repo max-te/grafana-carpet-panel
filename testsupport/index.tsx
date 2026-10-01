@@ -7,4 +7,8 @@ if (!container) {
   throw new Error('No root element found');
 }
 const root = createRoot(container);
-root.render(<Harness />);
+root.render(
+  <React.StrictMode>
+    <Harness />
+  </React.StrictMode>
+);
