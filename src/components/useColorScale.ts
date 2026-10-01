@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { HeatmapColorMode, HeatmapColorScale, type HeatmapColorOptions } from '../types';
 import { useTheme2 } from '@grafana/ui';
+import { colorSchemes } from '../palettes';
 import * as d3ScaleChromatic from 'd3-scale-chromatic';
 import tinycolor from 'tinycolor2';
 import * as d3 from 'd3';
@@ -38,7 +39,10 @@ export function useColorScale(colorOptions: HeatmapColorOptions) {
           colorFn.stops = scheme.length;
         }
 
-        if (colorOptions.reverse) {
+        const invert = colorSchemes.find((scheme) => scheme.name === (colorOptions.scheme || 'Spectral'))?.invert;
+        const isInverted =
+          invert === 'always' || (invert === 'dark' && theme.isDark) || (invert === 'light' && theme.isLight);
+        if (isInverted !== colorOptions.reverse) {
           return reverseColorFn(colorFn);
         } else {
           return colorFn;

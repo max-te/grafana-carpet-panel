@@ -19,7 +19,7 @@ import {
 import * as testData from './testdata.json';
 import { useKonvaDpr } from '../src/components/useKonvaDpr';
 import { useColorScale } from '../src/components/useColorScale';
-import { HeatmapColorMode } from '../src/types';
+import { HeatmapColorMode, type HeatmapColorOptions } from '../src/types';
 
 const timeRange: TimeRange = {
   from: dateTime(testData.request.range.from),
@@ -38,6 +38,15 @@ const maxHeight = 400;
 const minWidth = 100;
 const maxWidth = 1000;
 
+// Must render inside ThemeContext.Provider so the palette follows the selected theme
+const ThemedCarpetPlot: React.FC<Omit<ChartProps, 'colorPalette'> & { colorOptions: HeatmapColorOptions }> = ({
+  colorOptions,
+  ...chartProps
+}) => {
+  const colorPalette = useColorScale(colorOptions);
+  return <CarpetPlot {...chartProps} colorPalette={colorPalette.call} />;
+};
+
 export const Harness: React.FC = () => {
   const dpr = useKonvaDpr();
   const [themeId, setThemeId] = React.useState<'light' | 'dark'>('light');
@@ -53,7 +62,6 @@ export const Harness: React.FC = () => {
     }),
     [colorPaletteName]
   );
-  const colorPalette = useColorScale(colorOptions);
 
   const inlineStyle = `
   body {
@@ -110,14 +118,13 @@ export const Harness: React.FC = () => {
   const [lastHover, setLastHover] = React.useState<string>('null');
   const [timeRangeUpdate, updateTimeRange] = React.useState<{ from: number; to: number } | null>(null);
 
-  const chartProps: ChartProps = {
+  const chartProps: Omit<ChartProps, 'colorPalette'> = {
     width,
     height,
     timeField,
     valueField,
     timeZone: 'Europe/Berlin',
     timeRange,
-    colorPalette: colorPalette.call,
     gapWidth,
     showXAxis,
     showYAxis,
@@ -141,7 +148,7 @@ export const Harness: React.FC = () => {
           <div style={{ position: 'relative' }}>
             <ErrorBoundaryAlert>
               <Stage width={width} height={height} key={dpr}>
-                <CarpetPlot {...chartProps} />
+                <ThemedCarpetPlot {...chartProps} colorOptions={colorOptions} />
               </Stage>
             </ErrorBoundaryAlert>
             <div
