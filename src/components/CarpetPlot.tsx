@@ -56,7 +56,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   externalHoverTime,
 }) => {
   const theme = useTheme2();
-  const [tooltipData, setTooltipData] = useState<{ idx: number; x: number; y: number } | null>(null);
+  const [tooltipData, setTooltipData] = useState<{ idx: number; time: number; x: number; y: number } | null>(null);
   const [selectionStart, setSelectionStart] = useState<Pick<Cell, 'time' | 'endTime'> | null>(null);
 
   const handleCellMouseOver = useCallback(({ evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
@@ -66,6 +66,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
     const outerRect = (evt.target as Element).getBoundingClientRect();
     setTooltipData({
       idx: cellIdx,
+      time: currentTarget.getAttr('data-ts') as number,
       x: innerRect.x + outerRect.x + innerRect.width,
       y: innerRect.y + outerRect.y + innerRect.height,
     });
@@ -184,7 +185,9 @@ export const CarpetPlot: React.FC<ChartProps> = ({
     ]
   );
 
-  const hoveredCell = tooltipData ? cells[tooltipData.idx] : undefined;
+  // A data refresh under a resting cursor can move another cell to the stored index
+  const validTooltip = tooltipData && cells[tooltipData.idx]?.time === tooltipData.time ? tooltipData : undefined;
+  const hoveredCell = validTooltip ? cells[validTooltip.idx] : undefined;
   useEffect(() => {
     onHover?.(hoveredCell ?? null);
   }, [onHover, hoveredCell]);
@@ -227,7 +230,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       ))}
       <Html>
         <VizTooltip
-          position={tooltipData ?? undefined}
+          position={validTooltip}
           offset={{ x: 5, y: 5 }}
           content={
             hoveredCell ? (
