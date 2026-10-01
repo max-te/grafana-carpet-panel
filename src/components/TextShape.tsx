@@ -21,7 +21,20 @@ const textRenderFunc: ShapeAttrs['sceneFunc'] = (context, shape) => {
   const attrs = shape.attrs as TextShapeAttrs;
   context.textAlign = attrs.align ?? 'left';
   context.textBaseline = attrs.baseline ?? 'alphabetic';
-  context.font = `${attrs.fontSize.toFixed()}px ${attrs.fontFamily}`;
+  context.font = canvasFont(attrs.fontSize, attrs.fontFamily);
   context.fillStyle = shape.fill();
   context.fillText(attrs.text, 0, 0, shape.width());
 };
+
+const canvasFont = (fontSize: number, fontFamily: string) => `${fontSize.toFixed()}px ${fontFamily}`;
+
+let measureContext: CanvasRenderingContext2D | null = null;
+
+export function measureTextWidth(text: string, fontFamily: string, fontSize: number): number {
+  measureContext ??= document.createElement('canvas').getContext('2d');
+  if (!measureContext) {
+    throw new Error('Canvas 2D context unavailable');
+  }
+  measureContext.font = canvasFont(fontSize, fontFamily);
+  return measureContext.measureText(text).width;
+}

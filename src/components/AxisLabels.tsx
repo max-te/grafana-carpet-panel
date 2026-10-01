@@ -7,7 +7,7 @@ import { makeTimeScale } from './useTimeScale';
 import { makeDayTicks } from './dayTicks';
 import { resolveTimeZone } from './timeZone';
 import { useFontEvents } from './useFontEvents';
-import { TextShape } from './TextShape';
+import { measureTextWidth, TextShape } from './TextShape';
 
 const AXIS_FONT_SIZE = 12;
 export const XAxisIndicator: React.FC<{
@@ -27,13 +27,18 @@ export const XAxisIndicator: React.FC<{
   const isLong = totalMonths > 6;
   const formatDay = (day: Temporal.PlainDate) => (isLong ? day.toPlainYearMonth() : day.toPlainMonthDay()).toString();
   const scale = React.useMemo(() => makeTimeScale(range, width, timeZone), [range, width, timeZone]);
-  const ticks = React.useMemo(() => makeDayTicks(range, timeZone), [range, timeZone]);
+  const fontSize = AXIS_FONT_SIZE;
+  // Widest-digit sample label plus a one-em gap
+  const minLabelSpacing =
+    measureTextWidth(isLong ? '0000-00' : '00-00', theme.typography.fontFamily, fontSize) + fontSize;
+  const ticks = React.useMemo(
+    () => makeDayTicks(range, timeZone, Math.floor(width / minLabelSpacing)),
+    [range, timeZone, width, minLabelSpacing]
+  );
 
-  // TODO: Implement adaptive tick density based on available width to prevent label overlap
   const spacing = width / ticks.length;
   const colorGrid = 'rgba(120, 120, 130, 0.5)';
   const colorText = theme.colors.text.primary;
-  const fontSize = AXIS_FONT_SIZE;
   return (
     <>
       <Line points={[x, y, x + width, y]} stroke={colorGrid} strokeWidth={1} />
