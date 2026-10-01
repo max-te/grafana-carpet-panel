@@ -21,10 +21,11 @@ import {
 import { css } from '@emotion/css';
 import * as d3 from 'd3';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Rect, Layer } from 'react-konva';
+import { Rect, Layer, Shape } from 'react-konva';
 import { Html } from 'react-konva-utils';
 import { XAxisIndicator, YAxisIndicator } from './AxisLabels';
 import { makeCells, type Cell } from './makeCells';
+import { traceOutline } from './traceOutline';
 import type { KonvaEventObject } from 'konva/lib/Node';
 
 type ColorPalette = (t: number) => string;
@@ -228,21 +229,38 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       // TODO: shared tooltip (needs position of cell in client rect)
     }
   }
+  const highlightBoxes = highlightedCells.map((cell) => ({
+    x0: Math.floor(cell.left * innerWidth),
+    y0: Math.floor(cell.top * innerHeight),
+    x1: Math.floor(cell.right * innerWidth),
+    y1: Math.floor(cell.bottom * innerHeight),
+  }));
+  const highlightOutline = traceOutline(highlightBoxes);
+  const highlightedMean = d3.mean(highlightedCells, (cell) => cell.value) ?? min;
   const hoverLayer = (
     <Layer listening={false} x={leftPadding} y={topPadding}>
-      {highlightedCells.map((cell) => (
-        <Rect
-          key={cell.time.toFixed(0) + (cell.split ? cell.split.toFixed(0) : '')}
-          x={cell.left * innerWidth - 0.5}
-          y={cell.top * innerHeight}
-          width={innerWidth * (cell.right - cell.left) + 0.5}
-          height={innerHeight * (cell.bottom - cell.top) - 0.5}
-          fill={'rgba(120, 120, 130, 0.2)'}
-          stroke={cell.value > (min + max) / 2 ? colorScale(min) : colorScale(max)}
-          dash={[4, 2]}
-          strokeWidth={1}
-        />
-      ))}
+      <Shape
+        sceneFunc={(context, shape) => {
+          // One fill for all boxes, so the translucency does not stack where they touch
+          context.beginPath();
+          for (const { x0, y0, x1, y1 } of highlightBoxes) {
+            context.rect(x0, y0, x1 - x0, y1 - y0);
+          }
+          context.fillShape(shape);
+
+          // Centers the 1px stroke on a pixel row for a crisp line
+          context.beginPath();
+          for (const [x0, y0, x1, y1] of highlightOutline) {
+            context.moveTo(x0 - 0.5, y0 - 0.5);
+            context.lineTo(x1 - 0.5, y1 - 0.5);
+          }
+          context.strokeShape(shape);
+        }}
+        fill={'rgba(120, 120, 130, 0.2)'}
+        stroke={highlightedMean > (min + max) / 2 ? colorScale(min) : colorScale(max)}
+        dash={[4, 2]}
+        strokeWidth={1}
+      />
       <Html>
         <VizTooltip
           position={validTooltip}
