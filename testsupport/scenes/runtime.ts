@@ -1,4 +1,10 @@
-import { EventBusSrv, LoadingState, standardEditorsRegistry } from '@grafana/data';
+import {
+  EventBusSrv,
+  LoadingState,
+  standardEditorsRegistry,
+  standardFieldConfigEditorRegistry,
+  valueMappingsOverrideProcessor,
+} from '@grafana/data';
 import { setAppEvents, setPluginImportUtils, setRunRequest } from '@grafana/runtime';
 import { sceneUtils } from '@grafana/scenes';
 import { from, map } from 'rxjs';
@@ -27,6 +33,19 @@ export function installRuntime() {
       'unit',
     ].map((id) => ({ id, name: id, editor: () => null }))
   );
+  // Grafana registers every standard field option at startup; the panel enables only mappings
+  standardFieldConfigEditorRegistry.setInit(() => [
+    {
+      id: 'mappings',
+      path: 'mappings',
+      name: 'Value mappings',
+      editor: () => null,
+      override: () => null,
+      process: valueMappingsOverrideProcessor,
+      shouldApply: () => true,
+      defaultValue: [],
+    },
+  ]);
   setAppEvents(new EventBusSrv());
   setPluginImportUtils({
     importPanelPlugin: (id) => Promise.reject(new Error(`Panel plugin ${id} is not available in the harness`)),
