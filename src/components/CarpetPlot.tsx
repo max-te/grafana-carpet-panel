@@ -21,12 +21,14 @@ import {
 } from '@grafana/ui';
 import { css } from '@emotion/css';
 import * as d3 from 'd3';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import type Konva from 'konva';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Rect, Layer, Shape } from 'react-konva';
 import { Html } from 'react-konva-utils';
 import { XAxisIndicator, YAxisIndicator } from './AxisLabels';
 import { makeCells, makeTimeRangeArea, type Cell } from './makeCells';
 import { traceOutline } from './traceOutline';
+import { useAncestorScroll } from './useAncestorScroll';
 import { HourFormat } from '../types';
 import type { KonvaEventObject } from 'konva/lib/Node';
 
@@ -38,6 +40,26 @@ export interface ExternalHover {
   time: number;
   /** Client position of the stage; present when a shared tooltip should show */
   tooltipOrigin?: { x: number; y: number };
+}
+
+interface CellHover {
+  idx: number;
+  time: number;
+  /** Client position of the tooltip; absent while hidden */
+  position?: { x: number; y: number };
+}
+
+function measureCellHover({ evt, currentTarget }: KonvaEventObject<MouseEvent>): CellHover {
+  const innerRect = currentTarget.getClientRect();
+  const outerRect = (evt.target as Element).getBoundingClientRect();
+  return {
+    idx: currentTarget.getAttr('data-idx') as number,
+    time: currentTarget.getAttr('data-ts') as number,
+    position: {
+      x: innerRect.x + outerRect.x + innerRect.width,
+      y: innerRect.y + outerRect.y + innerRect.height,
+    },
+  };
 }
 
 interface ChartProps {
@@ -93,27 +115,28 @@ export const CarpetPlot: React.FC<ChartProps> = ({
 }) => {
   const theme = useTheme2();
   const styles = useStyles2(getStyles, tooltipMaxWidth);
-  const [tooltipData, setTooltipData] = useState<{ idx: number; time: number; x: number; y: number } | null>(null);
+  const [tooltipData, setTooltipData] = useState<CellHover | null>(null);
   const [selectionStart, setSelectionStart] = useState<Pick<Cell, 'time' | 'endTime'> | null>(null);
+  const heatmapLayerRef = useRef<Konva.Layer>(null);
 
-  const handleCellMouseOver = useCallback(({ evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
-    evt.stopPropagation();
-    const cellIdx = currentTarget.getAttr('data-idx') as number;
-    const innerRect = currentTarget.getClientRect();
-    const outerRect = (evt.target as Element).getBoundingClientRect();
-    setTooltipData({
-      idx: cellIdx,
-      time: currentTarget.getAttr('data-ts') as number,
-      x: innerRect.x + outerRect.x + innerRect.width,
-      y: innerRect.y + outerRect.y + innerRect.height,
-    });
-    if (evt.buttons !== 1) {
+  const handleCellMouseOver = useCallback((event: KonvaEventObject<MouseEvent>) => {
+    event.evt.stopPropagation();
+    setTooltipData(measureCellHover(event));
+    if (event.evt.buttons !== 1) {
       setSelectionStart(null);
     }
+  }, []);
+  // Restores a tooltip hidden by scrolling without leaving the cell
+  const handleCellMouseMove = useCallback((event: KonvaEventObject<MouseEvent>) => {
+    setTooltipData((hover) => (hover?.position ? hover : measureCellHover(event)));
   }, []);
   const handleLayerMouseLeave = useCallback(() => {
     setTooltipData(null);
   }, []);
+  const hideTooltip = useCallback(() => {
+    setTooltipData((hover) => (hover?.position ? { idx: hover.idx, time: hover.time } : hover));
+  }, []);
+  useAncestorScroll(heatmapLayerRef, hideTooltip);
   const handleCellMouseDown = useCallback(({ evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
     evt.stopPropagation();
     setSelectionStart({
@@ -190,7 +213,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   );
   const heatmapLayer = useMemo(
     () => (
-      <Layer onMouseLeave={handleLayerMouseLeave} x={leftPadding} y={topPadding}>
+      <Layer ref={heatmapLayerRef} onMouseLeave={handleLayerMouseLeave} x={leftPadding} y={topPadding}>
         {/* Hatches the whole time range; cells paint over it, leaving data gaps hatched */}
         <Shape
           visible={hatchGaps}
@@ -227,6 +250,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
             data-end-ts={cell.endTime}
             data-idx={idx}
             onMouseOver={handleCellMouseOver}
+            onMouseMove={handleCellMouseMove}
             onMouseDown={handleCellMouseDown}
             onMouseUp={handleCellMouseUp}
             perfectDrawEnabled={true}
@@ -246,6 +270,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       innerHeight,
       handleCellMouseDown,
       handleCellMouseOver,
+      handleCellMouseMove,
       handleCellMouseUp,
       handleLayerMouseLeave,
       gapWidth,
@@ -259,12 +284,16 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   // A data refresh under a resting cursor can move another cell to the stored index
   const validTooltip = tooltipData && cells[tooltipData.idx]?.time === tooltipData.time ? tooltipData : undefined;
   const hoveredCell = validTooltip ? cells[validTooltip.idx] : undefined;
+  const tooltipShown = validTooltip?.position !== undefined;
   useEffect(() => {
-    onHover?.(hoveredCell ?? null);
-  }, [onHover, hoveredCell]);
+    // Hiding keeps synced tooltips hidden; showing again resends so they reappear
+    if (tooltipShown || !hoveredCell) {
+      onHover?.(hoveredCell ?? null);
+    }
+  }, [onHover, hoveredCell, tooltipShown]);
   const highlightedCells: Cell[] = [];
   let tooltipCell = hoveredCell;
-  let tooltipPosition: { x: number; y: number } | undefined = validTooltip;
+  let tooltipPosition = validTooltip?.position;
   if (hoveredCell) {
     if (selectionStart) {
       const start = Math.min(hoveredCell.time, selectionStart.time);

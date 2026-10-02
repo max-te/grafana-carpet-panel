@@ -63,8 +63,7 @@ test('scrolling hides the tooltip until the next hover', async ({ page }) => {
   await page.evaluate(() => {
     window.scrollBy(0, 50);
   });
-  // FIXME: the tooltip stays at its stale position after scrolling
-  await expect(tooltips).toHaveCount(1);
+  await expect(tooltips).toHaveCount(0);
   await page
     .locator('.konvajs-content')
     .first()
@@ -78,7 +77,11 @@ test('scrolling hides shared tooltips', async ({ page }) => {
   const tooltips = page.getByTestId('data-testid viz-tooltip-wrapper');
   await expect(tooltips).toHaveCount(3);
   await page.evaluate(() => document.dispatchEvent(new Event('scroll')));
-  // FIXME: the tooltips stay at their stale positions after scrolling
+  await expect(tooltips).toHaveCount(0);
+  await page
+    .locator('.konvajs-content')
+    .first()
+    .hover({ position: { x: 201, y: 151 } });
   await expect(tooltips).toHaveCount(3);
 });
 
