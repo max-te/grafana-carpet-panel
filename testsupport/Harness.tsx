@@ -148,6 +148,9 @@ export const Harness: React.FC = () => {
     <ThemeContext value={theme}>
       <GlobalStyles />
       <style>{inlineStyle}</style>
+      <Box paddingX={2} paddingTop={1}>
+        <a href="scenes.html" style={{textDecoration: "underline"}}>Scenes</a>
+      </Box>
       <Box padding={1} display="flex" justifyContent={'center'} width={'100%'} height={'min-content'} marginY={1}>
         <Box padding={1} borderColor={'medium'} borderStyle={'solid'}>
           <Legend>Paneltest</Legend>
