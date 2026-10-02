@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { dateTime, type Field, type TimeRange } from '@grafana/data';
 import * as testData from '../testsupport/testdata.json';
-import { makeCells, makeTimeRangeArea, type Area } from '../src/components/makeCells';
+import { makeCells, makeTimeRangeArea, type Area, type Cell } from '../src/components/makeCells';
 
 const timeRange: TimeRange = {
   from: dateTime(testData.request.range.from),
@@ -173,6 +173,37 @@ describe('makeCells', () => {
     for (const c of cells) {
       expect(c.bottom - c.top).toBeCloseTo(1 / 24);
     }
+  });
+
+  describe('on daylight saving transition days in Europe/Berlin', () => {
+    const hourlyCells = (from: string, to: string) => {
+      const tr = { from: dateTime(from), to: dateTime(to), raw: { from, to } };
+      const times: number[] = [];
+      for (let t = tr.from.valueOf(); t < tr.to.valueOf(); t += 3600_000) {
+        times.push(t);
+      }
+      return makeCells(
+        times.map(() => 1),
+        times,
+        'Europe/Berlin',
+        tr
+      );
+    };
+    const cellAt = (cells: Cell[], iso: string) => cells.find((c) => c.time === dateTime(iso).valueOf() / 1000);
+
+    it('should scale the 23-hour spring-forward day by its real length', () => {
+      const cells = hourlyCells('2025-03-29T00:00:00Z', '2025-04-01T00:00:00Z');
+      // Local noon (CEST) is 11 hours after local midnight (CET)
+      expect(cellAt(cells, '2025-03-30T10:00:00Z')?.top).toBeCloseTo(11 / 23);
+      expect(cellAt(cells, '2025-03-30T10:00:00Z')?.bottom).toBeCloseTo(12 / 23);
+    });
+
+    it('should scale the 25-hour fall-back day by its real length', () => {
+      const cells = hourlyCells('2025-10-25T00:00:00Z', '2025-10-28T00:00:00Z');
+      // Local noon (CET) is 13 hours after local midnight (CEST)
+      expect(cellAt(cells, '2025-10-26T11:00:00Z')?.top).toBeCloseTo(13 / 25);
+      expect(cellAt(cells, '2025-10-26T11:00:00Z')?.bottom).toBeCloseTo(14 / 25);
+    });
   });
 
   it('should match snapshot with testdata', () => {
