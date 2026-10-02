@@ -22,12 +22,13 @@ import { css } from '@emotion/css';
 import * as d3 from 'd3';
 import type Konva from 'konva';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Rect, Layer, Shape } from 'react-konva';
+import { Layer, Shape } from 'react-konva';
 import { Html } from 'react-konva-utils';
 import { XAxisIndicator, YAxisIndicator } from './AxisLabels';
 import { getTimeStep, makeCells, makeSpanArea, makeTimeRangeArea, type Area, type Cell } from './makeCells';
 import { countDays } from './useTimeScale';
-import { traceOutline } from './traceOutline';
+import { traceOutline, type Box } from './traceOutline';
+import { findBoxAt, snapArea } from './pixelBoxes';
 import { getCellColor, type CellColoring } from './useCellColoring';
 import type { CellValue } from './categories';
 import { useClientPositionChange } from './useClientPositionChange';
@@ -40,13 +41,6 @@ const SECONDS_PER_DAY = 86400;
 /** Widens or narrows `gap` so that the cells between gaps span whole pixels. */
 function fitGap(pitch: number, gap: number): number {
   return Math.max(0, pitch - Math.max(1, Math.round(pitch - gap)));
-}
-
-/** Hit region spanning the gap, so the cursor never falls between cells. */
-function drawWholeCell(context: Konva.Context, shape: Konva.Shape) {
-  context.beginPath();
-  context.rect(0, 0, shape.width(), shape.height());
-  context.fillShape(shape);
 }
 
 export interface ExternalHover {
@@ -64,16 +58,20 @@ interface CellHover {
   position?: { x: number; y: number };
 }
 
-function measureCellHover({ evt, currentTarget }: KonvaEventObject<MouseEvent>): CellHover {
-  const innerRect = currentTarget.getClientRect();
-  const outerRect = (evt.target as Element).getBoundingClientRect();
+/** Index of the cell under the pointer, from the cells' pixel boxes in the coordinates of `node`; -1 if none. */
+function findCellUnderPointer(node: Konva.Node, cellBoxes: Box[]): number {
+  const pointer = node.getRelativePointerPosition();
+  return pointer ? findBoxAt(cellBoxes, pointer.x, pointer.y) : -1;
+}
+
+/** Places the tooltip at the bottom-right corner of the cell's box, in client coordinates. */
+function measureCellHover(node: Konva.Node, idx: number, time: number, box: Box): CellHover {
+  const origin = node.getAbsolutePosition();
+  const container = node.getStage()?.container().getBoundingClientRect();
   return {
-    idx: currentTarget.getAttr('data-idx') as number,
-    time: currentTarget.getAttr('data-ts') as number,
-    position: {
-      x: innerRect.x + outerRect.x + innerRect.width,
-      y: innerRect.y + outerRect.y + innerRect.height,
-    },
+    idx,
+    time,
+    position: container && { x: container.x + origin.x + box.x1, y: container.y + origin.y + box.y1 },
   };
 }
 
@@ -127,7 +125,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   const styles = useStyles2(getStyles, tooltipMaxWidth);
   const [tooltipData, setTooltipData] = useState<CellHover | null>(null);
   const [selectionStart, setSelectionStart] = useState<CellSpan | null>(null);
-  // Lets the cell handlers stay stable, as changing them rebinds every cell
+  // Keeps the cell handlers stable, so starting a selection does not redraw the cells
   const selectionStartRef = useRef<CellSpan | null>(null);
   const updateSelectionStart = useCallback((start: CellSpan | null) => {
     selectionStartRef.current = start;
@@ -135,20 +133,6 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   }, []);
   const heatmapLayerRef = useRef<Konva.Layer>(null);
 
-  const handleCellMouseOver = useCallback(
-    (event: KonvaEventObject<MouseEvent>) => {
-      event.evt.stopPropagation();
-      setTooltipData(measureCellHover(event));
-      if (event.evt.buttons !== 1) {
-        updateSelectionStart(null);
-      }
-    },
-    [updateSelectionStart]
-  );
-  // Restores a tooltip hidden by scrolling or resizing without leaving the cell
-  const handleCellMouseMove = useCallback((event: KonvaEventObject<MouseEvent>) => {
-    setTooltipData((hover) => (hover?.position ? hover : measureCellHover(event)));
-  }, []);
   const handleLayerMouseLeave = useCallback(() => {
     setTooltipData(null);
   }, []);
@@ -156,34 +140,6 @@ export const CarpetPlot: React.FC<ChartProps> = ({
     setTooltipData((hover) => (hover?.position ? { idx: hover.idx, time: hover.time } : hover));
   }, []);
   useClientPositionChange(heatmapLayerRef, hideTooltip);
-  const handleCellMouseDown = useCallback(
-    ({ evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
-      evt.stopPropagation();
-      updateSelectionStart({
-        time: currentTarget.getAttr('data-ts') as number,
-        endTime: currentTarget.getAttr('data-end-ts') as number,
-      });
-    },
-    [updateSelectionStart]
-  );
-  const handleCellMouseUp = useCallback(
-    ({ evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
-      evt.stopPropagation();
-      const end = {
-        time: currentTarget.getAttr('data-ts') as number,
-        endTime: currentTarget.getAttr('data-end-ts') as number,
-      };
-      const start = selectionStartRef.current;
-      if (start && start.time !== end.time) {
-        onChangeTimeRange?.({
-          from: Math.min(start.time, end.time) * 1000,
-          to: Math.max(start.endTime, end.endTime) * 1000,
-        });
-      }
-      updateSelectionStart(null);
-    },
-    [onChangeTimeRange, updateSelectionStart]
-  );
 
   const cellColor = useCallback((value: CellValue) => getCellColor(coloring, value), [coloring]);
   const display = getDisplayProcessor({
@@ -212,13 +168,62 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   const rowsPerDay = useMemo(() => SECONDS_PER_DAY / getTimeStep(timeField.values), [timeField.values]);
   const gapX = fitGap(innerWidth / numDays, gapWidth);
   const gapY = Number.isInteger(rowsPerDay) ? fitGap(innerHeight / rowsPerDay, gapWidth) : gapWidth;
-  const drawCellWithGap = useCallback(
-    (context: Konva.Context, shape: Konva.Shape) => {
-      context.beginPath();
-      context.rect(gapX / 2, gapY / 2, shape.width() - gapX, shape.height() - gapY);
-      context.fillShape(shape);
+  const cellBoxes = useMemo(
+    () => cells.map((cell) => snapArea(cell, innerWidth, innerHeight)),
+    [cells, innerWidth, innerHeight]
+  );
+  const cellColors = useMemo(() => cells.map((cell) => cellColor(cell.value)), [cells, cellColor]);
+
+  const handleCellsMouseMove = useCallback(
+    ({ evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
+      if (evt.buttons !== 1 && selectionStartRef.current) {
+        updateSelectionStart(null);
+      }
+      const idx = findCellUnderPointer(currentTarget, cellBoxes);
+      const cell = cells[idx];
+      const box = cellBoxes[idx];
+      if (!cell || !box) {
+        setTooltipData(null);
+        return;
+      }
+      evt.stopPropagation();
+      // Keeps the state while the pointer stays within the cell, unless scrolling or resizing hid the tooltip
+      setTooltipData((hover) =>
+        hover?.idx === idx && hover.time === cell.time && hover.position
+          ? hover
+          : measureCellHover(currentTarget, idx, cell.time, box)
+      );
     },
-    [gapX, gapY]
+    [cells, cellBoxes, updateSelectionStart]
+  );
+  const handleCellsMouseDown = useCallback(
+    ({ evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
+      const cell = cells[findCellUnderPointer(currentTarget, cellBoxes)];
+      if (!cell) {
+        return;
+      }
+      evt.stopPropagation();
+      updateSelectionStart({ time: cell.time, endTime: cell.endTime });
+    },
+    [cells, cellBoxes, updateSelectionStart]
+  );
+  const handleCellsMouseUp = useCallback(
+    ({ evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
+      const end = cells[findCellUnderPointer(currentTarget, cellBoxes)];
+      if (!end) {
+        return;
+      }
+      evt.stopPropagation();
+      const start = selectionStartRef.current;
+      if (start && start.time !== end.time) {
+        onChangeTimeRange?.({
+          from: Math.min(start.time, end.time) * 1000,
+          to: Math.max(start.endTime, end.endTime) * 1000,
+        });
+      }
+      updateSelectionStart(null);
+    },
+    [cells, cellBoxes, onChangeTimeRange, updateSelectionStart]
   );
 
   const axesLayer = (
@@ -289,53 +294,59 @@ export const CarpetPlot: React.FC<ChartProps> = ({
           }}
           fill={theme.colors.background.primary}
         />
-        {cells.map((cell, idx) => (
-          <Rect
-            key={cell.time.toFixed(0) + (cell.split ? cell.split.toFixed(0) : '')}
-            {...(gapWidth > 0
-              ? {
-                  x: cell.left * innerWidth,
-                  y: cell.top * innerHeight,
-                  width: (cell.right - cell.left) * innerWidth,
-                  height: (cell.bottom - cell.top) * innerHeight,
-                  sceneFunc: drawCellWithGap,
-                  hitFunc: drawWholeCell,
-                }
-              : {
-                  x: Math.floor(cell.left * innerWidth),
-                  y: Math.floor(cell.top * innerHeight),
-                  width: Math.floor(cell.right * innerWidth) - Math.floor(cell.left * innerWidth),
-                  height: Math.floor(cell.bottom * innerHeight) - Math.floor(cell.top * innerHeight),
-                })}
-            fill={cellColor(cell.value)}
-            data-ts={cell.time}
-            data-end-ts={cell.endTime}
-            data-idx={idx}
-            onMouseOver={handleCellMouseOver}
-            onMouseMove={handleCellMouseMove}
-            onMouseDown={handleCellMouseDown}
-            onMouseUp={handleCellMouseUp}
-            perfectDrawEnabled={true}
-          />
-        ))}
+        {/* All cells in one shape; the pointer position tells which cell an event is about */}
+        <Shape
+          sceneFunc={(context) => {
+            cells.forEach((cell, i) => {
+              const color = cellColors[i];
+              // The color scale maps NaN to undefined; such cells stay unpainted
+              if (!color) {
+                return;
+              }
+              context.fillStyle = color;
+              if (gapWidth > 0) {
+                context.fillRect(
+                  cell.left * innerWidth + gapX / 2,
+                  cell.top * innerHeight + gapY / 2,
+                  (cell.right - cell.left) * innerWidth - gapX,
+                  (cell.bottom - cell.top) * innerHeight - gapY
+                );
+              } else {
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- one box per cell
+                const { x0, y0, x1, y1 } = cellBoxes[i]!;
+                context.fillRect(x0, y0, x1 - x0, y1 - y0);
+              }
+            });
+          }}
+          // Spans gaps between cells too, so the cursor never falls between them
+          hitFunc={(context, shape) => {
+            context.beginPath();
+            context.rect(0, 0, innerWidth, innerHeight);
+            context.fillShape(shape);
+          }}
+          onMouseMove={handleCellsMouseMove}
+          onMouseDown={handleCellsMouseDown}
+          onMouseUp={handleCellsMouseUp}
+        />
       </Layer>
     ),
     [
       cells,
+      cellBoxes,
+      cellColors,
       timeRangeArea,
       hatchGaps,
       theme.colors.border.medium,
       innerWidth,
       innerHeight,
-      handleCellMouseDown,
-      handleCellMouseOver,
-      handleCellMouseMove,
-      handleCellMouseUp,
+      handleCellsMouseDown,
+      handleCellsMouseMove,
+      handleCellsMouseUp,
       handleLayerMouseLeave,
       gapWidth,
-      drawCellWithGap,
+      gapX,
+      gapY,
       theme.colors.background.primary,
-      cellColor,
       leftPadding,
       topPadding,
     ]
@@ -382,12 +393,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       }
     }
   }
-  const highlightBoxes = (selectionArea ?? highlightedCells).map((area) => ({
-    x0: Math.floor(area.left * innerWidth),
-    y0: Math.floor(area.top * innerHeight),
-    x1: Math.floor(area.right * innerWidth),
-    y1: Math.floor(area.bottom * innerHeight),
-  }));
+  const highlightBoxes = (selectionArea ?? highlightedCells).map((area) => snapArea(area, innerWidth, innerHeight));
   const highlightOutline = traceOutline(highlightBoxes);
   let outlineColor: string | undefined;
   if (coloring.kind === 'categories') {
