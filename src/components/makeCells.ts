@@ -3,10 +3,10 @@ import { Temporal } from '@js-temporal/polyfill';
 import { makeTimeScale } from './useTimeScale';
 import { resolveTimeZone } from './timeZone';
 
-export type Cell = {
+export type Cell<V = number> = {
   time: number;
   endTime: number;
-  value: number;
+  value: V;
   left: number;
   top: number;
   right: number;
@@ -70,20 +70,20 @@ export function getTimeStep(timeValues: number[]): number {
   return Number.isFinite(minInterval) ? minInterval / 1000 : FALLBACK_TIME_STEP;
 }
 
-export function makeCells(
-  values: Array<number | null>,
+export function makeCells<V>(
+  values: Array<V | null>,
   timeValues: number[],
   timeZone: string,
   timeRange: TimeRange,
   height = 1,
   width = 1
-): Cell[] {
+): Array<Cell<V>> {
   const tz = resolveTimeZone(timeZone);
   const xTime = makeTimeScale(timeRange, width, tz);
   const yAxis = makeTimeOfDayScale(tz, height);
 
   const timeStep = getTimeStep(timeValues);
-  const cells: Cell[] = [];
+  const cells: Array<Cell<V>> = [];
 
   const startDate = Temporal.Instant.fromEpochMilliseconds(timeRange.from.unix() * 1000).toZonedDateTimeISO(tz);
   let dayStart = startDate.startOfDay();
@@ -134,7 +134,7 @@ export function makeCells(
     const cellEndTime = time + timeStep;
 
     const TIME_EPS = 60;
-    const segments: Cell[] = [];
+    const segments: Array<Cell<V>> = [];
     let top = timeOfDay(time);
     for (;;) {
       segments.push({
