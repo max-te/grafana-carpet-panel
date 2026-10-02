@@ -120,22 +120,6 @@ export const CarpetPanel: React.FC<Props> = ({
   timeZone,
   onChangeTimeRange,
 }) => {
-  const dpr = useKonvaDpr();
-  const colorScale = useColorScale(options.color);
-  const stageRef = useRef<Konva.Stage>(null);
-  const { setGlobalHover, incomingHover } = useDashboardHoverEvents(stageRef);
-  const [hoveredValue, setHoveredValue] = React.useState<number>();
-  width = Math.trunc(width);
-  height = Math.trunc(height);
-
-  const onHover = React.useCallback(
-    (cell: { time: number; value: number } | null) => {
-      setGlobalHover(cell?.time ? cell.time * 1000 : null);
-      setHoveredValue(cell?.value);
-    },
-    [setGlobalHover]
-  );
-
   if (data.series.length === 0) {
     return (
       <PanelDataErrorView
@@ -176,11 +160,56 @@ export const CarpetPanel: React.FC<Props> = ({
     },
   };
 
+  return (
+    <CarpetView
+      options={options}
+      timeField={timeField}
+      valueField={displayedValueField}
+      width={width}
+      height={height}
+      timeRange={timeRange}
+      timeZone={timeZone}
+      onChangeTimeRange={onChangeTimeRange}
+    />
+  );
+};
+
+type ViewProps = Pick<Props, 'options' | 'width' | 'height' | 'timeRange' | 'timeZone' | 'onChangeTimeRange'> & {
+  timeField: Field<number>;
+  valueField: Field<number>;
+};
+
+const CarpetView: React.FC<ViewProps> = ({
+  options,
+  timeField,
+  valueField,
+  width,
+  height,
+  timeRange,
+  timeZone,
+  onChangeTimeRange,
+}) => {
+  const dpr = useKonvaDpr();
+  const colorScale = useColorScale(options.color);
+  const stageRef = useRef<Konva.Stage>(null);
+  const { setGlobalHover, incomingHover } = useDashboardHoverEvents(stageRef);
+  const [hoveredValue, setHoveredValue] = React.useState<number>();
+  width = Math.trunc(width);
+  height = Math.trunc(height);
+
+  const onHover = React.useCallback(
+    (cell: { time: number; value: number } | null) => {
+      setGlobalHover(cell?.time ? cell.time * 1000 : null);
+      setHoveredValue(cell?.value);
+    },
+    [setGlobalHover]
+  );
+
   const legend = options.legend?.show ? (
     <VizLayout.Legend placement={options.legend.placement ?? 'bottom'}>
       <ColorLegend
         colorScale={colorScale}
-        valueField={displayedValueField}
+        valueField={valueField}
         timeZone={timeZone}
         placement={options.legend.placement ?? 'bottom'}
         height={height}
@@ -198,7 +227,7 @@ export const CarpetPanel: React.FC<Props> = ({
             height={Math.trunc(vizHeight)}
             timeRange={timeRange}
             timeField={timeField}
-            valueField={displayedValueField}
+            valueField={valueField}
             colorPalette={colorScale.call}
             timeZone={timeZone}
             gapWidth={options.gapWidth ?? 0}
