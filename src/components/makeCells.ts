@@ -113,6 +113,10 @@ export function makeCells(
     // timeValues and values share length
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const timeMs = timeValues[i]!;
+    // Sorted input puts repeated timestamps side by side; the last sample wins
+    if (timeValues[i + 1] === timeMs) {
+      continue;
+    }
     const time = timeMs / 1000;
 
     while (time >= nextDayUnix) {

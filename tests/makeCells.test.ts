@@ -186,15 +186,12 @@ describe('makeCells', () => {
     // Two-hour cells; the repeated one crosses midnight
     const cells = makeCells([1, 2, 3], [start, start, start + 7200_000], 'utc', tr);
 
-    // BUG: both samples at `start` produce cells
     expect(cells.map((c) => [c.value, c.split])).toEqual([
-      [1, 1],
-      [1, 2],
-      [2, undefined],
+      [2, 1],
+      [2, 2],
       [3, undefined],
     ]);
-    // BUG: the second one lands in the next day, with negative height
-    expect(cells.every((c) => c.bottom > c.top)).toBe(false);
+    expect(cells.every((c) => c.bottom > c.top)).toBe(true);
   });
 
   describe('on daylight saving transition days in Europe/Berlin', () => {
