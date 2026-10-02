@@ -24,6 +24,15 @@ export interface HeatmapColorOptions {
   scheme?: string;
 }
 
+/**
+ * Clock convention of the hour labels; `Auto` follows the browser locale
+ */
+export enum HourFormat {
+  Auto = 'auto',
+  H12 = '12h',
+  H24 = '24h',
+}
+
 export interface CarpetPanelOptions {
   timeFieldName?: string;
   valueField?: {
@@ -34,6 +43,7 @@ export interface CarpetPanelOptions {
   axes?: {
     showX?: boolean;
     showY?: boolean;
+    hourFormat?: HourFormat;
     // TODO: Add configuration for axis labels, tick density, and formatting
   };
 

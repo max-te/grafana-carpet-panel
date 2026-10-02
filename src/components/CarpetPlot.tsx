@@ -26,6 +26,7 @@ import { Html } from 'react-konva-utils';
 import { XAxisIndicator, YAxisIndicator } from './AxisLabels';
 import { makeCells, makeTimeRangeArea, type Cell } from './makeCells';
 import { traceOutline } from './traceOutline';
+import { HourFormat } from '../types';
 import type { KonvaEventObject } from 'konva/lib/Node';
 
 type ColorPalette = (t: number) => string;
@@ -45,6 +46,7 @@ interface ChartProps {
 
   showXAxis?: boolean;
   showYAxis?: boolean;
+  hourFormat?: HourFormat;
   onHover?: (cell: Cell | null) => void;
   onChangeTimeRange?: (timeRange: AbsoluteTimeRange) => void;
   externalHoverTime?: number;
@@ -72,6 +74,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   hatchGaps,
   showXAxis,
   showYAxis,
+  hourFormat = HourFormat.Auto,
   onHover,
   onChangeTimeRange,
   externalHoverTime,
@@ -162,7 +165,15 @@ export const CarpetPlot: React.FC<ChartProps> = ({
           timeZone={timeZone}
         />
       )}
-      {showYAxis && <YAxisIndicator x={leftPadding} y={topPadding} height={innerHeight} width={yAxisWidth} />}
+      {showYAxis && (
+        <YAxisIndicator
+          x={leftPadding}
+          y={topPadding}
+          height={innerHeight}
+          width={yAxisWidth}
+          hourFormat={hourFormat}
+        />
+      )}
     </Layer>
   );
   const heatmapLayer = useMemo(

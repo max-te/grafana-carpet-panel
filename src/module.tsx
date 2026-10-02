@@ -1,5 +1,5 @@
 import { FieldType, PanelPlugin, FieldNamePickerBaseNameMode } from '@grafana/data';
-import { HeatmapColorMode, HeatmapColorScale, type CarpetPanelOptions } from './types';
+import { HeatmapColorMode, HeatmapColorScale, HourFormat, type CarpetPanelOptions } from './types';
 import { CarpetPanel } from './components/CarpetPanel';
 import { colorSchemes } from './palettes';
 import { useSchemeGradientStops } from './components/useColorScale';
@@ -69,6 +69,20 @@ export const plugin = new PanelPlugin<CarpetPanelOptions>(CarpetPanel).setPanelO
       name: 'Show Y axis',
       defaultValue: false,
       category: ['Axes'],
+    })
+    .addRadio({
+      path: 'axes.hourFormat',
+      name: 'Hour format',
+      defaultValue: HourFormat.Auto,
+      category: ['Axes'],
+      settings: {
+        options: [
+          { label: 'Auto', value: HourFormat.Auto, description: 'Follow the browser locale' },
+          { label: '24h', value: HourFormat.H24 },
+          { label: '12h', value: HourFormat.H12 },
+        ],
+      },
+      showIf: (opts) => opts.axes?.showY === true,
     });
 
   const category = ['Colors'];

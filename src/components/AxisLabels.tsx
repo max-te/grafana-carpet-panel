@@ -8,6 +8,8 @@ import { makeDayTicks } from './dayTicks';
 import { resolveTimeZone } from './timeZone';
 import { useFontEvents } from './useFontEvents';
 import { measureTextWidth, TextShape } from './TextShape';
+import { formatHour, usesTwelveHourClock } from './hourLabels';
+import type { HourFormat } from '../types';
 
 const AXIS_FONT_SIZE = 12;
 const DIVISORS_OF_24 = [1, 2, 3, 4, 6, 8, 12, 24];
@@ -71,12 +73,13 @@ export const XAxisIndicator: React.FC<{
 });
 XAxisIndicator.displayName = 'XAxisIndicator';
 
-export const YAxisIndicator: React.FC<{ x: number; y: number; height: number; width: number }> = ({
-  x,
-  y,
-  width,
-  height,
-}) => {
+export const YAxisIndicator: React.FC<{
+  x: number;
+  y: number;
+  height: number;
+  width: number;
+  hourFormat: HourFormat;
+}> = ({ x, y, width, height, hourFormat }) => {
   'use memo';
   useFontEvents();
   const ticks = Array.from({ length: 25 }, (_, i) => i);
@@ -86,15 +89,15 @@ export const YAxisIndicator: React.FC<{ x: number; y: number; height: number; wi
   const fontSize = AXIS_FONT_SIZE;
   const minTickMod = Math.ceil((fontSize * 1.2) / (height / 24));
   const tickMod = DIVISORS_OF_24.find((divisor) => divisor >= minTickMod) ?? minTickMod;
-  // TODO: Consider making the hour format configurable (12h vs 24h) based on user locale
+  const twelveHourClock = usesTwelveHourClock(hourFormat);
   return (
     <>
       <Line points={[x, y, x, y + height]} stroke={colorGrid} strokeWidth={1} />
       {ticks.map((hour) => {
         const tickY = y + (hour * height) / 24 + 0.5;
-        const label = `${hour.toFixed(0)}:00`;
+        const label = formatHour(hour, twelveHourClock);
         return (
-          <Fragment key={label}>
+          <Fragment key={hour}>
             <Line points={[x, tickY, x - 2, tickY]} stroke={colorGrid} strokeWidth={1} />
             {hour % tickMod === 0 && (
               <>

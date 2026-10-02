@@ -11,6 +11,9 @@ export default defineConfig({
     // Base URL to use in actions like `await page.goto('/')`.
     baseURL: 'http://localhost:8080',
 
+    // Snapshots expect the 24h clock that the Y axis picks for this locale
+    locale: 'en-GB',
+
     // Collect trace when retrying the failed test.
     trace: 'on-first-retry',
   },

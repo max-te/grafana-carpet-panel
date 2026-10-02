@@ -154,6 +154,7 @@ export const CarpetPanel: React.FC<Props> = ({
         hatchGaps={options.hatchGaps ?? true}
         showXAxis={options.axes?.showX}
         showYAxis={options.axes?.showY}
+        hourFormat={options.axes?.hourFormat}
         onHover={onHover}
         onChangeTimeRange={onChangeTimeRange}
         externalHoverTime={incomingHover ? incomingHover / 1000 : undefined}
