@@ -55,6 +55,33 @@ test('shared tooltip shows in every synced panel', async ({ page }) => {
   await expect(page).toHaveScreenshot('scenes-shared-tooltip-hover.png', { fullPage: true });
 });
 
+test('scrolling hides the tooltip until the next hover', async ({ page }) => {
+  await page.goto('/scenes.html#timezones');
+  await hoverFirstPanel(page);
+  const tooltips = page.getByTestId('data-testid viz-tooltip-wrapper');
+  await expect(tooltips).toHaveCount(1);
+  await page.evaluate(() => {
+    window.scrollBy(0, 50);
+  });
+  // FIXME: the tooltip stays at its stale position after scrolling
+  await expect(tooltips).toHaveCount(1);
+  await page
+    .locator('.konvajs-content')
+    .first()
+    .hover({ position: { x: 201, y: 151 } });
+  await expect(tooltips).toHaveCount(1);
+});
+
+test('scrolling hides shared tooltips', async ({ page }) => {
+  await page.goto('/scenes.html#shared-tooltip');
+  await hoverFirstPanel(page);
+  const tooltips = page.getByTestId('data-testid viz-tooltip-wrapper');
+  await expect(tooltips).toHaveCount(3);
+  await page.evaluate(() => document.dispatchEvent(new Event('scroll')));
+  // FIXME: the tooltips stay at their stale positions after scrolling
+  await expect(tooltips).toHaveCount(3);
+});
+
 test('crosshair sync shows only the local tooltip', async ({ page }) => {
   await page.goto('/scenes.html#crosshair');
   await hoverFirstPanel(page);
