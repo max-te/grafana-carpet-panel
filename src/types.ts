@@ -3,6 +3,7 @@ import type { LegendPlacement, OptionsWithTooltip } from '@grafana/ui';
 export enum HeatmapColorMode {
   Opacity = 'opacity',
   Scheme = 'scheme',
+  Thresholds = 'thresholds',
 }
 /**
  * Controls the color scale of the heatmap

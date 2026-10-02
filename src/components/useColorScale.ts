@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import type { GrafanaTheme2 } from '@grafana/data';
 import { HeatmapColorMode, HeatmapColorScale, type HeatmapColorOptions } from '../types';
 import { useTheme2 } from '@grafana/ui';
 import { colorSchemes } from '../palettes';
@@ -21,80 +21,73 @@ function reverseColorFn(colorFn: ColorFn): ColorFn {
   return { stops: colorFn.stops, call: reversedColorFn };
 }
 
-export function useColorScale(colorOptions: HeatmapColorOptions) {
-  const theme = useTheme2();
+/** The modes that color by position on a scale from min to max */
+type PaletteColorMode = Exclude<HeatmapColorMode, HeatmapColorMode.Thresholds>;
 
-  const colorPalette: ColorFn = useMemo(() => {
-    switch (colorOptions.mode) {
-      case HeatmapColorMode.Scheme: {
-        const colorFnName = `interpolate${colorOptions.scheme || 'Spectral'}` as D3ColorFnName;
-        const colorFn: ColorFn = { call: d3ScaleChromatic[colorFnName] };
-        if (typeof colorFn.call !== 'function') {
-          throw new Error('Invalid color scheme: ' + colorFnName);
-        }
-
-        const schemeName = `scheme${colorOptions.scheme || 'Spectral'}` as D3ColorSchemeName;
-        if (schemeName in d3ScaleChromatic) {
-          const scheme = d3ScaleChromatic[schemeName];
-          colorFn.stops = scheme.length;
-        }
-
-        const invert = colorSchemes.find((scheme) => scheme.name === (colorOptions.scheme || 'Spectral'))?.invert;
-        const isInverted =
-          invert === 'always' || (invert === 'dark' && theme.isDark) || (invert === 'light' && theme.isLight);
-        if (isInverted !== colorOptions.reverse) {
-          return reverseColorFn(colorFn);
-        } else {
-          return colorFn;
-        }
+export function makeColorPalette(
+  colorOptions: HeatmapColorOptions & { mode: PaletteColorMode },
+  theme: GrafanaTheme2
+): ColorFn {
+  switch (colorOptions.mode) {
+    case HeatmapColorMode.Scheme: {
+      const colorFnName = `interpolate${colorOptions.scheme || 'Spectral'}` as D3ColorFnName;
+      const colorFn: ColorFn = { call: d3ScaleChromatic[colorFnName] };
+      if (typeof colorFn.call !== 'function') {
+        throw new Error('Invalid color scheme: ' + colorFnName);
       }
-      case HeatmapColorMode.Opacity: {
-        const fill = tinycolor(theme.visualization.getColorByName(colorOptions.fill)).toRgb();
-        const background = tinycolor(theme.colors.background.primary).toRgb();
 
-        const scaleAlpha =
-          colorOptions.scale === HeatmapColorScale.Exponential
-            ? d3
-                .scalePow()
-                .exponent(colorOptions.exponent ?? 1)
-                .domain([0, 1])
-                .range([0, 1])
-            : d3.scaleLinear().domain([0, 1]).range([0, 1]);
-
-        const alphaColorInterpolate: ColorFn = {
-          call: (t) => {
-            const alphaValue = scaleAlpha(t);
-            const blend = {
-              r: fill.r * alphaValue + (1 - alphaValue) * background.r,
-              g: fill.g * alphaValue + (1 - alphaValue) * background.g,
-              b: fill.b * alphaValue + (1 - alphaValue) * background.b,
-              a: background.a,
-            };
-            return `rgba(${blend.r.toFixed(3)}, ${blend.g.toFixed(3)}, ${blend.b.toFixed(3)}, ${blend.a.toFixed(3)})`;
-          },
-        };
-        alphaColorInterpolate.stops = 2;
-        if (colorOptions.reverse) {
-          return reverseColorFn(alphaColorInterpolate);
-        } else {
-          return alphaColorInterpolate;
-        }
+      const schemeName = `scheme${colorOptions.scheme || 'Spectral'}` as D3ColorSchemeName;
+      if (schemeName in d3ScaleChromatic) {
+        const scheme = d3ScaleChromatic[schemeName];
+        colorFn.stops = scheme.length;
       }
-      default: {
-        const _exhaustive: never = colorOptions.mode;
-        throw new Error(`Unexpected color mode: ${_exhaustive as unknown as string}`);
+
+      const invert = colorSchemes.find((scheme) => scheme.name === (colorOptions.scheme || 'Spectral'))?.invert;
+      const isInverted =
+        invert === 'always' || (invert === 'dark' && theme.isDark) || (invert === 'light' && theme.isLight);
+      if (isInverted !== colorOptions.reverse) {
+        return reverseColorFn(colorFn);
+      } else {
+        return colorFn;
       }
     }
-  }, [
-    colorOptions.exponent,
-    colorOptions.fill,
-    colorOptions.mode,
-    colorOptions.reverse,
-    colorOptions.scale,
-    colorOptions.scheme,
-    theme,
-  ]);
-  return colorPalette;
+    case HeatmapColorMode.Opacity: {
+      const fill = tinycolor(theme.visualization.getColorByName(colorOptions.fill)).toRgb();
+      const background = tinycolor(theme.colors.background.primary).toRgb();
+
+      const scaleAlpha =
+        colorOptions.scale === HeatmapColorScale.Exponential
+          ? d3
+              .scalePow()
+              .exponent(colorOptions.exponent ?? 1)
+              .domain([0, 1])
+              .range([0, 1])
+          : d3.scaleLinear().domain([0, 1]).range([0, 1]);
+
+      const alphaColorInterpolate: ColorFn = {
+        call: (t) => {
+          const alphaValue = scaleAlpha(t);
+          const blend = {
+            r: fill.r * alphaValue + (1 - alphaValue) * background.r,
+            g: fill.g * alphaValue + (1 - alphaValue) * background.g,
+            b: fill.b * alphaValue + (1 - alphaValue) * background.b,
+            a: background.a,
+          };
+          return `rgba(${blend.r.toFixed(3)}, ${blend.g.toFixed(3)}, ${blend.b.toFixed(3)}, ${blend.a.toFixed(3)})`;
+        },
+      };
+      alphaColorInterpolate.stops = 2;
+      if (colorOptions.reverse) {
+        return reverseColorFn(alphaColorInterpolate);
+      } else {
+        return alphaColorInterpolate;
+      }
+    }
+    default: {
+      const _exhaustive: never = colorOptions.mode;
+      throw new Error(`Unexpected color mode: ${_exhaustive as unknown as string}`);
+    }
+  }
 }
 
 export function sampleGradientStops(colorFn: ColorFn) {
@@ -108,12 +101,10 @@ export function sampleGradientStops(colorFn: ColorFn) {
 
 export function useSchemeGradientStops(scheme: string) {
   'use memo';
-  const scale = useColorScale({
-    mode: HeatmapColorMode.Scheme,
-    scheme,
-    scale: HeatmapColorScale.Linear,
-    fill: '',
-    reverse: false,
-  });
-  return sampleGradientStops(scale);
+  const theme = useTheme2();
+  const palette = makeColorPalette(
+    { mode: HeatmapColorMode.Scheme, scheme, scale: HeatmapColorScale.Linear, fill: '', reverse: false },
+    theme
+  );
+  return sampleGradientStops(palette);
 }

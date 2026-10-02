@@ -11,7 +11,7 @@ export const plugin = new PanelPlugin<CarpetPanelOptions>(CarpetPanel)
   .useFieldConfig({
     // The panel options cover unit, decimals and the color scale
     disableStandardOptions: Object.values(FieldConfigProperty).filter(
-      (property) => property !== FieldConfigProperty.Mappings
+      (property) => property !== FieldConfigProperty.Mappings && property !== FieldConfigProperty.Thresholds
     ),
   })
   .setPanelOptions((builder) => {
@@ -105,6 +105,7 @@ export const plugin = new PanelPlugin<CarpetPanelOptions>(CarpetPanel)
         options: [
           { label: 'Scheme', value: HeatmapColorMode.Scheme },
           { label: 'Opacity', value: HeatmapColorMode.Opacity },
+          { label: 'Thresholds', value: HeatmapColorMode.Thresholds, description: 'Color by the panel thresholds' },
         ],
       },
     });
@@ -158,7 +159,7 @@ export const plugin = new PanelPlugin<CarpetPanelOptions>(CarpetPanel)
           component: () => <GradientViz scheme={scheme.name} />,
         })),
       },
-      showIf: (opts) => opts.color.mode !== HeatmapColorMode.Opacity,
+      showIf: (opts) => opts.color.mode === HeatmapColorMode.Scheme,
     });
 
     builder.addBooleanSwitch({
@@ -166,6 +167,7 @@ export const plugin = new PanelPlugin<CarpetPanelOptions>(CarpetPanel)
       name: 'Reverse',
       defaultValue: false,
       category,
+      showIf: (opts) => opts.color.mode !== HeatmapColorMode.Thresholds,
     });
 
     builder
