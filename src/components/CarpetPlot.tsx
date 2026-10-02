@@ -25,7 +25,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Rect, Layer, Shape } from 'react-konva';
 import { Html } from 'react-konva-utils';
 import { XAxisIndicator, YAxisIndicator } from './AxisLabels';
-import { getTimeStep, makeCells, makeTimeRangeArea, type Cell } from './makeCells';
+import { getTimeStep, makeCells, makeSpanArea, makeTimeRangeArea, type Area, type Cell } from './makeCells';
 import { countDays } from './useTimeScale';
 import { traceOutline } from './traceOutline';
 import { getCellColor, type CellColoring } from './useCellColoring';
@@ -352,6 +352,8 @@ export const CarpetPlot: React.FC<ChartProps> = ({
     }
   }, [onHover, hoveredCell, tooltipShown]);
   const highlightedCells: Array<Cell<CellValue>> = [];
+  // The selection covers its whole interval, data gaps included
+  let selectionArea: Area[] | undefined;
   let tooltipCell = hoveredCell;
   let tooltipPosition = validTooltip?.position;
   if (hoveredCell) {
@@ -359,6 +361,8 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       const start = Math.min(hoveredCell.time, selectionStart.time);
       const end = Math.max(hoveredCell.time, selectionStart.time);
       highlightedCells.push(...cells.filter((c) => c.time >= start && c.time <= end));
+      const [first, last] = [highlightedCells[0], highlightedCells.at(-1)];
+      selectionArea = first && last ? makeSpanArea(first, last) : undefined;
     } else if (hoveredCell.split) {
       highlightedCells.push(...cells.filter((c) => c.time === hoveredCell.time));
     } else {
@@ -378,11 +382,11 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       }
     }
   }
-  const highlightBoxes = highlightedCells.map((cell) => ({
-    x0: Math.floor(cell.left * innerWidth),
-    y0: Math.floor(cell.top * innerHeight),
-    x1: Math.floor(cell.right * innerWidth),
-    y1: Math.floor(cell.bottom * innerHeight),
+  const highlightBoxes = (selectionArea ?? highlightedCells).map((area) => ({
+    x0: Math.floor(area.left * innerWidth),
+    y0: Math.floor(area.top * innerHeight),
+    x1: Math.floor(area.right * innerWidth),
+    y1: Math.floor(area.bottom * innerHeight),
   }));
   const highlightOutline = traceOutline(highlightBoxes);
   let outlineColor: string | undefined;
