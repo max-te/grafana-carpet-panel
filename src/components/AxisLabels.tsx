@@ -9,10 +9,12 @@ import { resolveTimeZone } from './timeZone';
 import { useFontEvents } from './useFontEvents';
 import { measureTextWidth, TextShape } from './TextShape';
 import { formatHour, usesTwelveHourClock } from './hourLabels';
+import { formatDay } from './dayLabels';
 import type { HourFormat } from '../types';
 
 const AXIS_FONT_SIZE = 12;
 const DIVISORS_OF_24 = [1, 2, 3, 4, 6, 8, 12, 24];
+const WIDEST_SAMPLE_DAY = Temporal.PlainDate.from('2000-12-28');
 export const XAxisIndicator: React.FC<{
   x: number;
   y: number;
@@ -28,12 +30,11 @@ export const XAxisIndicator: React.FC<{
   const toZdt = Temporal.Instant.fromEpochMilliseconds(range.to.valueOf()).toZonedDateTimeISO(tz);
   const totalMonths = toZdt.since(fromZdt, { largestUnit: 'months' }).total({ unit: 'months', relativeTo: fromZdt });
   const isLong = totalMonths > 6;
-  const formatDay = (day: Temporal.PlainDate) => (isLong ? day.toPlainYearMonth() : day.toPlainMonthDay()).toString();
   const scale = React.useMemo(() => makeTimeScale(range, width, timeZone), [range, width, timeZone]);
   const fontSize = AXIS_FONT_SIZE;
-  // Widest-digit sample label plus a one-em gap
+  // Two-digit month and day sample label plus a one-em gap
   const minLabelSpacing =
-    measureTextWidth(isLong ? '0000-00' : '00-00', theme.typography.fontFamily, fontSize) + fontSize;
+    measureTextWidth(formatDay(WIDEST_SAMPLE_DAY, isLong), theme.typography.fontFamily, fontSize) + fontSize;
   const ticks = React.useMemo(
     () => makeDayTicks(range, timeZone, Math.floor(width / minLabelSpacing)),
     [range, timeZone, width, minLabelSpacing]
@@ -49,7 +50,7 @@ export const XAxisIndicator: React.FC<{
         const dayStart = day.toZonedDateTime(tz).epochMilliseconds;
         const nextDayStart = day.add({ days: 1 }).toZonedDateTime(tz).epochMilliseconds;
         const tickX = (scale(dayStart) + scale(nextDayStart)) / 2 + x;
-        const label = formatDay(day);
+        const label = formatDay(day, isLong);
         return (
           // eslint-disable-next-line @eslint-react/no-array-index-key -- In the Konva context, this is okay. Using the date causes a bug where stale labels remain.
           <Fragment key={idx}>
