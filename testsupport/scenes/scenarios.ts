@@ -110,6 +110,7 @@ export const scenarios: Scenario[] = [
             generator: 'recorded',
             options: { axes: { showX: false, showY: false }, hatchGaps: false },
           }),
+          carpetPanel({ title: 'Legend', generator: 'recorded', options: { legend: { show: true } } }),
         ]),
       }),
   },
