@@ -103,7 +103,7 @@ export const scenarios: Scenario[] = [
           carpetPanel({
             title: 'Clamped color scale 200–400, unit W/m²',
             generator: 'recorded',
-            options: { color: { min: 200, max: 400 }, valueField: { unit: 'watt' } },
+            options: { color: { min: 200, max: 400 }, valueField: { unit: 'Wm2' } },
           }),
           carpetPanel({
             title: 'No axes, no hatching',
@@ -376,7 +376,7 @@ export const scenarios: Scenario[] = [
             generator: 'recorded',
             options: {
               color: { min: 200, max: 400 },
-              valueField: { unit: 'watt' },
+              valueField: { unit: 'Wm2' },
               legend: { show: true, placement: 'right' },
             },
           }),
