@@ -1,3 +1,5 @@
+import type { OptionsWithTooltip } from '@grafana/ui';
+
 export enum HeatmapColorMode {
   Opacity = 'opacity',
   Scheme = 'scheme',
@@ -33,7 +35,7 @@ export enum HourFormat {
   H24 = '24h',
 }
 
-export interface CarpetPanelOptions {
+export interface CarpetPanelOptions extends OptionsWithTooltip {
   timeFieldName?: string;
   valueField?: {
     name?: string;
@@ -49,6 +51,5 @@ export interface CarpetPanelOptions {
   color: HeatmapColorOptions;
   gapWidth?: number;
   hatchGaps?: boolean;
-  // TODO: Add tooltip configuration options (show/hide, format, etc.)
   // TODO: Add legend configuration options
 }

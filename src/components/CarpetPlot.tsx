@@ -9,6 +9,7 @@ import {
   type TimeRange,
 } from '@grafana/data';
 import {
+  TooltipDisplayMode,
   useStyles2,
   useTheme2,
   VizTooltip,
@@ -47,14 +48,16 @@ interface ChartProps {
   showXAxis?: boolean;
   showYAxis?: boolean;
   hourFormat?: HourFormat;
+  tooltipMode?: TooltipDisplayMode;
+  tooltipMaxWidth?: number;
   onHover?: (cell: Cell | null) => void;
   onChangeTimeRange?: (timeRange: AbsoluteTimeRange) => void;
   externalHoverTime?: number;
 }
 
-const getStyles = (theme: GrafanaTheme2) => ({
+const getStyles = (theme: GrafanaTheme2, tooltipMaxWidth?: number) => ({
   // Header and content bring their own padding; cancel VizTooltip's container padding
-  tooltip: css({ margin: theme.spacing(-1) }),
+  tooltip: css({ margin: theme.spacing(-1), maxWidth: tooltipMaxWidth }),
 });
 
 function useColorScale(colorPalette: ColorPalette, min: number, max: number) {
@@ -75,12 +78,14 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   showXAxis,
   showYAxis,
   hourFormat = HourFormat.Auto,
+  tooltipMode = TooltipDisplayMode.Single,
+  tooltipMaxWidth,
   onHover,
   onChangeTimeRange,
   externalHoverTime,
 }) => {
   const theme = useTheme2();
-  const styles = useStyles2(getStyles);
+  const styles = useStyles2(getStyles, tooltipMaxWidth);
   const [tooltipData, setTooltipData] = useState<{ idx: number; time: number; x: number; y: number } | null>(null);
   const [selectionStart, setSelectionStart] = useState<Pick<Cell, 'time' | 'endTime'> | null>(null);
 
@@ -302,7 +307,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       />
       <Html>
         <VizTooltip
-          position={validTooltip}
+          position={tooltipMode === TooltipDisplayMode.None ? undefined : validTooltip}
           offset={{ x: 5, y: 5 }}
           content={
             hoveredCell ? (

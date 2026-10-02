@@ -1,4 +1,5 @@
 import { FieldType, PanelPlugin, FieldNamePickerBaseNameMode } from '@grafana/data';
+import { commonOptionsBuilder } from '@grafana/ui';
 import { HeatmapColorMode, HeatmapColorScale, HourFormat, type CarpetPanelOptions } from './types';
 import { CarpetPanel } from './components/CarpetPanel';
 import { colorSchemes } from './palettes';
@@ -180,7 +181,9 @@ export const plugin = new PanelPlugin<CarpetPanelOptions>(CarpetPanel).setPanelO
       category,
     });
 
-  // TODO: Add options for tooltip customization (format, additional fields, etc.)
+  // A cell holds a single value, so the multi-series tooltip modes do not apply
+  commonOptionsBuilder.addTooltipOptions(builder, true);
+
   // TODO: Consider adding legend options for better data interpretation
 
   return builder;

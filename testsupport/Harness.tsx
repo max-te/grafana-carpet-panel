@@ -16,6 +16,7 @@ import {
   Input,
   Legend,
   Text,
+  TooltipDisplayMode,
 } from '@grafana/ui';
 import * as testData from './testdata.json';
 import { useKonvaDpr } from '../src/components/useKonvaDpr';
@@ -123,6 +124,8 @@ export const Harness: React.FC = () => {
   const [showYAxis, setShowYAxis] = React.useState<boolean>(true);
   const [hourFormat, setHourFormat] = React.useState<HourFormat>(HourFormat.Auto);
   const [decimals, setDecimals] = React.useState<number | undefined>(undefined);
+  const [tooltipMode, setTooltipMode] = React.useState<TooltipDisplayMode>(TooltipDisplayMode.Single);
+  const [tooltipMaxWidth, setTooltipMaxWidth] = React.useState<number | undefined>(undefined);
   const displayedValueField = React.useMemo(
     () => ({ ...valueField, config: { ...valueField.config, decimals } }),
     [decimals]
@@ -142,6 +145,8 @@ export const Harness: React.FC = () => {
     showXAxis,
     showYAxis,
     hourFormat,
+    tooltipMode,
+    tooltipMaxWidth,
     onHover(cell) {
       console.info('Hover Event', cell);
       setLastHover(JSON.stringify(cell));
@@ -277,6 +282,31 @@ export const Harness: React.FC = () => {
               onChange={(e) => {
                 const { value } = e.currentTarget;
                 setDecimals(value === '' ? undefined : Number(value));
+              }}
+            />
+          </InlineField>
+        </InlineFieldRow>
+        <InlineFieldRow>
+          <InlineField label="Tooltip">
+            <RadioButtonGroup
+              options={[
+                { value: TooltipDisplayMode.Single, label: 'Single' },
+                { value: TooltipDisplayMode.None, label: 'Hidden' },
+              ]}
+              value={tooltipMode}
+              onChange={setTooltipMode}
+            />
+          </InlineField>
+          <InlineField label="Tooltip max width">
+            <Input
+              type="number"
+              min={0}
+              width={10}
+              placeholder="auto"
+              value={tooltipMaxWidth ?? ''}
+              onChange={(e) => {
+                const { value } = e.currentTarget;
+                setTooltipMaxWidth(value === '' ? undefined : Number(value));
               }}
             />
           </InlineField>
