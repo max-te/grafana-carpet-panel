@@ -13,7 +13,7 @@ import { usePanelContext } from '@grafana/ui';
 import { PanelDataErrorView } from '@grafana/runtime';
 import { Stage } from 'react-konva';
 import { CarpetPlot, type ExternalHover } from './CarpetPlot';
-import { useAncestorScroll } from './useAncestorScroll';
+import { useClientPositionChange } from './useClientPositionChange';
 import { useColorScale } from './useColorScale';
 import { useKonvaDpr } from './useKonvaDpr';
 
@@ -77,7 +77,7 @@ const useDashboardHoverEvents = (stageRef: React.RefObject<Konva.Stage | null>) 
   const hideIncomingTooltip = useCallback(() => {
     setIncomingHover((hover) => (hover?.tooltipOrigin ? { time: hover.time } : hover));
   }, []);
-  useAncestorScroll(stageRef, hideIncomingTooltip);
+  useClientPositionChange(stageRef, hideIncomingTooltip);
   return {
     setGlobalHover,
     incomingHover: syncMode === DashboardCursorSync.Off ? null : incomingHover,

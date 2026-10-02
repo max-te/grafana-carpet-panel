@@ -28,7 +28,7 @@ import { Html } from 'react-konva-utils';
 import { XAxisIndicator, YAxisIndicator } from './AxisLabels';
 import { makeCells, makeTimeRangeArea, type Cell } from './makeCells';
 import { traceOutline } from './traceOutline';
-import { useAncestorScroll } from './useAncestorScroll';
+import { useClientPositionChange } from './useClientPositionChange';
 import { HourFormat } from '../types';
 import type { KonvaEventObject } from 'konva/lib/Node';
 
@@ -126,7 +126,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       setSelectionStart(null);
     }
   }, []);
-  // Restores a tooltip hidden by scrolling without leaving the cell
+  // Restores a tooltip hidden by scrolling or resizing without leaving the cell
   const handleCellMouseMove = useCallback((event: KonvaEventObject<MouseEvent>) => {
     setTooltipData((hover) => (hover?.position ? hover : measureCellHover(event)));
   }, []);
@@ -136,7 +136,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   const hideTooltip = useCallback(() => {
     setTooltipData((hover) => (hover?.position ? { idx: hover.idx, time: hover.time } : hover));
   }, []);
-  useAncestorScroll(heatmapLayerRef, hideTooltip);
+  useClientPositionChange(heatmapLayerRef, hideTooltip);
   const handleCellMouseDown = useCallback(({ evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
     evt.stopPropagation();
     setSelectionStart({
