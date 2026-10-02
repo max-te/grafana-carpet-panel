@@ -29,6 +29,25 @@ test('drag selection matches snapshot', async ({ page }) => {
   await expect(canvas).toHaveScreenshot('example-drag.png');
 });
 
+test('drag selection changes the time range on release', async ({ page }) => {
+  await page.goto('/');
+  const canvas = page.locator('.konvajs-content');
+  await canvas.waitFor();
+  const box = await canvas.boundingBox();
+  if (!box) {
+    throw new Error('canvas has no bounding box');
+  }
+
+  await page.mouse.move(box.x + 100, box.y + 150);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 400, box.y + 250, { steps: 10 });
+  await page.mouse.up();
+  const update = page.getByText(/Time range updated: \d+ - \d+/);
+  await expect(update).toBeVisible();
+  const [from, to] = ((await update.textContent()) ?? '').match(/\d+/g)?.map(Number) ?? [];
+  expect(from).toBeLessThan(to ?? 0);
+});
+
 test('unhatched gaps match snapshot', async ({ page }) => {
   await page.goto('/');
   await page.waitForSelector('.konvajs-content');
