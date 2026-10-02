@@ -10,6 +10,7 @@ import { useFontEvents } from './useFontEvents';
 import { measureTextWidth, TextShape } from './TextShape';
 
 const AXIS_FONT_SIZE = 12;
+const DIVISORS_OF_24 = [1, 2, 3, 4, 6, 8, 12, 24];
 export const XAxisIndicator: React.FC<{
   x: number;
   y: number;
@@ -83,8 +84,8 @@ export const YAxisIndicator: React.FC<{ x: number; y: number; height: number; wi
   const colorGrid = 'rgba(120, 120, 130, 0.5)';
   const colorText = theme.colors.text.primary;
   const fontSize = AXIS_FONT_SIZE;
-  const tickMod = Math.ceil((fontSize * 1.2) / (height / 24));
-  // TODO: Improve tick calculation to find the next divisor of 24 for more natural label spacing
+  const minTickMod = Math.ceil((fontSize * 1.2) / (height / 24));
+  const tickMod = DIVISORS_OF_24.find((divisor) => divisor >= minTickMod) ?? minTickMod;
   // TODO: Consider making the hour format configurable (12h vs 24h) based on user locale
   return (
     <>
