@@ -51,8 +51,7 @@ async function hoverFirstPanel(page: Page) {
 test('shared tooltip shows in every synced panel', async ({ page }) => {
   await page.goto('/scenes.html#shared-tooltip');
   await hoverFirstPanel(page);
-  // FIXME: only the hovered panel shows a tooltip, the synced panels show none
-  await expect(page.getByTestId('data-testid viz-tooltip-wrapper')).toHaveCount(1);
+  await expect(page.getByTestId('data-testid viz-tooltip-wrapper')).toHaveCount(3);
   await expect(page).toHaveScreenshot('scenes-shared-tooltip-hover.png', { fullPage: true });
 });
 

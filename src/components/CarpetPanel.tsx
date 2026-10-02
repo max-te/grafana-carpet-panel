@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
+import type Konva from 'konva';
 import {
   FieldType,
   type PanelProps,
@@ -11,16 +12,25 @@ import type { CarpetPanelOptions } from '../types';
 import { usePanelContext } from '@grafana/ui';
 import { PanelDataErrorView } from '@grafana/runtime';
 import { Stage } from 'react-konva';
-import { CarpetPlot } from './CarpetPlot';
+import { CarpetPlot, type ExternalHover } from './CarpetPlot';
 import { useColorScale } from './useColorScale';
 import { useKonvaDpr } from './useKonvaDpr';
 
 type Props = PanelProps<CarpetPanelOptions>;
 
-const useDashboardHoverEvents = () => {
+// Like Grafana's own panels, show a synced tooltip only while the whole plot is on screen
+function getVisibleClientOrigin(stage: Konva.Stage | null) {
+  const rect = stage?.container().getBoundingClientRect();
+  if (!rect || rect.top < 0 || rect.left < 0 || rect.bottom > window.innerHeight || rect.right > window.innerWidth) {
+    return undefined;
+  }
+  return { x: rect.x, y: rect.y };
+}
+
+const useDashboardHoverEvents = (stageRef: React.RefObject<Konva.Stage | null>) => {
   const { eventBus, sync } = usePanelContext();
   const syncMode = sync ? sync() : DashboardCursorSync.Off;
-  const [incomingHover, setIncomingHover] = React.useState<number | null>(null);
+  const [incomingHover, setIncomingHover] = React.useState<ExternalHover | null>(null);
   const setGlobalHover = useCallback(
     (time: number | null) => {
       if (syncMode !== DashboardCursorSync.Off) {
@@ -38,12 +48,21 @@ const useDashboardHoverEvents = () => {
   );
   useEffect(() => {
     const sub = eventBus.getStream(DataHoverEvent).subscribe((ev) => {
-      setIncomingHover(ev.payload.point.time ?? null);
+      const time = ev.payload.point.time;
+      setIncomingHover(
+        time
+          ? {
+              time: time / 1000,
+              tooltipOrigin:
+                syncMode === DashboardCursorSync.Tooltip ? getVisibleClientOrigin(stageRef.current) : undefined,
+            }
+          : null
+      );
     });
     return () => {
       sub.unsubscribe();
     };
-  }, [eventBus]);
+  }, [eventBus, syncMode, stageRef]);
 
   useEffect(() => {
     const sub = eventBus.getStream(DataHoverClearEvent).subscribe(() => {
@@ -72,7 +91,8 @@ export const CarpetPanel: React.FC<Props> = ({
 }) => {
   const dpr = useKonvaDpr();
   const colorScale = useColorScale(options.color);
-  const { setGlobalHover, incomingHover } = useDashboardHoverEvents();
+  const stageRef = useRef<Konva.Stage>(null);
+  const { setGlobalHover, incomingHover } = useDashboardHoverEvents(stageRef);
   width = Math.trunc(width);
   height = Math.trunc(height);
 
@@ -141,7 +161,7 @@ export const CarpetPanel: React.FC<Props> = ({
   };
 
   return (
-    <Stage width={width} height={height} key={dpr}>
+    <Stage width={width} height={height} key={dpr} ref={stageRef}>
       <CarpetPlot
         width={width}
         height={height}
@@ -159,7 +179,7 @@ export const CarpetPanel: React.FC<Props> = ({
         tooltipMaxWidth={options.tooltip.maxWidth}
         onHover={onHover}
         onChangeTimeRange={onChangeTimeRange}
-        externalHoverTime={incomingHover ? incomingHover / 1000 : undefined}
+        externalHover={incomingHover ?? undefined}
       />
     </Stage>
   );

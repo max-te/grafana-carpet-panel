@@ -33,6 +33,13 @@ import type { KonvaEventObject } from 'konva/lib/Node';
 type ColorPalette = (t: number) => string;
 
 const HATCH_SPACING = 6;
+
+export interface ExternalHover {
+  time: number;
+  /** Client position of the stage; present when a shared tooltip should show */
+  tooltipOrigin?: { x: number; y: number };
+}
+
 interface ChartProps {
   width: number;
   height: number;
@@ -52,7 +59,7 @@ interface ChartProps {
   tooltipMaxWidth?: number;
   onHover?: (cell: Cell | null) => void;
   onChangeTimeRange?: (timeRange: AbsoluteTimeRange) => void;
-  externalHoverTime?: number;
+  externalHover?: ExternalHover;
 }
 
 const getStyles = (theme: GrafanaTheme2, tooltipMaxWidth?: number) => ({
@@ -82,7 +89,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   tooltipMaxWidth,
   onHover,
   onChangeTimeRange,
-  externalHoverTime,
+  externalHover,
 }) => {
   const theme = useTheme2();
   const styles = useStyles2(getStyles, tooltipMaxWidth);
@@ -256,6 +263,8 @@ export const CarpetPlot: React.FC<ChartProps> = ({
     onHover?.(hoveredCell ?? null);
   }, [onHover, hoveredCell]);
   const highlightedCells: Cell[] = [];
+  let tooltipCell = hoveredCell;
+  let tooltipPosition: { x: number; y: number } | undefined = validTooltip;
   if (hoveredCell) {
     if (selectionStart) {
       const start = Math.min(hoveredCell.time, selectionStart.time);
@@ -266,11 +275,18 @@ export const CarpetPlot: React.FC<ChartProps> = ({
     } else {
       highlightedCells.push(hoveredCell);
     }
-  } else if (externalHoverTime) {
-    const nextCell = cells.find((c) => c.endTime >= externalHoverTime && c.time <= externalHoverTime);
+  } else if (externalHover) {
+    const { time, tooltipOrigin } = externalHover;
+    const nextCell = cells.find((c) => c.endTime >= time && c.time <= time);
     if (nextCell) {
       highlightedCells.push(nextCell);
-      // TODO: shared tooltip (needs position of cell in client rect)
+      if (tooltipOrigin) {
+        tooltipCell = nextCell;
+        tooltipPosition = {
+          x: tooltipOrigin.x + leftPadding + Math.floor(nextCell.right * innerWidth),
+          y: tooltipOrigin.y + topPadding + Math.floor(nextCell.bottom * innerHeight),
+        };
+      }
     }
   }
   const highlightBoxes = highlightedCells.map((cell) => ({
@@ -307,18 +323,18 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       />
       <Html>
         <VizTooltip
-          position={tooltipMode === TooltipDisplayMode.None ? undefined : validTooltip}
+          position={tooltipMode === TooltipDisplayMode.None ? undefined : tooltipPosition}
           offset={{ x: 5, y: 5 }}
           content={
-            hoveredCell ? (
+            tooltipCell ? (
               <VizTooltipWrapper className={styles.tooltip}>
-                <VizTooltipHeader item={{ label: '', value: dateTimeFormat(hoveredCell.time * 1000, { timeZone }) }} />
+                <VizTooltipHeader item={{ label: '', value: dateTimeFormat(tooltipCell.time * 1000, { timeZone }) }} />
                 <VizTooltipContent
                   items={[
                     {
                       label: valueField.config.displayName || valueField.config.displayNameFromDS || valueField.name,
-                      value: formattedValueToString(display(hoveredCell.value)),
-                      color: colorScale(hoveredCell.value),
+                      value: formattedValueToString(display(tooltipCell.value)),
+                      color: colorScale(tooltipCell.value),
                       colorIndicator: VizTooltipColorIndicator.value,
                       colorPlacement: VizTooltipColorPlacement.trailing,
                     },
