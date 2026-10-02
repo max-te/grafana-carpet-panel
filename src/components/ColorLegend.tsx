@@ -2,11 +2,12 @@ import { css, cx } from '@emotion/css';
 import { formattedValueToString, getDisplayProcessor, type Field, type GrafanaTheme2 } from '@grafana/data';
 import { type LegendPlacement, useStyles2, useTheme2 } from '@grafana/ui';
 import React from 'react';
-import type { CellColoring } from './useCellColoring';
+import type { CellValue } from './categories';
+import type { ContinuousColoring } from './useCellColoring';
 
 interface Props {
-  coloring: CellColoring;
-  valueField: Field<number>;
+  coloring: ContinuousColoring;
+  valueField: Field<CellValue>;
   timeZone: string;
   placement: LegendPlacement;
   markedValue?: number;

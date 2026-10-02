@@ -28,7 +28,8 @@ import { XAxisIndicator, YAxisIndicator } from './AxisLabels';
 import { getTimeStep, makeCells, makeTimeRangeArea, type Cell } from './makeCells';
 import { countDays } from './useTimeScale';
 import { traceOutline } from './traceOutline';
-import type { CellColoring } from './useCellColoring';
+import { getCellColor, type CellColoring } from './useCellColoring';
+import type { CellValue } from './categories';
 import { useClientPositionChange } from './useClientPositionChange';
 import { HourFormat } from '../types';
 import type { KonvaEventObject } from 'konva/lib/Node';
@@ -79,7 +80,7 @@ interface ChartProps {
   height: number;
 
   timeField: Field<number>;
-  valueField: Field<number>;
+  valueField: Field<CellValue>;
   timeZone: string;
   timeRange: TimeRange;
   coloring: CellColoring;
@@ -91,7 +92,7 @@ interface ChartProps {
   hourFormat?: HourFormat;
   tooltipMode?: TooltipDisplayMode;
   tooltipMaxWidth?: number;
-  onHover?: (cell: Cell | null) => void;
+  onHover?: (cell: Cell<CellValue> | null) => void;
   onChangeTimeRange?: (timeRange: AbsoluteTimeRange) => void;
   externalHover?: ExternalHover;
 }
@@ -169,7 +170,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
     [onChangeTimeRange, selectionStart]
   );
 
-  const { color: cellColor, min, max } = coloring;
+  const cellColor = useCallback((value: CellValue) => getCellColor(coloring, value), [coloring]);
   const display = getDisplayProcessor({
     field: valueField,
     theme,
@@ -335,7 +336,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       onHover?.(hoveredCell ?? null);
     }
   }, [onHover, hoveredCell, tooltipShown]);
-  const highlightedCells: Cell[] = [];
+  const highlightedCells: Array<Cell<CellValue>> = [];
   let tooltipCell = hoveredCell;
   let tooltipPosition = validTooltip?.position;
   if (hoveredCell) {
@@ -369,7 +370,15 @@ export const CarpetPlot: React.FC<ChartProps> = ({
     y1: Math.floor(cell.bottom * innerHeight),
   }));
   const highlightOutline = traceOutline(highlightBoxes);
-  const highlightedMean = d3.mean(highlightedCells, (cell) => cell.value) ?? min;
+  let outlineColor: string | undefined;
+  if (coloring.kind === 'categories') {
+    const firstCell = highlightedCells[0];
+    outlineColor = firstCell && theme.colors.getContrastText(cellColor(firstCell.value));
+  } else {
+    const { min, max, color } = coloring;
+    const highlightedMean = d3.mean(highlightedCells, (cell) => cell.value as number) ?? min;
+    outlineColor = highlightedMean > (min + max) / 2 ? color(min) : color(max);
+  }
   const hoverLayer = (
     <Layer listening={false} x={leftPadding} y={topPadding}>
       <Shape
@@ -390,7 +399,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
           context.strokeShape(shape);
         }}
         fill={'rgba(120, 120, 130, 0.2)'}
-        stroke={highlightedMean > (min + max) / 2 ? cellColor(min) : cellColor(max)}
+        stroke={outlineColor}
         dash={[4, 2]}
         strokeWidth={1}
       />

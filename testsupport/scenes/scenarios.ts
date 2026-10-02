@@ -1,4 +1,4 @@
-import { DashboardCursorSync } from '@grafana/data';
+import { DashboardCursorSync, MappingType } from '@grafana/data';
 import {
   behaviors,
   EmbeddedScene,
@@ -26,7 +26,7 @@ export interface Scenario {
 }
 
 type CarpetPanelSpec = Pick<VizPanelState<CarpetPanelOptions>, 'title'> &
-  Partial<Pick<VizPanelState<CarpetPanelOptions>, 'description' | 'options' | '$timeRange'>> & {
+  Partial<Pick<VizPanelState<CarpetPanelOptions>, 'description' | 'options' | 'fieldConfig' | '$timeRange'>> & {
     generator: GeneratorName;
   };
 
@@ -220,7 +220,7 @@ export const scenarios: Scenario[] = [
           carpetPanel({ title: 'No series', generator: 'no-series' }),
           carpetPanel({ title: 'Empty frame', generator: 'empty-frame' }),
           carpetPanel({ title: 'No time field', generator: 'no-time-field' }),
-          carpetPanel({ title: 'No number field', generator: 'no-number-field' }),
+          carpetPanel({ title: 'String field only', generator: 'no-number-field' }),
           carpetPanel({ title: 'Number field only in second frame', generator: 'number-in-second-frame' }),
           carpetPanel({
             title: 'Two time and number fields, defaults',
@@ -347,6 +347,45 @@ export const scenarios: Scenario[] = [
             ),
           ],
         }),
+      }),
+  },
+  {
+    id: 'categorical',
+    title: 'Categorical values',
+    description:
+      'String, boolean and enum fields. Value mappings and enum colors color their categories; the classic palette colors the rest.',
+    build: () =>
+      carpetScene({
+        ...fortnight,
+        body: grid([
+          carpetPanel({ title: 'Strings, palette', generator: 'states', options: { legend: { show: true } } }),
+          carpetPanel({
+            title: 'Strings, value mappings for off, running and fault, right',
+            generator: 'states',
+            options: { legend: { show: true, placement: 'right' }, gapWidth: 1 },
+            fieldConfig: {
+              defaults: {
+                mappings: [
+                  {
+                    type: MappingType.ValueToText,
+                    options: {
+                      off: { text: 'Off', color: 'transparent' },
+                      running: { text: 'Running', color: 'green' },
+                      fault: { text: 'Fault', color: 'red' },
+                    },
+                  },
+                ],
+              },
+              overrides: [],
+            },
+          }),
+          carpetPanel({ title: 'Booleans', generator: 'daylight', options: { legend: { show: true } } }),
+          carpetPanel({
+            title: 'Enum, purple for Off only',
+            generator: 'enum-states',
+            options: { legend: { show: true } },
+          }),
+        ]),
       }),
   },
   {

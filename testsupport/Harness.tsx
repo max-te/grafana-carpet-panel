@@ -62,14 +62,16 @@ const ThemedCarpetPlot: React.FC<
       legend={
         legend.show ? (
           <VizLayout.Legend placement={legend.placement}>
-            <ColorLegend
-              coloring={coloring}
-              valueField={valueField}
-              timeZone={timeZone}
-              placement={legend.placement}
-              height={height}
-              markedValue={hoveredValue}
-            />
+            {coloring.kind === 'continuous' && (
+              <ColorLegend
+                coloring={coloring}
+                valueField={valueField}
+                timeZone={timeZone}
+                placement={legend.placement}
+                height={height}
+                markedValue={hoveredValue}
+              />
+            )}
           </VizLayout.Legend>
         ) : null
       }
@@ -83,7 +85,7 @@ const ThemedCarpetPlot: React.FC<
             coloring={coloring}
             onHover={(cell) => {
               onHover?.(cell);
-              setHoveredValue(cell?.value);
+              setHoveredValue(typeof cell?.value === 'number' ? cell.value : undefined);
             }}
           />
         </Stage>

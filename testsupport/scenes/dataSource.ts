@@ -53,6 +53,34 @@ function timeSeries(times: number[], values: Array<number | null>): DataFrame {
   });
 }
 
+function categorical(step: number, type: FieldType, value: (time: number) => string | boolean | number): Generator {
+  return (range) => {
+    const times = sampleTimes(range, step);
+    return [
+      createDataFrame({
+        fields: [
+          { name: 'Time', type: FieldType.time, values: times },
+          {
+            name: 'State',
+            type,
+            values: times.map(value),
+            config:
+              type === FieldType.enum
+                ? { type: { enum: { text: ['Off', 'Idle', 'Running', 'Fault'], color: ['purple'] } } }
+                : {},
+          },
+        ],
+      }),
+    ];
+  };
+}
+
+/** Machine state following the solar curve, with occasional faults. */
+function machineState(time: number): string {
+  const power = solar(time);
+  return noise(time + 2) < 0.03 ? 'fault' : power === 0 ? 'off' : power < 300 ? 'idle' : 'running';
+}
+
 function sampled(step: number, value: (time: number) => number | null): Generator {
   return (range) => {
     const times = sampleTimes(range, step);
@@ -118,6 +146,10 @@ export const generators = {
     const times = [fractionOf(range, 0.3), fractionOf(range, 0.7)].map((t) => Math.round(t / hour) * hour);
     return [timeSeries(times, [10, 90])];
   },
+
+  states: categorical(hour, FieldType.string, machineState),
+  daylight: categorical(hour, FieldType.boolean, (t) => solar(t) > 0),
+  'enum-states': categorical(hour, FieldType.enum, (t) => ['off', 'idle', 'running', 'fault'].indexOf(machineState(t))),
 
   'no-series': () => [],
   'empty-frame': () => [timeSeries([], [])],

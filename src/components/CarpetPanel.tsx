@@ -14,7 +14,9 @@ import { usePanelContext, VizLayout } from '@grafana/ui';
 import { PanelDataErrorView } from '@grafana/runtime';
 import { Stage } from 'react-konva';
 import { CarpetPlot, type ExternalHover } from './CarpetPlot';
+import { CategoryLegend } from './CategoryLegend';
 import { ColorLegend } from './ColorLegend';
+import { isCategoricalField, type CellValue } from './categories';
 import { useClientPositionChange } from './useClientPositionChange';
 import { useCellColoring } from './useCellColoring';
 import { useKonvaDpr } from './useKonvaDpr';
@@ -30,10 +32,10 @@ function getVisibleClientOrigin(stage: Konva.Stage | null) {
   return { x: rect.x, y: rect.y };
 }
 
-/** Picks both fields from the first frame holding the value field. */
-function findFields(series: DataFrame[], options: CarpetPanelOptions) {
+/** Picks both fields from the first frame holding the value field, by name or else by `isDefaultValueField`. */
+function findFields(series: DataFrame[], options: CarpetPanelOptions, isDefaultValueField: (field: Field) => boolean) {
   let timeField: Field<number> | undefined = undefined;
-  let valueField: Field<number> | undefined = undefined;
+  let valueField: Field<CellValue> | undefined = undefined;
   for (const frame of series) {
     timeField = options.timeFieldName
       ? frame.fields.find(
@@ -45,7 +47,7 @@ function findFields(series: DataFrame[], options: CarpetPanelOptions) {
       ? frame.fields.find(
           (f) => f.name === options.valueField?.name || f.config.displayNameFromDS === options.valueField?.name
         )
-      : frame.fields.find((f) => f.type === FieldType.number);
+      : frame.fields.find(isDefaultValueField);
     if (valueField) {
       break;
     }
@@ -132,7 +134,10 @@ export const CarpetPanel: React.FC<Props> = ({
       />
     );
   }
-  const { timeField, valueField } = findFields(data.series, options);
+  let { timeField, valueField } = findFields(data.series, options, (f) => f.type === FieldType.number);
+  if (!valueField) {
+    ({ timeField, valueField } = findFields(data.series, options, isCategoricalField));
+  }
 
   if (timeField === undefined || valueField === undefined) {
     return (
@@ -149,7 +154,7 @@ export const CarpetPanel: React.FC<Props> = ({
     return <PanelDataErrorView fieldConfig={fieldConfig} panelId={id} data={data} needsTimeField />;
   }
 
-  const displayedValueField: Field<number> = {
+  const displayedValueField: Field<CellValue> = {
     ...valueField,
     config: {
       ...valueField.config,
@@ -176,7 +181,7 @@ export const CarpetPanel: React.FC<Props> = ({
 
 type ViewProps = Pick<Props, 'options' | 'width' | 'height' | 'timeRange' | 'timeZone' | 'onChangeTimeRange'> & {
   timeField: Field<number>;
-  valueField: Field<number>;
+  valueField: Field<CellValue>;
 };
 
 const CarpetView: React.FC<ViewProps> = ({
@@ -193,12 +198,12 @@ const CarpetView: React.FC<ViewProps> = ({
   const coloring = useCellColoring(options.color, valueField);
   const stageRef = useRef<Konva.Stage>(null);
   const { setGlobalHover, incomingHover } = useDashboardHoverEvents(stageRef);
-  const [hoveredValue, setHoveredValue] = React.useState<number>();
+  const [hoveredValue, setHoveredValue] = React.useState<CellValue>();
   width = Math.trunc(width);
   height = Math.trunc(height);
 
   const onHover = React.useCallback(
-    (cell: { time: number; value: number } | null) => {
+    (cell: { time: number; value: CellValue } | null) => {
       setGlobalHover(cell?.time ? cell.time * 1000 : null);
       setHoveredValue(cell?.value);
     },
@@ -207,14 +212,24 @@ const CarpetView: React.FC<ViewProps> = ({
 
   const legend = options.legend?.show ? (
     <VizLayout.Legend placement={options.legend.placement ?? 'bottom'}>
-      <ColorLegend
-        coloring={coloring}
-        valueField={valueField}
-        timeZone={timeZone}
-        placement={options.legend.placement ?? 'bottom'}
-        height={height}
-        markedValue={hoveredValue}
-      />
+      {coloring.kind === 'continuous' ? (
+        <ColorLegend
+          coloring={coloring}
+          valueField={valueField}
+          timeZone={timeZone}
+          placement={options.legend.placement ?? 'bottom'}
+          height={height}
+          markedValue={typeof hoveredValue === 'number' ? hoveredValue : undefined}
+        />
+      ) : (
+        <CategoryLegend
+          colors={coloring.colors}
+          valueField={valueField}
+          timeZone={timeZone}
+          placement={options.legend.placement ?? 'bottom'}
+          markedValue={hoveredValue}
+        />
+      )}
     </VizLayout.Legend>
   ) : null;
 

@@ -11,6 +11,7 @@ const scenarioIds = [
   'timezones',
   'dst',
   'sizes',
+  'categorical',
   'legend',
 ];
 
@@ -98,6 +99,16 @@ test('resizing the window hides tooltips until the next hover', async ({ page })
     .first()
     .hover({ position: { x: 201, y: 151 } });
   await expect(tooltips).toHaveCount(3);
+});
+
+test('hovering categorical cells shows their tooltip', async ({ page }) => {
+  await page.goto('/scenes.html#categorical');
+  const canvases = page.locator('.konvajs-content');
+  await expect(canvases).toHaveCount(4);
+  for (const canvas of await canvases.all()) {
+    await canvas.hover({ position: { x: 200, y: 150 } });
+    await expect(page.getByTestId('data-testid viz-tooltip-wrapper')).toHaveCount(1);
+  }
 });
 
 test('crosshair sync shows only the local tooltip', async ({ page }) => {
