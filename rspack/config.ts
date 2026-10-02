@@ -168,7 +168,7 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
           { from: 'plugin.json', to: '.' },
           { from: '../LICENSE', to: '.' },
           { from: '../CHANGELOG.md', to: '.', force: true },
-          { from: '**/*.json', to: '.' }, // TODO<Add an error for checking the basic structure of the repo>
+          { from: '**/*.json', to: '.' },
           { from: '**/*.svg', to: '.', noErrorOnMissing: true }, // Optional
           { from: '**/*.png', to: '.', noErrorOnMissing: true }, // Optional
           { from: '**/*.html', to: '.', noErrorOnMissing: true }, // Optional

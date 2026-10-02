@@ -44,7 +44,6 @@ export interface CarpetPanelOptions {
     showX?: boolean;
     showY?: boolean;
     hourFormat?: HourFormat;
-    // TODO: Add configuration for axis labels, tick density, and formatting
   };
 
   color: HeatmapColorOptions;
