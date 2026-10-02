@@ -97,6 +97,15 @@ export function useColorScale(colorOptions: HeatmapColorOptions) {
   return colorPalette;
 }
 
+export function sampleGradientStops(colorFn: ColorFn) {
+  const stop_count = 2 * (colorFn.stops ?? 10);
+  const stops = Array.from({ length: stop_count }).map((_, i) => {
+    const t = i / (stop_count - 1);
+    return colorFn.call(t);
+  });
+  return stops;
+}
+
 export function useSchemeGradientStops(scheme: string) {
   'use memo';
   const scale = useColorScale({
@@ -106,10 +115,5 @@ export function useSchemeGradientStops(scheme: string) {
     fill: '',
     reverse: false,
   });
-  const stop_count = 2 * (scale.stops ?? 10);
-  const stops = Array.from({ length: stop_count }).map((_, i) => {
-    const t = i / (stop_count - 1);
-    return scale.call(t);
-  });
-  return stops;
+  return sampleGradientStops(scale);
 }
