@@ -348,4 +348,39 @@ export const scenarios: Scenario[] = [
         }),
       }),
   },
+  {
+    id: 'legend',
+    title: 'Legend',
+    description: 'The color legend below and beside the plot, labelled with the formatted ends of the color scale.',
+    build: () =>
+      carpetScene({
+        ...recordedRange,
+        timeZone: 'Europe/Berlin',
+        body: grid([
+          carpetPanel({ title: 'Bottom', generator: 'recorded', options: { legend: { show: true } } }),
+          carpetPanel({
+            title: 'Right',
+            generator: 'recorded',
+            options: { legend: { show: true, placement: 'right' } },
+          }),
+          carpetPanel({
+            title: 'Opacity, bottom',
+            generator: 'recorded',
+            options: {
+              color: { mode: HeatmapColorMode.Opacity, fill: 'orange' },
+              legend: { show: true },
+            },
+          }),
+          carpetPanel({
+            title: 'Clamped 200–400, unit W/m², right',
+            generator: 'recorded',
+            options: {
+              color: { min: 200, max: 400 },
+              valueField: { unit: 'watt' },
+              legend: { show: true, placement: 'right' },
+            },
+          }),
+        ]),
+      }),
+  },
 ];
