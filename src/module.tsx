@@ -184,7 +184,26 @@ export const plugin = new PanelPlugin<CarpetPanelOptions>(CarpetPanel).setPanelO
   // A cell holds a single value, so the multi-series tooltip modes do not apply
   commonOptionsBuilder.addTooltipOptions(builder, true);
 
-  // TODO: Consider adding legend options for better data interpretation
+  builder
+    .addBooleanSwitch({
+      path: 'legend.show',
+      name: 'Show legend',
+      defaultValue: false,
+      category: ['Legend'],
+    })
+    .addRadio({
+      path: 'legend.placement',
+      name: 'Placement',
+      defaultValue: 'bottom',
+      category: ['Legend'],
+      settings: {
+        options: [
+          { label: 'Bottom', value: 'bottom' },
+          { label: 'Right', value: 'right' },
+        ],
+      },
+      showIf: (opts) => opts.legend?.show === true,
+    });
 
   return builder;
 });

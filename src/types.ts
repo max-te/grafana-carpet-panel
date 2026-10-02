@@ -1,4 +1,4 @@
-import type { OptionsWithTooltip } from '@grafana/ui';
+import type { LegendPlacement, OptionsWithTooltip } from '@grafana/ui';
 
 export enum HeatmapColorMode {
   Opacity = 'opacity',
@@ -51,5 +51,8 @@ export interface CarpetPanelOptions extends OptionsWithTooltip {
   color: HeatmapColorOptions;
   gapWidth?: number;
   hatchGaps?: boolean;
-  // TODO: Add legend configuration options
+  legend?: {
+    show?: boolean;
+    placement?: LegendPlacement;
+  };
 }

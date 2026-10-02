@@ -9,10 +9,11 @@ import {
   DashboardCursorSync,
 } from '@grafana/data';
 import type { CarpetPanelOptions } from '../types';
-import { usePanelContext } from '@grafana/ui';
+import { usePanelContext, VizLayout } from '@grafana/ui';
 import { PanelDataErrorView } from '@grafana/runtime';
 import { Stage } from 'react-konva';
 import { CarpetPlot, type ExternalHover } from './CarpetPlot';
+import { ColorLegend } from './ColorLegend';
 import { useClientPositionChange } from './useClientPositionChange';
 import { useColorScale } from './useColorScale';
 import { useKonvaDpr } from './useKonvaDpr';
@@ -166,27 +167,43 @@ export const CarpetPanel: React.FC<Props> = ({
     },
   };
 
-  return (
-    <Stage width={width} height={height} key={dpr} ref={stageRef}>
-      <CarpetPlot
-        width={width}
-        height={height}
-        timeRange={timeRange}
-        timeField={timeField}
+  const legend = options.legend?.show ? (
+    <VizLayout.Legend placement={options.legend.placement ?? 'bottom'}>
+      <ColorLegend
+        colorScale={colorScale}
         valueField={displayedValueField}
-        colorPalette={colorScale.call}
         timeZone={timeZone}
-        gapWidth={options.gapWidth ?? 0}
-        hatchGaps={options.hatchGaps ?? true}
-        showXAxis={options.axes?.showX}
-        showYAxis={options.axes?.showY}
-        hourFormat={options.axes?.hourFormat}
-        tooltipMode={options.tooltip.mode}
-        tooltipMaxWidth={options.tooltip.maxWidth}
-        onHover={onHover}
-        onChangeTimeRange={onChangeTimeRange}
-        externalHover={incomingHover ?? undefined}
+        placement={options.legend.placement ?? 'bottom'}
+        height={height}
       />
-    </Stage>
+    </VizLayout.Legend>
+  ) : null;
+
+  return (
+    <VizLayout width={width} height={height} legend={legend}>
+      {(vizWidth, vizHeight) => (
+        <Stage width={Math.trunc(vizWidth)} height={Math.trunc(vizHeight)} key={dpr} ref={stageRef}>
+          <CarpetPlot
+            width={Math.trunc(vizWidth)}
+            height={Math.trunc(vizHeight)}
+            timeRange={timeRange}
+            timeField={timeField}
+            valueField={displayedValueField}
+            colorPalette={colorScale.call}
+            timeZone={timeZone}
+            gapWidth={options.gapWidth ?? 0}
+            hatchGaps={options.hatchGaps ?? true}
+            showXAxis={options.axes?.showX}
+            showYAxis={options.axes?.showY}
+            hourFormat={options.axes?.hourFormat}
+            tooltipMode={options.tooltip.mode}
+            tooltipMaxWidth={options.tooltip.maxWidth}
+            onHover={onHover}
+            onChangeTimeRange={onChangeTimeRange}
+            externalHover={incomingHover ?? undefined}
+          />
+        </Stage>
+      )}
+    </VizLayout>
   );
 };
