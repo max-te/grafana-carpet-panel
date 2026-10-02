@@ -5,7 +5,10 @@ import { reactCompilerConfig } from './react-compiler-config.ts';
 
 const config = async (env: Record<string, any>, argv: Record<string, any>) => {
   return defineConfig({
-    entry: './testsupport/index.tsx',
+    entry: {
+      main: './testsupport/index.tsx',
+      scenes: './testsupport/scenes/index.tsx',
+    },
     context: path.resolve(import.meta.dirname, '..'),
     devtool: 'inline-source-map',
     mode: 'development',
@@ -92,6 +95,12 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
     plugins: [
       new rspack.HtmlRspackPlugin({
         template: './testsupport/index.html',
+        chunks: ['main'],
+      }),
+      new rspack.HtmlRspackPlugin({
+        template: './testsupport/scenes/index.html',
+        filename: 'scenes.html',
+        chunks: ['scenes'],
       }),
     ],
   }) satisfies RspackOptions;
