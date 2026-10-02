@@ -13,6 +13,17 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
       poll: true,
     },
     devServer: {
+      static: [
+        {
+          directory: path.resolve(import.meta.dirname, '../node_modules/@grafana/ui/dist/public/img'),
+          publicPath: '/public/build/img',
+        },
+        // Icons missing from @grafana/ui
+        {
+          directory: path.resolve(import.meta.dirname, '../testsupport/public/img'),
+          publicPath: '/public/build/img',
+        },
+      ],
       setupMiddlewares: (middlewares, devServer) => {
         middlewares.push({
           name: 'fonts',
