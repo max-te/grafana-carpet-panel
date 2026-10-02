@@ -134,6 +134,7 @@ export const CarpetPanel: React.FC<Props> = ({
     config: {
       ...valueField.config,
       unit: options.valueField?.unit || valueField.config.unit,
+      decimals: options.valueField?.decimals ?? valueField.config.decimals,
       min: options.color.min,
       max: options.color.max,
     },

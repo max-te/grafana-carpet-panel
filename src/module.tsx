@@ -28,6 +28,17 @@ export const plugin = new PanelPlugin<CarpetPanelOptions>(CarpetPanel).setPanelO
       name: 'Unit',
       description: 'Unit of the value field',
     })
+    .addNumberInput({
+      path: 'valueField.decimals',
+      name: 'Decimals',
+      description: 'Decimal places of the value field',
+      settings: {
+        placeholder: 'auto',
+        min: 0,
+        max: 10,
+        integer: true,
+      },
+    })
     .addSliderInput({
       path: 'gapWidth',
       name: 'Gap',

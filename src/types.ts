@@ -29,7 +29,7 @@ export interface CarpetPanelOptions {
   valueField?: {
     name?: string;
     unit?: string;
-    // TODO: Add decimals configuration for value formatting
+    decimals?: number;
   };
   axes?: {
     showX?: boolean;
