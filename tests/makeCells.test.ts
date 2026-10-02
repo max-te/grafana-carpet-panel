@@ -21,6 +21,15 @@ const timeZone = 'Europe/Berlin';
 const width = 1000;
 const height = 360;
 
+const expectArea = (actual: Area[], expected: Area[]) => {
+  expect(actual).toHaveLength(expected.length);
+  actual.forEach((box, i) => {
+    for (const side of ['left', 'top', 'right', 'bottom'] as const) {
+      expect(box[side]).toBeCloseTo(expected[i]?.[side] ?? NaN);
+    }
+  });
+};
+
 describe('makeCells', () => {
   it('should produce consistent output for testdata', () => {
     const cells = makeCells(valueValues, timeValues, timeZone, timeRange, height, width);
@@ -59,7 +68,48 @@ describe('makeCells', () => {
     const cells = makeCells(values, times, 'utc', tr, 100, 200);
 
     const splitCells = cells.filter((c) => c.split !== undefined);
-    expect(splitCells.length).toBeGreaterThan(0);
+    expect(splitCells).toHaveLength(2);
+  });
+
+  describe('with a time step longer than a day', () => {
+    const tr = {
+      from: dateTime('2024-01-01T00:00:00Z'),
+      to: dateTime('2024-01-04T12:00:00Z'),
+      raw: { from: '2024-01-01T00:00:00Z', to: '2024-01-04T12:00:00Z' },
+    };
+    const segmentsOfFirstSample = (times: number[]) => {
+      const cells = makeCells([1, 2], times, 'utc', tr);
+      return cells.filter((c) => c.time === cells[0]?.time);
+    };
+
+    it('should fill every day a midnight-aligned cell covers', () => {
+      const segments = segmentsOfFirstSample([
+        dateTime('2024-01-01T00:00:00Z').valueOf(),
+        dateTime('2024-01-03T00:00:00Z').valueOf(),
+      ]);
+
+      expectArea(segments, [
+        { left: 0, top: 0, right: 0.25, bottom: 1 },
+        { left: 0.25, top: 0, right: 0.5, bottom: 1 },
+      ]);
+    });
+
+    it('should split a cell crossing two midnights into three segments', () => {
+      const segments = segmentsOfFirstSample([
+        dateTime('2024-01-01T14:00:00Z').valueOf(),
+        dateTime('2024-01-03T02:00:00Z').valueOf(),
+      ]);
+
+      expectArea(segments, [
+        { left: 0, top: 14 / 24, right: 0.25, bottom: 1 },
+        { left: 0.25, top: 0, right: 0.5, bottom: 1 },
+        { left: 0.5, top: 0, right: 0.75, bottom: 2 / 24 },
+      ]);
+      for (const c of segments) {
+        expect(c.endTime).toBe(dateTime('2024-01-03T02:00:00Z').valueOf() / 1000);
+        expect(c.value).toBe(1);
+      }
+    });
   });
 
   it('should handle pre-epoch dates', () => {
@@ -133,15 +183,6 @@ describe('makeCells', () => {
 });
 
 describe('makeTimeRangeArea', () => {
-  const expectArea = (actual: Area[], expected: Area[]) => {
-    expect(actual).toHaveLength(expected.length);
-    actual.forEach((box, i) => {
-      for (const side of ['left', 'top', 'right', 'bottom'] as const) {
-        expect(box[side]).toBeCloseTo(expected[i]?.[side] ?? NaN);
-      }
-    });
-  };
-
   it('should cover a partial first day, full middle days and a partial last day', () => {
     const tr = {
       from: dateTime('2024-01-01T06:00:00Z'),

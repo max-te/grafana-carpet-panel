@@ -108,43 +108,39 @@ export function makeCells(
       dayWidth = nextDayX - x;
     }
 
-    const y = yAxis(time);
     const cellEndTime = time + timeStep;
 
     const TIME_EPS = 60;
-    const nextDayUnix = nextDay.epochMilliseconds / 1000;
-    const cell: Cell = {
-      time,
-      endTime: cellEndTime,
-      value,
-      left: x,
-      top: y,
-      right: x + dayWidth,
-      bottom: cellEndTime < nextDayUnix ? yAxis(cellEndTime) : height,
-    };
-    cells.push(cell);
-
-    // TODO: at really low resolutions a cell *could* span more than a full day
-    if (cellEndTime - nextDayUnix > TIME_EPS) {
-      cell.split = 1;
+    const segments: Cell[] = [];
+    let top = yAxis(time);
+    for (;;) {
+      const nextDayUnix = nextDay.epochMilliseconds / 1000;
+      segments.push({
+        time,
+        endTime: cellEndTime,
+        value,
+        left: x,
+        top,
+        right: x + dayWidth,
+        bottom: cellEndTime < nextDayUnix ? yAxis(cellEndTime) : height,
+      });
+      if (cellEndTime - nextDayUnix <= TIME_EPS) {
+        break;
+      }
       dayStart = nextDay;
       nextDay = dayStart.add({ days: 1 });
       x = nextDayX;
       nextDayX = xTime(nextDay.epochMilliseconds);
       dayWidth = nextDayX - x;
-
-      const secondCell: Cell = {
-        time,
-        endTime: cellEndTime,
-        value,
-        left: x,
-        top: 0,
-        right: x + dayWidth,
-        bottom: yAxis(cellEndTime),
-        split: -1,
-      };
-      cells.push(secondCell);
+      top = 0;
     }
+
+    if (segments.length > 1) {
+      segments.forEach((segment, ordinal) => {
+        segment.split = ordinal + 1;
+      });
+    }
+    cells.push(...segments);
   }
 
   return cells;

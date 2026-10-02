@@ -245,14 +245,10 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       const start = Math.min(hoveredCell.time, selectionStart.time);
       const end = Math.max(hoveredCell.time, selectionStart.time);
       highlightedCells.push(...cells.filter((c) => c.time >= start && c.time <= end));
+    } else if (hoveredCell.split) {
+      highlightedCells.push(...cells.filter((c) => c.time === hoveredCell.time));
     } else {
       highlightedCells.push(hoveredCell);
-      if (hoveredCell.split) {
-        const splitCell = cells[(tooltipData?.idx ?? 0) + hoveredCell.split];
-        if (splitCell) {
-          highlightedCells.push(splitCell);
-        }
-      }
     }
   } else if (externalHoverTime) {
     const nextCell = cells.find((c) => c.endTime >= externalHoverTime && c.time <= externalHoverTime);
