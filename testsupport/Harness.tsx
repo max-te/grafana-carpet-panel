@@ -18,7 +18,10 @@ import {
   Legend,
   Text,
   TooltipDisplayMode,
+  VizLayout,
+  type LegendPlacement,
 } from '@grafana/ui';
+import { ColorLegend } from '../src/components/ColorLegend';
 import * as testData from './testdata.json';
 import { useKonvaDpr } from '../src/components/useKonvaDpr';
 import { useColorScale } from '../src/components/useColorScale';
@@ -42,12 +45,45 @@ const minWidth = 100;
 const maxWidth = 1000;
 
 // Must render inside ThemeContext so the palette follows the selected theme
-const ThemedCarpetPlot: React.FC<Omit<ChartProps, 'colorPalette'> & { colorOptions: HeatmapColorOptions }> = ({
-  colorOptions,
-  ...chartProps
-}) => {
+const ThemedCarpetPlot: React.FC<
+  Omit<ChartProps, 'colorPalette'> & {
+    colorOptions: HeatmapColorOptions;
+    legend: { show: boolean; placement: LegendPlacement };
+    dpr: number;
+  }
+> = ({ colorOptions, legend, dpr, ...chartProps }) => {
   const colorPalette = useColorScale(colorOptions);
-  return <CarpetPlot {...chartProps} colorPalette={colorPalette.call} />;
+  const { width, height, valueField, timeZone } = chartProps;
+  return (
+    <VizLayout
+      width={width}
+      height={height}
+      legend={
+        legend.show ? (
+          <VizLayout.Legend placement={legend.placement}>
+            <ColorLegend
+              colorScale={colorPalette}
+              valueField={valueField}
+              timeZone={timeZone}
+              placement={legend.placement}
+              height={height}
+            />
+          </VizLayout.Legend>
+        ) : null
+      }
+    >
+      {(vizWidth, vizHeight) => (
+        <Stage width={Math.trunc(vizWidth)} height={Math.trunc(vizHeight)} key={dpr}>
+          <CarpetPlot
+            {...chartProps}
+            width={Math.trunc(vizWidth)}
+            height={Math.trunc(vizHeight)}
+            colorPalette={colorPalette.call}
+          />
+        </Stage>
+      )}
+    </VizLayout>
+  );
 };
 
 export const Harness: React.FC = () => {
@@ -127,6 +163,8 @@ export const Harness: React.FC = () => {
   const [decimals, setDecimals] = React.useState<number | undefined>(undefined);
   const [tooltipMode, setTooltipMode] = React.useState<TooltipDisplayMode>(TooltipDisplayMode.Single);
   const [tooltipMaxWidth, setTooltipMaxWidth] = React.useState<number | undefined>(undefined);
+  const [showLegend, setShowLegend] = React.useState<boolean>(false);
+  const [legendPlacement, setLegendPlacement] = React.useState<LegendPlacement>('bottom');
   const displayedValueField = React.useMemo(
     () => ({ ...valueField, config: { ...valueField.config, decimals } }),
     [decimals]
@@ -171,9 +209,12 @@ export const Harness: React.FC = () => {
           <Legend>Paneltest</Legend>
           <div style={{ position: 'relative' }}>
             <ErrorBoundaryAlert>
-              <Stage width={width} height={height} key={dpr}>
-                <ThemedCarpetPlot {...chartProps} colorOptions={colorOptions} />
-              </Stage>
+              <ThemedCarpetPlot
+                {...chartProps}
+                colorOptions={colorOptions}
+                legend={{ show: showLegend, placement: legendPlacement }}
+                dpr={dpr}
+              />
             </ErrorBoundaryAlert>
             <div
               onMouseDown={handleResizeStart}
@@ -310,6 +351,27 @@ export const Harness: React.FC = () => {
                 const { value } = e.currentTarget;
                 setTooltipMaxWidth(value === '' ? undefined : Number(value));
               }}
+            />
+          </InlineField>
+        </InlineFieldRow>
+        <InlineFieldRow>
+          <InlineField>
+            <Checkbox
+              value={showLegend}
+              onChange={(e) => {
+                setShowLegend(e.currentTarget.checked);
+              }}
+              label="show legend"
+            />
+          </InlineField>
+          <InlineField label="Legend placement">
+            <RadioButtonGroup
+              options={[
+                { value: 'bottom', label: 'Bottom' },
+                { value: 'right', label: 'Right' },
+              ]}
+              value={legendPlacement}
+              onChange={setLegendPlacement}
             />
           </InlineField>
         </InlineFieldRow>

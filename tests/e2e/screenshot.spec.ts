@@ -36,3 +36,20 @@ test('unhatched gaps match snapshot', async ({ page }) => {
   await page.getByText('hatch data gaps').click();
   await expect(page.locator('.konvajs-content')).toHaveScreenshot('example-unhatched.png');
 });
+
+test('bottom legend matches snapshot', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForSelector('.konvajs-content');
+  await page.evaluate(async () => await document.fonts.load('12px Inter'));
+  await page.getByText('show legend').click();
+  await expect(page.getByTestId('data-testid viz-layout')).toHaveScreenshot('example-legend-bottom.png');
+});
+
+test('right legend matches snapshot', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForSelector('.konvajs-content');
+  await page.evaluate(async () => await document.fonts.load('12px Inter'));
+  await page.getByText('show legend').click();
+  await page.getByRole('radio', { name: 'Right' }).click();
+  await expect(page.getByTestId('data-testid viz-layout')).toHaveScreenshot('example-legend-right.png');
+});
