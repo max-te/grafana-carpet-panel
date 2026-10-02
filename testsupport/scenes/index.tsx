@@ -62,7 +62,9 @@ const ScenesHarness: React.FC = () => {
             />
           </Stack>
           <Text color="secondary">{scenario.description}</Text>
-          <ScenarioView key={`${scenario.id}-${themeId}`} scenario={scenario} />
+          <div data-testid="scenario">
+            <ScenarioView key={`${scenario.id}-${themeId}`} scenario={scenario} />
+          </div>
         </Stack>
       </Box>
     </ThemeContext>

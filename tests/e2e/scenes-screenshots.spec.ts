@@ -32,7 +32,7 @@ async function expectSceneScreenshot(page: Page, name: string) {
   await page.waitForSelector('.konvajs-content');
   await page.evaluate(async () => await document.fonts.load('12px Inter'));
   await page.mouse.move(0, 0);
-  await expect(page).toHaveScreenshot(name, { fullPage: true });
+  await expect(page.getByTestId('scenario')).toHaveScreenshot(name);
 }
 
 for (const id of scenarioIds) {
@@ -53,7 +53,7 @@ test('shared tooltip shows in every synced panel', async ({ page }) => {
   await page.goto('/scenes.html#shared-tooltip');
   await hoverFirstPanel(page);
   await expect(page.getByTestId('data-testid viz-tooltip-wrapper')).toHaveCount(3);
-  await expect(page).toHaveScreenshot('scenes-shared-tooltip-hover.png', { fullPage: true });
+  await expect(page.getByTestId('scenario')).toHaveScreenshot('scenes-shared-tooltip-hover.png');
 });
 
 test('scrolling hides the tooltip until the next hover', async ({ page }) => {
