@@ -53,3 +53,13 @@ test('right legend matches snapshot', async ({ page }) => {
   await page.getByRole('radio', { name: 'Right' }).click();
   await expect(page.getByTestId('data-testid viz-layout')).toHaveScreenshot('example-legend-right.png');
 });
+
+test('legend marks the hovered value', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForSelector('.konvajs-content');
+  await page.evaluate(async () => await document.fonts.load('12px Inter'));
+  await page.getByText('show legend').click();
+  await page.locator('.konvajs-content').hover({ position: { x: 500, y: 180 } });
+  await page.getByTestId('data-testid viz-tooltip-wrapper').waitFor({ state: 'visible' });
+  await expect(page.getByTestId('data-testid viz-layout')).toHaveScreenshot('example-legend-hover.png');
+});

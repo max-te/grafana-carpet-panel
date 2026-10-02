@@ -53,7 +53,8 @@ const ThemedCarpetPlot: React.FC<
   }
 > = ({ colorOptions, legend, dpr, ...chartProps }) => {
   const colorPalette = useColorScale(colorOptions);
-  const { width, height, valueField, timeZone } = chartProps;
+  const { width, height, valueField, timeZone, onHover } = chartProps;
+  const [hoveredValue, setHoveredValue] = React.useState<number>();
   return (
     <VizLayout
       width={width}
@@ -67,6 +68,7 @@ const ThemedCarpetPlot: React.FC<
               timeZone={timeZone}
               placement={legend.placement}
               height={height}
+              markedValue={hoveredValue}
             />
           </VizLayout.Legend>
         ) : null
@@ -79,6 +81,10 @@ const ThemedCarpetPlot: React.FC<
             width={Math.trunc(vizWidth)}
             height={Math.trunc(vizHeight)}
             colorPalette={colorPalette.call}
+            onHover={(cell) => {
+              onHover?.(cell);
+              setHoveredValue(cell?.value);
+            }}
           />
         </Stage>
       )}

@@ -100,12 +100,14 @@ export const CarpetPanel: React.FC<Props> = ({
   const colorScale = useColorScale(options.color);
   const stageRef = useRef<Konva.Stage>(null);
   const { setGlobalHover, incomingHover } = useDashboardHoverEvents(stageRef);
+  const [hoveredValue, setHoveredValue] = React.useState<number>();
   width = Math.trunc(width);
   height = Math.trunc(height);
 
   const onHover = React.useCallback(
-    (cell: { time: number } | null) => {
+    (cell: { time: number; value: number } | null) => {
       setGlobalHover(cell?.time ? cell.time * 1000 : null);
+      setHoveredValue(cell?.value);
     },
     [setGlobalHover]
   );
@@ -175,6 +177,7 @@ export const CarpetPanel: React.FC<Props> = ({
         timeZone={timeZone}
         placement={options.legend.placement ?? 'bottom'}
         height={height}
+        markedValue={hoveredValue}
       />
     </VizLayout.Legend>
   ) : null;
