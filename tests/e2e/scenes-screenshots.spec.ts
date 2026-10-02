@@ -28,11 +28,11 @@ test('screenshots cover every scenario', async ({ page }) => {
   expect(tabIds).toEqual(scenarioIds);
 });
 
-async function expectSceneScreenshot(page: Page, name: string) {
+async function expectSceneScreenshot(page: Page, name: string, scale: 'css' | 'device' = 'css') {
   await page.waitForSelector('.konvajs-content');
   await page.evaluate(async () => await document.fonts.load('12px Inter'));
   await page.mouse.move(0, 0);
-  await expect(page.getByTestId('scenario')).toHaveScreenshot(name);
+  await expect(page.getByTestId('scenario')).toHaveScreenshot(name, { scale });
 }
 
 for (const id of scenarioIds) {
@@ -110,4 +110,13 @@ test('scenario options in dark theme matches snapshot', async ({ page }) => {
   await page.goto('/scenes.html#options');
   await page.getByRole('radio', { name: 'Dark' }).check();
   await expectSceneScreenshot(page, 'scenes-options-dark.png');
+});
+
+test.describe('at fractional device pixel ratio', () => {
+  test.use({ deviceScaleFactor: 1.25 });
+
+  test('scenario options matches snapshot', async ({ page }) => {
+    await page.goto('/scenes.html#options');
+    await expectSceneScreenshot(page, 'scenes-options-dpr1.25.png', 'device');
+  });
 });
