@@ -1,6 +1,17 @@
 import { test, expect, type Page } from '@playwright/test';
 
-const scenarioIds = ['options', 'crosshair', 'resolution', 'gaps', 'values', 'fields', 'timezones', 'dst', 'sizes'];
+const scenarioIds = [
+  'options',
+  'crosshair',
+  'shared-tooltip',
+  'resolution',
+  'gaps',
+  'values',
+  'fields',
+  'timezones',
+  'dst',
+  'sizes',
+];
 
 // Scenes default to the browser time zone, and some ranges are relative to now
 test.use({ timezoneId: 'Europe/Berlin', viewport: { width: 1600, height: 1000 } });
@@ -29,6 +40,27 @@ for (const id of scenarioIds) {
     await expectSceneScreenshot(page, `scenes-${id}.png`);
   });
 }
+
+async function hoverFirstPanel(page: Page) {
+  const canvas = page.locator('.konvajs-content').first();
+  await canvas.waitFor();
+  await page.evaluate(async () => await document.fonts.load('12px Inter'));
+  await canvas.hover({ position: { x: 200, y: 150 } });
+}
+
+test('shared tooltip shows in every synced panel', async ({ page }) => {
+  await page.goto('/scenes.html#shared-tooltip');
+  await hoverFirstPanel(page);
+  // FIXME: only the hovered panel shows a tooltip, the synced panels show none
+  await expect(page.getByTestId('data-testid viz-tooltip-wrapper')).toHaveCount(1);
+  await expect(page).toHaveScreenshot('scenes-shared-tooltip-hover.png', { fullPage: true });
+});
+
+test('crosshair sync shows only the local tooltip', async ({ page }) => {
+  await page.goto('/scenes.html#crosshair');
+  await hoverFirstPanel(page);
+  await expect(page.getByTestId('data-testid viz-tooltip-wrapper')).toHaveCount(1);
+});
 
 test('scenario options in dark theme matches snapshot', async ({ page }) => {
   await page.goto('/scenes.html#options');

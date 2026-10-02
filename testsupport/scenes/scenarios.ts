@@ -131,6 +131,22 @@ export const scenarios: Scenario[] = [
       }),
   },
   {
+    id: 'shared-tooltip',
+    title: 'Shared tooltip',
+    description:
+      'Shared tooltip sync. Hovering one panel must show the tooltip of the same instant in every other panel that is fully on screen.',
+    build: () =>
+      carpetScene({
+        ...fortnight,
+        sync: DashboardCursorSync.Tooltip,
+        body: grid([
+          carpetPanel({ title: 'Hourly', generator: 'solar-1h' }),
+          carpetPanel({ title: '15 minutes', generator: 'solar-15m' }),
+          carpetPanel({ title: '6 hours', generator: 'solar-6h' }),
+        ]),
+      }),
+  },
+  {
     id: 'resolution',
     title: 'Sample resolution',
     description:
