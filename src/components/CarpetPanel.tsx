@@ -16,7 +16,7 @@ import { Stage } from 'react-konva';
 import { CarpetPlot, type ExternalHover } from './CarpetPlot';
 import { ColorLegend } from './ColorLegend';
 import { useClientPositionChange } from './useClientPositionChange';
-import { useColorScale } from './useColorScale';
+import { useCellColoring } from './useCellColoring';
 import { useKonvaDpr } from './useKonvaDpr';
 
 type Props = PanelProps<CarpetPanelOptions>;
@@ -190,7 +190,7 @@ const CarpetView: React.FC<ViewProps> = ({
   onChangeTimeRange,
 }) => {
   const dpr = useKonvaDpr();
-  const colorScale = useColorScale(options.color);
+  const coloring = useCellColoring(options.color, valueField);
   const stageRef = useRef<Konva.Stage>(null);
   const { setGlobalHover, incomingHover } = useDashboardHoverEvents(stageRef);
   const [hoveredValue, setHoveredValue] = React.useState<number>();
@@ -208,7 +208,7 @@ const CarpetView: React.FC<ViewProps> = ({
   const legend = options.legend?.show ? (
     <VizLayout.Legend placement={options.legend.placement ?? 'bottom'}>
       <ColorLegend
-        colorScale={colorScale}
+        coloring={coloring}
         valueField={valueField}
         timeZone={timeZone}
         placement={options.legend.placement ?? 'bottom'}
@@ -228,7 +228,7 @@ const CarpetView: React.FC<ViewProps> = ({
             timeRange={timeRange}
             timeField={timeField}
             valueField={valueField}
-            colorPalette={colorScale.call}
+            coloring={coloring}
             timeZone={timeZone}
             gapWidth={options.gapWidth ?? 0}
             hatchGaps={options.hatchGaps ?? true}

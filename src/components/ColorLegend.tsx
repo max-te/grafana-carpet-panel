@@ -1,17 +1,11 @@
 import { css, cx } from '@emotion/css';
-import {
-  formattedValueToString,
-  getDisplayProcessor,
-  getMinMaxAndDelta,
-  type Field,
-  type GrafanaTheme2,
-} from '@grafana/data';
+import { formattedValueToString, getDisplayProcessor, type Field, type GrafanaTheme2 } from '@grafana/data';
 import { type LegendPlacement, useStyles2, useTheme2 } from '@grafana/ui';
 import React from 'react';
-import { sampleGradientStops, type ColorFn } from './useColorScale';
+import type { CellColoring } from './useCellColoring';
 
 interface Props {
-  colorScale: ColorFn;
+  coloring: CellColoring;
   valueField: Field<number>;
   timeZone: string;
   placement: LegendPlacement;
@@ -85,18 +79,16 @@ function getScaleFraction(value: number, min: number, max: number) {
   return Math.min(1, Math.max(0, (value - min) / (max - min)));
 }
 
-export const ColorLegend: React.FC<Props> = ({ colorScale, valueField, timeZone, placement, height, markedValue }) => {
+export const ColorLegend: React.FC<Props> = ({ coloring, valueField, timeZone, placement, height, markedValue }) => {
   'use memo';
   const theme = useTheme2();
   const styles = useStyles2(getStyles);
 
-  const minMax = getMinMaxAndDelta(valueField);
+  const { min, max } = coloring;
   const display = getDisplayProcessor({ field: valueField, theme, timeZone });
-  const min = minMax.min ?? 0;
-  const max = minMax.max ?? 1;
   const minLabel = formattedValueToString(display(min));
   const maxLabel = formattedValueToString(display(max));
-  const stops = sampleGradientStops(colorScale).join(',');
+  const stops = coloring.gradientStops.join(',');
   // Keeps the marker's stem inside the bar at both ends
   const markerOffset =
     markedValue === undefined

@@ -24,7 +24,7 @@ import {
 import { ColorLegend } from '../src/components/ColorLegend';
 import * as testData from './testdata.json';
 import { useKonvaDpr } from '../src/components/useKonvaDpr';
-import { useColorScale } from '../src/components/useColorScale';
+import { useCellColoring } from '../src/components/useCellColoring';
 import { HeatmapColorMode, HourFormat, type HeatmapColorOptions } from '../src/types';
 
 const timeRange: TimeRange = {
@@ -46,14 +46,14 @@ const maxWidth = 1000;
 
 // Must render inside ThemeContext so the palette follows the selected theme
 const ThemedCarpetPlot: React.FC<
-  Omit<ChartProps, 'colorPalette'> & {
+  Omit<ChartProps, 'coloring'> & {
     colorOptions: HeatmapColorOptions;
     legend: { show: boolean; placement: LegendPlacement };
     dpr: number;
   }
 > = ({ colorOptions, legend, dpr, ...chartProps }) => {
-  const colorPalette = useColorScale(colorOptions);
   const { width, height, valueField, timeZone, onHover } = chartProps;
+  const coloring = useCellColoring(colorOptions, valueField);
   const [hoveredValue, setHoveredValue] = React.useState<number>();
   return (
     <VizLayout
@@ -63,7 +63,7 @@ const ThemedCarpetPlot: React.FC<
         legend.show ? (
           <VizLayout.Legend placement={legend.placement}>
             <ColorLegend
-              colorScale={colorPalette}
+              coloring={coloring}
               valueField={valueField}
               timeZone={timeZone}
               placement={legend.placement}
@@ -80,7 +80,7 @@ const ThemedCarpetPlot: React.FC<
             {...chartProps}
             width={Math.trunc(vizWidth)}
             height={Math.trunc(vizHeight)}
-            colorPalette={colorPalette.call}
+            coloring={coloring}
             onHover={(cell) => {
               onHover?.(cell);
               setHoveredValue(cell?.value);
@@ -178,7 +178,7 @@ export const Harness: React.FC = () => {
   const [lastHover, setLastHover] = React.useState<string>('null');
   const [timeRangeUpdate, setTimeRangeUpdate] = React.useState<{ from: number; to: number } | null>(null);
 
-  const chartProps: Omit<ChartProps, 'colorPalette'> = {
+  const chartProps: Omit<ChartProps, 'coloring'> = {
     width,
     height,
     timeField,

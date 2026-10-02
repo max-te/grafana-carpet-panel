@@ -2,7 +2,6 @@ import {
   dateTimeFormat,
   formattedValueToString,
   getDisplayProcessor,
-  getMinMaxAndDelta,
   type AbsoluteTimeRange,
   type Field,
   type GrafanaTheme2,
@@ -29,11 +28,10 @@ import { XAxisIndicator, YAxisIndicator } from './AxisLabels';
 import { getTimeStep, makeCells, makeTimeRangeArea, type Cell } from './makeCells';
 import { countDays } from './useTimeScale';
 import { traceOutline } from './traceOutline';
+import type { CellColoring } from './useCellColoring';
 import { useClientPositionChange } from './useClientPositionChange';
 import { HourFormat } from '../types';
 import type { KonvaEventObject } from 'konva/lib/Node';
-
-type ColorPalette = (t: number) => string;
 
 const HATCH_SPACING = 6;
 const SECONDS_PER_DAY = 86400;
@@ -84,7 +82,7 @@ interface ChartProps {
   valueField: Field<number>;
   timeZone: string;
   timeRange: TimeRange;
-  colorPalette: ColorPalette;
+  coloring: CellColoring;
   gapWidth: number;
   hatchGaps?: boolean;
 
@@ -103,18 +101,13 @@ const getStyles = (theme: GrafanaTheme2, tooltipMaxWidth?: number) => ({
   tooltip: css({ margin: theme.spacing(-1), maxWidth: tooltipMaxWidth }),
 });
 
-function useColorScale(colorPalette: ColorPalette, min: number, max: number) {
-  const colorScale = useMemo(() => d3.scaleSequential(colorPalette).domain([min, max]), [min, max, colorPalette]);
-  return colorScale;
-}
-
 export const CarpetPlot: React.FC<ChartProps> = ({
   width,
   height,
   timeRange,
   timeField,
   valueField,
-  colorPalette,
+  coloring,
   timeZone,
   gapWidth,
   hatchGaps,
@@ -176,10 +169,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
     [onChangeTimeRange, selectionStart]
   );
 
-  const minMax = getMinMaxAndDelta(valueField);
-  const min = minMax.min ?? 0;
-  const max = minMax.max ?? 1;
-  const colorScale = useColorScale(colorPalette, min, max);
+  const { color: cellColor, min, max } = coloring;
   const display = getDisplayProcessor({
     field: valueField,
     theme,
@@ -301,7 +291,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
                   width: Math.floor(cell.right * innerWidth) - Math.floor(cell.left * innerWidth),
                   height: Math.floor(cell.bottom * innerHeight) - Math.floor(cell.top * innerHeight),
                 })}
-            fill={colorScale(cell.value)}
+            fill={cellColor(cell.value)}
             data-ts={cell.time}
             data-end-ts={cell.endTime}
             data-idx={idx}
@@ -329,7 +319,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       gapWidth,
       drawCellWithGap,
       theme.colors.background.primary,
-      colorScale,
+      cellColor,
       leftPadding,
       topPadding,
     ]
@@ -400,7 +390,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
           context.strokeShape(shape);
         }}
         fill={'rgba(120, 120, 130, 0.2)'}
-        stroke={highlightedMean > (min + max) / 2 ? colorScale(min) : colorScale(max)}
+        stroke={highlightedMean > (min + max) / 2 ? cellColor(min) : cellColor(max)}
         dash={[4, 2]}
         strokeWidth={1}
       />
@@ -417,7 +407,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
                     {
                       label: valueField.config.displayName || valueField.config.displayNameFromDS || valueField.name,
                       value: formattedValueToString(display(tooltipCell.value)),
-                      color: colorScale(tooltipCell.value),
+                      color: cellColor(tooltipCell.value),
                       colorIndicator: VizTooltipColorIndicator.value,
                       colorPlacement: VizTooltipColorPlacement.trailing,
                     },
