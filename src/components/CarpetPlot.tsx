@@ -26,7 +26,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Rect, Layer, Shape } from 'react-konva';
 import { Html } from 'react-konva-utils';
 import { XAxisIndicator, YAxisIndicator } from './AxisLabels';
-import { makeCells, makeTimeRangeArea, type Cell } from './makeCells';
+import { getTimeStep, makeCells, makeTimeRangeArea, type Cell } from './makeCells';
+import { countDays } from './useTimeScale';
 import { traceOutline } from './traceOutline';
 import { useClientPositionChange } from './useClientPositionChange';
 import { HourFormat } from '../types';
@@ -35,6 +36,19 @@ import type { KonvaEventObject } from 'konva/lib/Node';
 type ColorPalette = (t: number) => string;
 
 const HATCH_SPACING = 6;
+const SECONDS_PER_DAY = 86400;
+
+/** Widens or narrows `gap` so that the cells between gaps span whole pixels. */
+function fitGap(pitch: number, gap: number): number {
+  return Math.max(0, pitch - Math.max(1, Math.round(pitch - gap)));
+}
+
+/** Hit region spanning the gap, so the cursor never falls between cells. */
+function drawWholeCell(context: Konva.Context, shape: Konva.Shape) {
+  context.beginPath();
+  context.rect(0, 0, shape.width(), shape.height());
+  context.fillShape(shape);
+}
 
 export interface ExternalHover {
   time: number;
@@ -188,6 +202,19 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   );
   const timeRangeArea = useMemo(() => makeTimeRangeArea(timeZone, timeRange), [timeZone, timeRange]);
 
+  const numDays = useMemo(() => countDays(timeRange, timeZone), [timeRange, timeZone]);
+  const rowsPerDay = useMemo(() => SECONDS_PER_DAY / getTimeStep(timeField.values), [timeField.values]);
+  const gapX = fitGap(innerWidth / numDays, gapWidth);
+  const gapY = Number.isInteger(rowsPerDay) ? fitGap(innerHeight / rowsPerDay, gapWidth) : gapWidth;
+  const drawCellWithGap = useCallback(
+    (context: Konva.Context, shape: Konva.Shape) => {
+      context.beginPath();
+      context.rect(gapX / 2, gapY / 2, shape.width() - gapX, shape.height() - gapY);
+      context.fillShape(shape);
+    },
+    [gapX, gapY]
+  );
+
   const axesLayer = (
     <Layer listening={false}>
       {showXAxis && (
@@ -238,13 +265,42 @@ export const CarpetPlot: React.FC<ChartProps> = ({
           stroke={theme.colors.border.medium}
           strokeWidth={1}
         />
+        {/* One path, so anti-aliased edges between neighbouring cells leave no seams for the hatching */}
+        <Shape
+          visible={gapWidth > 0}
+          listening={false}
+          sceneFunc={(context, shape) => {
+            context.beginPath();
+            for (const cell of cells) {
+              context.rect(
+                cell.left * innerWidth,
+                cell.top * innerHeight,
+                (cell.right - cell.left) * innerWidth,
+                (cell.bottom - cell.top) * innerHeight
+              );
+            }
+            context.fillShape(shape);
+          }}
+          fill={theme.colors.background.primary}
+        />
         {cells.map((cell, idx) => (
           <Rect
             key={cell.time.toFixed(0) + (cell.split ? cell.split.toFixed(0) : '')}
-            x={Math.floor(cell.left * innerWidth)}
-            y={Math.floor(cell.top * innerHeight)}
-            width={Math.floor(cell.right * innerWidth) - Math.floor(cell.left * innerWidth)}
-            height={Math.floor(cell.bottom * innerHeight) - Math.floor(cell.top * innerHeight)}
+            {...(gapWidth > 0
+              ? {
+                  x: cell.left * innerWidth,
+                  y: cell.top * innerHeight,
+                  width: (cell.right - cell.left) * innerWidth,
+                  height: (cell.bottom - cell.top) * innerHeight,
+                  sceneFunc: drawCellWithGap,
+                  hitFunc: drawWholeCell,
+                }
+              : {
+                  x: Math.floor(cell.left * innerWidth),
+                  y: Math.floor(cell.top * innerHeight),
+                  width: Math.floor(cell.right * innerWidth) - Math.floor(cell.left * innerWidth),
+                  height: Math.floor(cell.bottom * innerHeight) - Math.floor(cell.top * innerHeight),
+                })}
             fill={colorScale(cell.value)}
             data-ts={cell.time}
             data-end-ts={cell.endTime}
@@ -254,9 +310,6 @@ export const CarpetPlot: React.FC<ChartProps> = ({
             onMouseDown={handleCellMouseDown}
             onMouseUp={handleCellMouseUp}
             perfectDrawEnabled={true}
-            strokeEnabled={gapWidth > 0}
-            strokeWidth={gapWidth}
-            stroke={theme.colors.background.primary}
           />
         ))}
       </Layer>
@@ -274,6 +327,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       handleCellMouseUp,
       handleLayerMouseLeave,
       gapWidth,
+      drawCellWithGap,
       theme.colors.background.primary,
       colorScale,
       leftPadding,

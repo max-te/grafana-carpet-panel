@@ -57,7 +57,8 @@ export function makeTimeRangeArea(timeZone: string, timeRange: TimeRange): Area[
   return area;
 }
 
-function getTimeStep(timeValues: number[]): number {
+/** Smallest interval between samples, in seconds. */
+export function getTimeStep(timeValues: number[]): number {
   let minInterval = Infinity;
   for (let i = 1; i < timeValues.length; i++) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- range checked above
