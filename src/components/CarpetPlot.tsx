@@ -55,6 +55,8 @@ export interface ExternalHover {
   tooltipOrigin?: { x: number; y: number };
 }
 
+type CellSpan = Pick<Cell, 'time' | 'endTime'>;
+
 interface CellHover {
   idx: number;
   time: number;
@@ -124,16 +126,25 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   const theme = useTheme2();
   const styles = useStyles2(getStyles, tooltipMaxWidth);
   const [tooltipData, setTooltipData] = useState<CellHover | null>(null);
-  const [selectionStart, setSelectionStart] = useState<Pick<Cell, 'time' | 'endTime'> | null>(null);
+  const [selectionStart, setSelectionStart] = useState<CellSpan | null>(null);
+  // Lets the cell handlers stay stable, as changing them rebinds every cell
+  const selectionStartRef = useRef<CellSpan | null>(null);
+  const updateSelectionStart = useCallback((start: CellSpan | null) => {
+    selectionStartRef.current = start;
+    setSelectionStart(start);
+  }, []);
   const heatmapLayerRef = useRef<Konva.Layer>(null);
 
-  const handleCellMouseOver = useCallback((event: KonvaEventObject<MouseEvent>) => {
-    event.evt.stopPropagation();
-    setTooltipData(measureCellHover(event));
-    if (event.evt.buttons !== 1) {
-      setSelectionStart(null);
-    }
-  }, []);
+  const handleCellMouseOver = useCallback(
+    (event: KonvaEventObject<MouseEvent>) => {
+      event.evt.stopPropagation();
+      setTooltipData(measureCellHover(event));
+      if (event.evt.buttons !== 1) {
+        updateSelectionStart(null);
+      }
+    },
+    [updateSelectionStart]
+  );
   // Restores a tooltip hidden by scrolling or resizing without leaving the cell
   const handleCellMouseMove = useCallback((event: KonvaEventObject<MouseEvent>) => {
     setTooltipData((hover) => (hover?.position ? hover : measureCellHover(event)));
@@ -145,13 +156,16 @@ export const CarpetPlot: React.FC<ChartProps> = ({
     setTooltipData((hover) => (hover?.position ? { idx: hover.idx, time: hover.time } : hover));
   }, []);
   useClientPositionChange(heatmapLayerRef, hideTooltip);
-  const handleCellMouseDown = useCallback(({ evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
-    evt.stopPropagation();
-    setSelectionStart({
-      time: currentTarget.getAttr('data-ts') as number,
-      endTime: currentTarget.getAttr('data-end-ts') as number,
-    });
-  }, []);
+  const handleCellMouseDown = useCallback(
+    ({ evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
+      evt.stopPropagation();
+      updateSelectionStart({
+        time: currentTarget.getAttr('data-ts') as number,
+        endTime: currentTarget.getAttr('data-end-ts') as number,
+      });
+    },
+    [updateSelectionStart]
+  );
   const handleCellMouseUp = useCallback(
     ({ evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
       evt.stopPropagation();
@@ -159,15 +173,16 @@ export const CarpetPlot: React.FC<ChartProps> = ({
         time: currentTarget.getAttr('data-ts') as number,
         endTime: currentTarget.getAttr('data-end-ts') as number,
       };
-      if (selectionStart && selectionStart.time !== end.time) {
+      const start = selectionStartRef.current;
+      if (start && start.time !== end.time) {
         onChangeTimeRange?.({
-          from: Math.min(selectionStart.time, end.time) * 1000,
-          to: Math.max(selectionStart.endTime, end.endTime) * 1000,
+          from: Math.min(start.time, end.time) * 1000,
+          to: Math.max(start.endTime, end.endTime) * 1000,
         });
       }
-      setSelectionStart(null);
+      updateSelectionStart(null);
     },
-    [onChangeTimeRange, selectionStart]
+    [onChangeTimeRange, updateSelectionStart]
   );
 
   const cellColor = useCallback((value: CellValue) => getCellColor(coloring, value), [coloring]);
