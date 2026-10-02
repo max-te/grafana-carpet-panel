@@ -1,9 +1,12 @@
 import {
   EventBusSrv,
+  FieldConfigProperty,
   LoadingState,
   standardEditorsRegistry,
   standardFieldConfigEditorRegistry,
   valueMappingsOverrideProcessor,
+  type ThresholdsConfig,
+  ThresholdsMode,
 } from '@grafana/data';
 import { setAppEvents, setPluginImportUtils, setRunRequest } from '@grafana/runtime';
 import { sceneUtils } from '@grafana/scenes';
@@ -33,7 +36,7 @@ export function installRuntime() {
       'unit',
     ].map((id) => ({ id, name: id, editor: () => null }))
   );
-  // Grafana registers every standard field option at startup; the panel enables only mappings
+  // Grafana registers every standard field option at startup; the panel enables only mappings and thresholds
   standardFieldConfigEditorRegistry.setInit(() => [
     {
       id: 'mappings',
@@ -44,6 +47,22 @@ export function installRuntime() {
       process: valueMappingsOverrideProcessor,
       shouldApply: () => true,
       defaultValue: [],
+    },
+    {
+      id: FieldConfigProperty.Thresholds,
+      path: FieldConfigProperty.Thresholds,
+      name: 'Thresholds',
+      editor: () => null,
+      override: () => null,
+      process: (value: ThresholdsConfig) => value,
+      shouldApply: () => true,
+      defaultValue: {
+        mode: ThresholdsMode.Absolute,
+        steps: [
+          { value: -Infinity, color: 'green' },
+          { value: 80, color: 'red' },
+        ],
+      },
     },
   ]);
   setAppEvents(new EventBusSrv());

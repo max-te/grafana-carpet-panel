@@ -1,4 +1,4 @@
-import { DashboardCursorSync, MappingType } from '@grafana/data';
+import { DashboardCursorSync, MappingType, ThresholdsMode } from '@grafana/data';
 import {
   behaviors,
   EmbeddedScene,
@@ -418,6 +418,56 @@ export const scenarios: Scenario[] = [
               color: { min: 200, max: 400 },
               valueField: { unit: 'Wm2' },
               legend: { show: true, placement: 'right' },
+            },
+          }),
+        ]),
+      }),
+  },
+  {
+    id: 'thresholds',
+    title: 'Thresholds',
+    description: 'Cells colored by the step of the panel thresholds their value falls into.',
+    build: () =>
+      carpetScene({
+        ...recordedRange,
+        timeZone: 'Europe/Berlin',
+        body: grid([
+          carpetPanel({
+            title: 'Absolute 200, 400, bottom',
+            generator: 'recorded',
+            options: { color: { mode: HeatmapColorMode.Thresholds }, legend: { show: true } },
+            fieldConfig: {
+              defaults: {
+                thresholds: {
+                  mode: ThresholdsMode.Absolute,
+                  steps: [
+                    { value: -Infinity, color: 'green' },
+                    { value: 200, color: 'yellow' },
+                    { value: 400, color: 'red' },
+                  ],
+                },
+              },
+              overrides: [],
+            },
+          }),
+          carpetPanel({
+            title: 'Percentage 50 % of 0–600, right',
+            generator: 'recorded',
+            options: {
+              color: { mode: HeatmapColorMode.Thresholds, min: 0, max: 600 },
+              legend: { show: true, placement: 'right' },
+            },
+            fieldConfig: {
+              defaults: {
+                thresholds: {
+                  mode: ThresholdsMode.Percentage,
+                  steps: [
+                    { value: -Infinity, color: 'blue' },
+                    { value: 50, color: 'orange' },
+                  ],
+                },
+              },
+              overrides: [],
             },
           }),
         ]),

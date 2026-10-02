@@ -13,6 +13,7 @@ const scenarioIds = [
   'sizes',
   'categorical',
   'legend',
+  'thresholds',
 ];
 
 // Scenes default to the browser time zone, and some ranges are relative to now
