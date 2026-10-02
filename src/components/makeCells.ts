@@ -87,9 +87,24 @@ export function makeCells(
   const startDate = Temporal.Instant.fromEpochMilliseconds(timeRange.from.unix() * 1000).toZonedDateTimeISO(tz);
   let dayStart = startDate.startOfDay();
   let nextDay = dayStart;
+  // Unix seconds of dayStart and nextDay, as Temporal's epoch getters are costly per sample
+  let dayStartUnix = dayStart.epochMilliseconds / 1000;
+  let nextDayUnix = dayStartUnix;
   let dayWidth = 0,
     x = 0,
     nextDayX = 0;
+  const advanceDay = (start: Temporal.ZonedDateTime) => {
+    dayStart = start;
+    nextDay = dayStart.add({ days: 1 });
+    dayStartUnix = dayStart.epochMilliseconds / 1000;
+    nextDayUnix = nextDay.epochMilliseconds / 1000;
+  };
+  // Equals yAxis within the current day, without a time zone lookup per sample
+  const timeOfDay = (unixSeconds: number) =>
+    unixSeconds >= dayStartUnix && unixSeconds < nextDayUnix
+      ? (height * (unixSeconds - dayStartUnix)) / (nextDayUnix - dayStartUnix)
+      : yAxis(unixSeconds);
+
   for (let i = 0; i < values.length; i++) {
     const value = values[i];
     if (value === null || value === undefined) {
@@ -97,12 +112,15 @@ export function makeCells(
     }
     // timeValues and values share length
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const date = Temporal.Instant.fromEpochMilliseconds(timeValues[i]!).toZonedDateTimeISO(tz);
-    const time = date.epochMilliseconds / 1000;
+    const timeMs = timeValues[i]!;
+    const time = timeMs / 1000;
 
-    while (time >= nextDay.epochMilliseconds / 1000) {
-      dayStart = dayStart === nextDay ? date.startOfDay() : nextDay;
-      nextDay = dayStart.add({ days: 1 });
+    while (time >= nextDayUnix) {
+      advanceDay(
+        dayStart === nextDay
+          ? Temporal.Instant.fromEpochMilliseconds(timeMs).toZonedDateTimeISO(tz).startOfDay()
+          : nextDay
+      );
       x = xTime(dayStart.epochMilliseconds);
       nextDayX = xTime(nextDay.epochMilliseconds);
       dayWidth = nextDayX - x;
@@ -112,9 +130,8 @@ export function makeCells(
 
     const TIME_EPS = 60;
     const segments: Cell[] = [];
-    let top = yAxis(time);
+    let top = timeOfDay(time);
     for (;;) {
-      const nextDayUnix = nextDay.epochMilliseconds / 1000;
       segments.push({
         time,
         endTime: cellEndTime,
@@ -122,13 +139,12 @@ export function makeCells(
         left: x,
         top,
         right: x + dayWidth,
-        bottom: cellEndTime < nextDayUnix ? yAxis(cellEndTime) : height,
+        bottom: cellEndTime < nextDayUnix ? timeOfDay(cellEndTime) : height,
       });
       if (cellEndTime - nextDayUnix <= TIME_EPS) {
         break;
       }
-      dayStart = nextDay;
-      nextDay = dayStart.add({ days: 1 });
+      advanceDay(nextDay);
       x = nextDayX;
       nextDayX = xTime(nextDay.epochMilliseconds);
       dayWidth = nextDayX - x;
