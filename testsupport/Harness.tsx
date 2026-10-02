@@ -13,13 +13,14 @@ import {
   InlineField,
   InlineFieldRow,
   Checkbox,
+  Input,
   Legend,
   Text,
 } from '@grafana/ui';
 import * as testData from './testdata.json';
 import { useKonvaDpr } from '../src/components/useKonvaDpr';
 import { useColorScale } from '../src/components/useColorScale';
-import { HeatmapColorMode, type HeatmapColorOptions } from '../src/types';
+import { HeatmapColorMode, HourFormat, type HeatmapColorOptions } from '../src/types';
 
 const timeRange: TimeRange = {
   from: dateTime(testData.request.range.from),
@@ -120,6 +121,12 @@ export const Harness: React.FC = () => {
   const [hatchGaps, setHatchGaps] = React.useState<boolean>(true);
   const [showXAxis, setShowXAxis] = React.useState<boolean>(true);
   const [showYAxis, setShowYAxis] = React.useState<boolean>(true);
+  const [hourFormat, setHourFormat] = React.useState<HourFormat>(HourFormat.Auto);
+  const [decimals, setDecimals] = React.useState<number | undefined>(undefined);
+  const displayedValueField = React.useMemo(
+    () => ({ ...valueField, config: { ...valueField.config, decimals } }),
+    [decimals]
+  );
   const [lastHover, setLastHover] = React.useState<string>('null');
   const [timeRangeUpdate, setTimeRangeUpdate] = React.useState<{ from: number; to: number } | null>(null);
 
@@ -127,13 +134,14 @@ export const Harness: React.FC = () => {
     width,
     height,
     timeField,
-    valueField,
+    valueField: displayedValueField,
     timeZone: 'Europe/Berlin',
     timeRange,
     gapWidth,
     hatchGaps,
     showXAxis,
     showYAxis,
+    hourFormat,
     onHover(cell) {
       console.info('Hover Event', cell);
       setLastHover(JSON.stringify(cell));
@@ -243,6 +251,33 @@ export const Harness: React.FC = () => {
                 setShowYAxis(e.currentTarget.checked);
               }}
               label="show Y axis"
+            />
+          </InlineField>
+        </InlineFieldRow>
+        <InlineFieldRow>
+          <InlineField label="Hour format">
+            <RadioButtonGroup
+              options={[
+                { value: HourFormat.Auto, label: 'Auto' },
+                { value: HourFormat.H24, label: '24h' },
+                { value: HourFormat.H12, label: '12h' },
+              ]}
+              value={hourFormat}
+              onChange={setHourFormat}
+            />
+          </InlineField>
+          <InlineField label="Decimals">
+            <Input
+              type="number"
+              min={0}
+              max={10}
+              width={10}
+              placeholder="auto"
+              value={decimals ?? ''}
+              onChange={(e) => {
+                const { value } = e.currentTarget;
+                setDecimals(value === '' ? undefined : Number(value));
+              }}
             />
           </InlineField>
         </InlineFieldRow>
