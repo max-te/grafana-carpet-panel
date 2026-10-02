@@ -3,6 +3,7 @@ import type Konva from 'konva';
 import {
   FieldType,
   type PanelProps,
+  type DataFrame,
   type Field,
   DataHoverEvent,
   DataHoverClearEvent,
@@ -27,6 +28,29 @@ function getVisibleClientOrigin(stage: Konva.Stage | null) {
     return undefined;
   }
   return { x: rect.x, y: rect.y };
+}
+
+/** Picks both fields from the first frame holding the value field. */
+function findFields(series: DataFrame[], options: CarpetPanelOptions) {
+  let timeField: Field<number> | undefined = undefined;
+  let valueField: Field<number> | undefined = undefined;
+  for (const frame of series) {
+    timeField = options.timeFieldName
+      ? frame.fields.find(
+          (f) => f.name === options.timeFieldName || f.config.displayNameFromDS === options.timeFieldName
+        )
+      : frame.fields.find((f) => f.type === FieldType.time);
+
+    valueField = options.valueField?.name
+      ? frame.fields.find(
+          (f) => f.name === options.valueField?.name || f.config.displayNameFromDS === options.valueField?.name
+        )
+      : frame.fields.find((f) => f.type === FieldType.number);
+    if (valueField) {
+      break;
+    }
+  }
+  return { timeField, valueField };
 }
 
 const useDashboardHoverEvents = (stageRef: React.RefObject<Konva.Stage | null>) => {
@@ -124,24 +148,7 @@ export const CarpetPanel: React.FC<Props> = ({
       />
     );
   }
-  let timeField: Field<number> | undefined = undefined;
-  let valueField: Field<number> | undefined = undefined;
-  for (const frame of data.series) {
-    timeField = options.timeFieldName
-      ? frame.fields.find(
-          (f) => f.name === options.timeFieldName || f.config.displayNameFromDS === options.timeFieldName
-        )
-      : frame.fields.find((f) => f.type === FieldType.time);
-
-    valueField = options.valueField?.name
-      ? frame.fields.find(
-          (f) => f.name === options.valueField?.name || f.config.displayNameFromDS === options.valueField?.name
-        )
-      : frame.fields.find((f) => f.type === FieldType.number);
-    if (valueField) {
-      break;
-    }
-  }
+  const { timeField, valueField } = findFields(data.series, options);
 
   if (timeField === undefined || valueField === undefined) {
     return (
