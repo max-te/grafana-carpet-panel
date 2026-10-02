@@ -39,21 +39,32 @@ export function makeTimeRangeArea(timeZone: string, timeRange: TimeRange): Area[
   const yAxis = makeTimeOfDayScale(tz, 1);
   const from = Temporal.Instant.fromEpochMilliseconds(timeRange.from.valueOf()).toZonedDateTimeISO(tz);
   const to = Temporal.Instant.fromEpochMilliseconds(timeRange.to.valueOf()).toZonedDateTimeISO(tz);
-  const fromDayLeft = xTime(from.startOfDay().epochMilliseconds);
-  const fromDayRight = xTime(from.startOfDay().add({ days: 1 }).epochMilliseconds);
-  const toDayLeft = xTime(to.startOfDay().epochMilliseconds);
-  const toDayRight = xTime(to.startOfDay().add({ days: 1 }).epochMilliseconds);
-  const top = yAxis(from.epochMilliseconds / 1000);
-  const bottom = yAxis(to.epochMilliseconds / 1000);
+  const first = {
+    left: xTime(from.startOfDay().epochMilliseconds),
+    top: yAxis(from.epochMilliseconds / 1000),
+    right: xTime(from.startOfDay().add({ days: 1 }).epochMilliseconds),
+  };
+  const last = {
+    left: xTime(to.startOfDay().epochMilliseconds),
+    right: xTime(to.startOfDay().add({ days: 1 }).epochMilliseconds),
+    bottom: yAxis(to.epochMilliseconds / 1000),
+  };
+  return makeSpanArea(first, last);
+}
 
-  if (fromDayLeft === toDayLeft) {
-    return [{ left: fromDayLeft, top, right: fromDayRight, bottom }];
+/** The region from the top of `first` to the bottom of `last`, as up to three boxes. */
+export function makeSpanArea(
+  first: Pick<Area, 'left' | 'top' | 'right'>,
+  last: Pick<Area, 'left' | 'right' | 'bottom'>
+): Area[] {
+  if (first.left === last.left) {
+    return [{ left: first.left, top: first.top, right: first.right, bottom: last.bottom }];
   }
-  const area: Area[] = [{ left: fromDayLeft, top, right: fromDayRight, bottom: 1 }];
-  if (fromDayRight < toDayLeft) {
-    area.push({ left: fromDayRight, top: 0, right: toDayLeft, bottom: 1 });
+  const area: Area[] = [{ left: first.left, top: first.top, right: first.right, bottom: 1 }];
+  if (first.right < last.left) {
+    area.push({ left: first.right, top: 0, right: last.left, bottom: 1 });
   }
-  area.push({ left: toDayLeft, top: 0, right: toDayRight, bottom });
+  area.push({ left: last.left, top: 0, right: last.right, bottom: last.bottom });
   return area;
 }
 

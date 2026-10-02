@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { dateTime, type Field, type TimeRange } from '@grafana/data';
 import * as testData from '../testsupport/testdata.json';
-import { makeCells, makeTimeRangeArea, type Area, type Cell } from '../src/components/makeCells';
+import { makeCells, makeSpanArea, makeTimeRangeArea, type Area, type Cell } from '../src/components/makeCells';
 
 const timeRange: TimeRange = {
   from: dateTime(testData.request.range.from),
@@ -255,5 +255,18 @@ describe('makeTimeRangeArea', () => {
     };
 
     expectArea(makeTimeRangeArea('utc', tr), [{ left: 0, top: 0.25, right: 1, bottom: 0.75 }]);
+  });
+});
+
+describe('makeSpanArea', () => {
+  it('should cover the columns between two cells, gaps included', () => {
+    const first = { left: 0, top: 0.5, right: 0.25, bottom: 0.6 };
+    const last = { left: 0.75, top: 0.1, right: 1, bottom: 0.2 };
+
+    expectArea(makeSpanArea(first, last), [
+      { left: 0, top: 0.5, right: 0.25, bottom: 1 },
+      { left: 0.25, top: 0, right: 0.75, bottom: 1 },
+      { left: 0.75, top: 0, right: 1, bottom: 0.2 },
+    ]);
   });
 });
