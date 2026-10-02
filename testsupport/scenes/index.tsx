@@ -1,7 +1,7 @@
 import './bootData';
 import { getThemeById, ThemeContext } from '@grafana/data';
 import { config } from '@grafana/runtime';
-import { Box, GlobalStyles, RadioButtonGroup, Stack, Tab, TabsBar, Text } from '@grafana/ui';
+import { Box, GlobalStyles, PortalContainer, RadioButtonGroup, Stack, Tab, TabsBar, Text } from '@grafana/ui';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { installRuntime } from './runtime';
@@ -43,6 +43,7 @@ const ScenesHarness: React.FC = () => {
   return (
     <ThemeContext value={theme}>
       <GlobalStyles />
+      <PortalContainer />
       <Box padding={2}>
         <Stack direction="column" gap={2}>
           <Stack justifyContent="space-between" alignItems="center">

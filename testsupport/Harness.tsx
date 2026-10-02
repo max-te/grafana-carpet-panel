@@ -7,6 +7,7 @@ import {
   Box,
   ErrorBoundaryAlert,
   GlobalStyles,
+  PortalContainer,
   RadioButtonGroup,
   Slider,
   Space,
@@ -160,6 +161,7 @@ export const Harness: React.FC = () => {
   return (
     <ThemeContext value={theme}>
       <GlobalStyles />
+      <PortalContainer />
       <style>{inlineStyle}</style>
       <Box paddingX={2} paddingTop={1}>
         <a href="scenes.html" style={{textDecoration: "underline"}}>Scenes</a>
