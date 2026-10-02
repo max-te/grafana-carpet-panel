@@ -1,0 +1,37 @@
+import { test, expect, type Page } from '@playwright/test';
+
+const scenarioIds = ['options', 'crosshair', 'resolution', 'gaps', 'values', 'fields', 'timezones', 'dst', 'sizes'];
+
+// Scenes default to the browser time zone, and some ranges are relative to now
+test.use({ timezoneId: 'Europe/Berlin', viewport: { width: 1600, height: 1000 } });
+test.beforeEach(async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2025-06-16T12:00:00+02:00'));
+});
+
+test('screenshots cover every scenario', async ({ page }) => {
+  await page.goto('/scenes.html');
+  const tabs = page.getByRole('tablist').getByRole('tab');
+  await expect(tabs).not.toHaveCount(0);
+  const tabIds = await tabs.evaluateAll((elements) => elements.map((tab) => tab.getAttribute('href')?.slice(1) ?? ''));
+  expect(tabIds).toEqual(scenarioIds);
+});
+
+async function expectSceneScreenshot(page: Page, name: string) {
+  await page.waitForSelector('.konvajs-content');
+  await page.evaluate(async () => await document.fonts.load('12px Inter'));
+  await page.mouse.move(0, 0);
+  await expect(page).toHaveScreenshot(name, { fullPage: true });
+}
+
+for (const id of scenarioIds) {
+  test(`scenario ${id} matches snapshot`, async ({ page }) => {
+    await page.goto(`/scenes.html#${id}`);
+    await expectSceneScreenshot(page, `scenes-${id}.png`);
+  });
+}
+
+test('scenario options in dark theme matches snapshot', async ({ page }) => {
+  await page.goto('/scenes.html#options');
+  await page.getByRole('radio', { name: 'Dark' }).check();
+  await expectSceneScreenshot(page, 'scenes-options-dark.png');
+});
