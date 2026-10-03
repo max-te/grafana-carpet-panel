@@ -190,8 +190,7 @@ export const plugin = new PanelPlugin<CarpetPanelOptions>(CarpetPanel)
         category,
       });
 
-    // A cell holds a single value, so the multi-series tooltip modes do not apply
-    commonOptionsBuilder.addTooltipOptions(builder, true);
+    commonOptionsBuilder.addTooltipOptions(builder);
 
     builder
       .addBooleanSwitch({

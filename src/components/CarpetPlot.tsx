@@ -18,6 +18,7 @@ import {
   VizTooltipHeader,
   VizTooltipWrapper,
 } from '@grafana/ui';
+import { SortOrder } from '@grafana/schema';
 import { css } from '@emotion/css';
 import * as d3 from 'd3';
 import type Konva from 'konva';
@@ -107,7 +108,10 @@ interface ChartProps {
   showYAxis?: boolean;
   hourFormat?: HourFormat;
   tooltipMode?: TooltipDisplayMode;
+  /** Order of the series in the tooltip listing all of them */
+  tooltipSort?: SortOrder;
   tooltipMaxWidth?: number;
+  tooltipMaxHeight?: number;
   onHover?: (cell: Cell<CellValue> | null) => void;
   onChangeTimeRange?: (timeRange: AbsoluteTimeRange) => void;
   externalHover?: ExternalHover;
@@ -131,7 +135,9 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   showYAxis,
   hourFormat = HourFormat.Auto,
   tooltipMode = TooltipDisplayMode.Single,
+  tooltipSort = SortOrder.None,
   tooltipMaxWidth,
+  tooltipMaxHeight,
   onHover,
   onChangeTimeRange,
   externalHover,
@@ -362,7 +368,41 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       };
     }
   }
-  const tooltipSeries = tooltipBand === undefined ? undefined : series[tooltipBand];
+  const tooltipRows: Array<{ band: number; cell: Cell<CellValue> }> = [];
+  if (tooltipCell && tooltipBand !== undefined) {
+    if (tooltipMode === TooltipDisplayMode.Multi) {
+      bandCells.forEach((cells, band) => {
+        const cell = band === tooltipBand ? tooltipCell : findCellsAt(cells, tooltipCell.time)[0];
+        if (cell) {
+          tooltipRows.push({ band, cell });
+        }
+      });
+      if (coloring.kind === 'continuous' && tooltipSort !== SortOrder.None) {
+        const order = tooltipSort === SortOrder.Descending ? d3.descending : d3.ascending;
+        tooltipRows.sort((a, b) => order(a.cell.value, b.cell.value));
+      }
+    } else {
+      tooltipRows.push({ band: tooltipBand, cell: tooltipCell });
+    }
+  }
+  const tooltipItems = tooltipRows.flatMap(({ band, cell }) => {
+    const bandSeries = series[band];
+    if (!bandSeries) {
+      return [];
+    }
+    const display = getDisplayProcessor({ field: bandSeries.valueField, theme, timeZone });
+    return [
+      {
+        label: bandSeries.name,
+        value: formattedValueToString(display(cell.value)),
+        color: cellColor(cell.value),
+        colorIndicator: VizTooltipColorIndicator.value,
+        colorPlacement: VizTooltipColorPlacement.trailing,
+        // Marks the series under the pointer among the others
+        isActive: tooltipRows.length > 1 && band === validTooltip?.band,
+      },
+    ];
+  });
 
   const getOutlineColor = (cells: Array<Cell<CellValue>>) => {
     if (coloring.kind === 'categories') {
@@ -410,21 +450,13 @@ export const CarpetPlot: React.FC<ChartProps> = ({
           position={tooltipMode === TooltipDisplayMode.None ? undefined : tooltipPosition}
           offset={{ x: 5, y: 5 }}
           content={
-            tooltipCell && tooltipSeries ? (
+            tooltipCell && tooltipItems.length > 0 ? (
               <VizTooltipWrapper className={styles.tooltip}>
                 <VizTooltipHeader item={{ label: '', value: dateTimeFormat(tooltipCell.time * 1000, { timeZone }) }} />
                 <VizTooltipContent
-                  items={[
-                    {
-                      label: tooltipSeries.name,
-                      value: formattedValueToString(
-                        getDisplayProcessor({ field: tooltipSeries.valueField, theme, timeZone })(tooltipCell.value)
-                      ),
-                      color: cellColor(tooltipCell.value),
-                      colorIndicator: VizTooltipColorIndicator.value,
-                      colorPlacement: VizTooltipColorPlacement.trailing,
-                    },
-                  ]}
+                  items={tooltipItems}
+                  scrollable={tooltipMode === TooltipDisplayMode.Multi && tooltipMaxHeight !== undefined}
+                  maxHeight={tooltipMaxHeight}
                 />
               </VizTooltipWrapper>
             ) : undefined
