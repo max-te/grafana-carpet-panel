@@ -47,6 +47,8 @@ export interface CarpetPanelOptions extends OptionsWithTooltip {
     showX?: boolean;
     showY?: boolean;
     hourFormat?: HourFormat;
+    /** Labels each band with its series name, when there are several */
+    showSeriesNames?: boolean;
   };
 
   color: HeatmapColorOptions;

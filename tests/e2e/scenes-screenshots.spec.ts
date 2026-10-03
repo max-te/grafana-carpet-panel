@@ -121,7 +121,7 @@ test('crosshair sync shows only the local tooltip', async ({ page }) => {
 
 test.describe('with multiple series', () => {
   // Fits the whole scenario, as scrolling to capture it would move the page under the pointer
-  test.use({ viewport: { width: 1600, height: 1300 } });
+  test.use({ viewport: { width: 1600, height: 1900 } });
 
   test('hovering one band highlights its time in every band and lists all series', async ({ page }) => {
     await page.goto('/scenes.html#series');

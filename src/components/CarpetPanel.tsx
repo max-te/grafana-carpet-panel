@@ -224,6 +224,7 @@ const CarpetView: React.FC<ViewProps> = ({
             showXAxis={options.axes?.showX}
             showYAxis={options.axes?.showY}
             hourFormat={options.axes?.hourFormat}
+            showSeriesNames={options.axes?.showSeriesNames}
             tooltipMode={options.tooltip.mode}
             tooltipSort={options.tooltip.sort}
             tooltipMaxWidth={options.tooltip.maxWidth}

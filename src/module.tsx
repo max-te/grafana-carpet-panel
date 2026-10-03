@@ -91,6 +91,13 @@ export const plugin = new PanelPlugin<CarpetPanelOptions>(CarpetPanel)
           ],
         },
         showIf: (opts) => opts.axes?.showY === true,
+      })
+      .addBooleanSwitch({
+        path: 'axes.showSeriesNames',
+        name: 'Show series names',
+        description: 'Label each band with its series name, when there are several',
+        defaultValue: true,
+        category: ['Axes'],
       });
 
     const category = ['Colors'];

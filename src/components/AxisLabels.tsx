@@ -80,7 +80,9 @@ export const YAxisIndicator: React.FC<{
   height: number;
   width: number;
   hourFormat: HourFormat;
-}> = ({ x, y, width, height, hourFormat }) => {
+  /** Labels 24:00, which a band stacked below labels as 0:00 */
+  showEndLabel?: boolean;
+}> = ({ x, y, width, height, hourFormat, showEndLabel = true }) => {
   'use memo';
   useFontEvents();
   const ticks = Array.from({ length: 25 }, (_, i) => i);
@@ -100,7 +102,7 @@ export const YAxisIndicator: React.FC<{
         return (
           <Fragment key={hour}>
             <Line points={[x, tickY, x - 2, tickY]} stroke={colorGrid} strokeWidth={1} />
-            {hour % tickMod === 0 && (
+            {hour % tickMod === 0 && (hour < 24 || showEndLabel) && (
               <>
                 <Line points={[x, tickY, x - 4, tickY]} stroke={colorGrid} strokeWidth={1} />
                 <TextShape

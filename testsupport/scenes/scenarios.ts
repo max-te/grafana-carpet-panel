@@ -267,6 +267,11 @@ export const scenarios: Scenario[] = [
             }),
             carpetPanel({ title: 'Eight series, Y axis', generator: 'many-hosts', options: { axes: { showY: true } } }),
             carpetPanel({
+              title: 'Eight series, Y axis, names hidden',
+              generator: 'many-hosts',
+              options: { axes: { showY: true, showSeriesNames: false } },
+            }),
+            carpetPanel({
               title: 'Three label sets, beta selected',
               generator: 'labelled-hosts',
               options: { valueField: { name: 'beta' } },

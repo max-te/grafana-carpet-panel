@@ -107,6 +107,8 @@ interface ChartProps {
   showXAxis?: boolean;
   showYAxis?: boolean;
   hourFormat?: HourFormat;
+  /** Labels each band when there are several */
+  showSeriesNames?: boolean;
   tooltipMode?: TooltipDisplayMode;
   /** Order of the series in the tooltip listing all of them */
   tooltipSort?: SortOrder;
@@ -134,6 +136,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   showXAxis,
   showYAxis,
   hourFormat = HourFormat.Auto,
+  showSeriesNames = true,
   tooltipMode = TooltipDisplayMode.Single,
   tooltipSort = SortOrder.None,
   tooltipMaxWidth,
@@ -177,7 +180,8 @@ export const CarpetPlot: React.FC<ChartProps> = ({
 
   // A lone series needs no label, and keeps the whole plot to itself
   const isStacked = series.length > 1;
-  const labelHeight = isStacked ? xAxisHeight : 0;
+  const isLabelled = isStacked && showSeriesNames;
+  const labelHeight = isLabelled ? xAxisHeight : 0;
   const bandSpacing = isStacked ? padding : 0;
   const bandHeight = Math.max(
     0,
@@ -283,9 +287,10 @@ export const CarpetPlot: React.FC<ChartProps> = ({
             height={bandHeight}
             width={yAxisWidth}
             hourFormat={hourFormat}
+            showEndLabel={band === series.length - 1}
           />
         ))}
-      {isStacked &&
+      {isLabelled &&
         series.map(({ name }, band) => (
           <SeriesLabel
             key={band}
