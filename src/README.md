@@ -16,7 +16,7 @@ Carpet plots are ideal for visualizing patterns across time periods, such as:
 - Hourly system metrics across days
 - Recurring patterns in time series data
 
-![Screenshot](https://github.com/max-te/grafana-carpet-panel/blob/main/src/img/screenshot.png?raw=true)
+<img src="https://github.com/max-te/grafana-carpet-panel/blob/main/tests/e2e/readme.spec.ts-snapshots/readme-chromium-linux.png?raw=true" alt="Screenshot" width="608">
 
 ## Getting Started
 

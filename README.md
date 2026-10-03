@@ -7,7 +7,7 @@ This is a Grafana panel plugin that displays a carpet plot.
 It's a spiritual successor to the Marcus Olsson's [Hourly Heatmap panel](https://grafana.com/grafana/plugins/marcusolsson-hourly-heatmap-panel/).
 It is build with [Konva](https://konvajs.org/) and [react-konva](https://www.npmjs.com/package/react-konva), focusing on performance when displaying large time ranges and less uneven spacing between grid cells.
 
-![Screenshot](src/img/screenshot.png)
+<img src="tests/e2e/readme.spec.ts-snapshots/readme-chromium-linux.png" alt="Screenshot" width="608">
 
 ## Building
 This project uses [Node](https://nodejs.org/) as a runtime with [pnpm](https://pnpm.io/) as a package manager and [Rspack](https://rspack.dev/) as a bundler.
