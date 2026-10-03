@@ -53,6 +53,16 @@ function timeSeries(times: number[], values: Array<number | null>): DataFrame {
   });
 }
 
+/** One series of a query returning a frame per label set, like Prometheus. */
+function labelled(times: number[], values: number[], labels: Record<string, string>): DataFrame {
+  return createDataFrame({
+    fields: [
+      { name: 'Time', type: FieldType.time, values: times },
+      { name: 'Value', type: FieldType.number, values, labels },
+    ],
+  });
+}
+
 function categorical(step: number, type: FieldType, value: (time: number) => string | boolean | number): Generator {
   return (range) => {
     const times = sampleTimes(range, step);
@@ -193,6 +203,61 @@ export const generators = {
         ],
       }),
     ];
+  },
+
+  'labelled-hosts': (range) => {
+    const times = sampleTimes(range, hour);
+    return ['alpha', 'beta', 'gamma'].map((host, i) =>
+      labelled(
+        times,
+        times.map((t) => solar(t + i * day) * (1 - 0.3 * i)),
+        { host }
+      )
+    );
+  },
+  'many-hosts': (range) => {
+    const times = sampleTimes(range, hour);
+    return Array.from({ length: 8 }, (_, i) =>
+      labelled(
+        times,
+        times.map((t) => solar(t + i * hour)),
+        { host: `node-${String(i + 1)}` }
+      )
+    );
+  },
+  'wide-frame': (range) => {
+    const times = sampleTimes(range, hour);
+    return [
+      createDataFrame({
+        fields: [
+          { name: 'Time', type: FieldType.time, values: times },
+          { name: 'East', type: FieldType.number, values: times.map((t) => solar(t + 2 * hour)) },
+          { name: 'South', type: FieldType.number, values: times.map(solar) },
+          { name: 'West', type: FieldType.number, values: times.map((t) => solar(t - 2 * hour)) },
+        ],
+      }),
+    ];
+  },
+  'mixed-steps': (range) => {
+    const fine = sampleTimes(range, 15 * minute);
+    const coarse = sampleTimes(range, 6 * hour);
+    return [labelled(fine, fine.map(solar), { step: '15 min' }), labelled(coarse, coarse.map(solar), { step: '6 h' })];
+  },
+  'machine-states': (range) => {
+    const times = sampleTimes(range, hour);
+    return ['press', 'lathe'].map((machine, i) =>
+      createDataFrame({
+        fields: [
+          { name: 'Time', type: FieldType.time, values: times },
+          {
+            name: 'State',
+            type: FieldType.string,
+            values: times.map((t) => machineState(t + i * day)),
+            labels: { machine },
+          },
+        ],
+      })
+    );
   },
 } satisfies Record<string, Generator>;
 

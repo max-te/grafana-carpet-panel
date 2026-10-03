@@ -1,4 +1,5 @@
 import { DashboardCursorSync, MappingType, ThresholdsMode } from '@grafana/data';
+import { SortOrder, TooltipDisplayMode } from '@grafana/schema';
 import {
   behaviors,
   EmbeddedScene,
@@ -236,6 +237,38 @@ export const scenarios: Scenario[] = [
             title: 'Selected fields do not exist',
             generator: 'named-fields',
             options: { timeFieldName: 'Missing', valueField: { name: 'Missing' } },
+          }),
+        ]),
+      }),
+  },
+  {
+    id: 'series',
+    title: 'Multiple series',
+    description: 'One labelled band per series, stacked above a shared date axis and colored on one scale.',
+    build: () =>
+      carpetScene({
+        ...fortnight,
+        body: grid([
+          carpetPanel({
+            title: 'Three label sets, All tooltip sorted descending',
+            generator: 'labelled-hosts',
+            options: {
+              tooltip: { mode: TooltipDisplayMode.Multi, sort: SortOrder.Descending },
+              legend: { show: true },
+            },
+          }),
+          carpetPanel({ title: 'Wide frame, Y axis', generator: 'wide-frame', options: { axes: { showY: true } } }),
+          carpetPanel({ title: 'Time steps of 15 min and 6 h', generator: 'mixed-steps' }),
+          carpetPanel({
+            title: 'Categorical, two machines',
+            generator: 'machine-states',
+            options: { legend: { show: true } },
+          }),
+          carpetPanel({ title: 'Eight series, Y axis', generator: 'many-hosts', options: { axes: { showY: true } } }),
+          carpetPanel({
+            title: 'Three label sets, beta selected',
+            generator: 'labelled-hosts',
+            options: { valueField: { name: 'beta' } },
           }),
         ]),
       }),

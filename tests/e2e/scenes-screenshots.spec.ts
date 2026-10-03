@@ -8,6 +8,7 @@ const scenarioIds = [
   'gaps',
   'values',
   'fields',
+  'series',
   'timezones',
   'dst',
   'sizes',
@@ -116,6 +117,41 @@ test('crosshair sync shows only the local tooltip', async ({ page }) => {
   await page.goto('/scenes.html#crosshair');
   await hoverFirstPanel(page);
   await expect(page.getByTestId('data-testid viz-tooltip-wrapper')).toHaveCount(1);
+});
+
+test('hovering one band highlights its time in every band and lists all series', async ({ page }) => {
+  await page.goto('/scenes.html#series');
+  const canvas = page.locator('.konvajs-content').first();
+  await canvas.waitFor();
+  await page.evaluate(async () => await document.fonts.load('12px Inter'));
+  // Within the top band, below its label
+  await canvas.hover({ position: { x: 200, y: 50 } });
+  const tooltip = page.getByTestId('data-testid viz-tooltip-wrapper');
+  await expect(tooltip).toHaveCount(1);
+  for (const host of ['alpha', 'beta', 'gamma']) {
+    await expect(tooltip).toContainText(host);
+  }
+  await expect(page.getByTestId('scenario')).toHaveScreenshot('scenes-series-hover.png');
+});
+
+test('dragging across bands selects in every band and changes the time range', async ({ page }) => {
+  await page.goto('/scenes.html#series');
+  const canvas = page.locator('.konvajs-content').first();
+  await canvas.waitFor();
+  await page.evaluate(async () => await document.fonts.load('12px Inter'));
+  const box = await canvas.boundingBox();
+  if (!box) {
+    throw new Error('canvas has no bounding box');
+  }
+  const initialRange = await page.getByRole('button', { name: /to/ }).first().textContent();
+
+  // From the top band into the bottom one
+  await page.mouse.move(box.x + 100, box.y + 40);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 300, box.y + box.height - 40, { steps: 10 });
+  await expect(page.getByTestId('scenario')).toHaveScreenshot('scenes-series-drag.png');
+  await page.mouse.up();
+  await expect(page.getByRole('button', { name: /to/ }).first()).not.toHaveText(initialRange ?? '');
 });
 
 test('scenario options in dark theme matches snapshot', async ({ page }) => {
