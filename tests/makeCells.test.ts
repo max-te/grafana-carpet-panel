@@ -1,7 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { dateTime, type Field, type TimeRange } from '@grafana/data';
 import * as testData from '../testsupport/testdata.json';
-import { makeCells, makeSpanArea, makeTimeRangeArea, type Area, type Cell } from '../src/components/makeCells';
+import {
+  findCellsAt,
+  makeCells,
+  makeSpanArea,
+  makeTimeRangeArea,
+  type Area,
+  type Cell,
+} from '../src/components/makeCells';
 
 const timeRange: TimeRange = {
   from: dateTime(testData.request.range.from),
@@ -268,5 +275,46 @@ describe('makeSpanArea', () => {
       { left: 0.25, top: 0, right: 0.75, bottom: 1 },
       { left: 0.75, top: 0, right: 1, bottom: 0.2 },
     ]);
+  });
+});
+
+describe('findCellsAt', () => {
+  const hour = 3600;
+  const tr = {
+    from: dateTime('2024-01-01T00:00:00Z'),
+    to: dateTime('2024-01-04T00:00:00Z'),
+    raw: { from: '2024-01-01T00:00:00Z', to: '2024-01-04T00:00:00Z' },
+  };
+  const at = (iso: string) => dateTime(iso).valueOf() / 1000;
+  const startsOf = (cells: Cell[]) => cells.map((c) => new Date(c.time * 1000).toISOString());
+
+  const hourly = makeCells(
+    [1, 2, 3, 4],
+    ['10:00', '11:00', '12:00', '14:00'].map((t) => dateTime(`2024-01-01T${t}:00Z`).valueOf()),
+    'utc',
+    tr
+  );
+
+  it('should resolve the start of a cell to that cell, not the one ending there', () => {
+    expect(startsOf(findCellsAt(hourly, at('2024-01-01T11:00:00Z')))).toEqual(['2024-01-01T11:00:00.000Z']);
+  });
+
+  it('should resolve a time within a cell to that cell', () => {
+    expect(startsOf(findCellsAt(hourly, at('2024-01-01T11:00:00Z') + hour / 3))).toEqual(['2024-01-01T11:00:00.000Z']);
+  });
+
+  it('should find nothing in a data gap', () => {
+    expect(findCellsAt(hourly, at('2024-01-01T13:00:00Z'))).toEqual([]);
+  });
+
+  it('should return every segment of a split cell, from any of its days', () => {
+    const cells = makeCells(
+      [1, 2],
+      ['2024-01-01T12:00:00Z', '2024-01-03T12:00:00Z'].map((t) => dateTime(t).valueOf()),
+      'utc',
+      tr
+    );
+    const segments = findCellsAt(cells, at('2024-01-02T18:00:00Z'));
+    expect(segments.map((c) => c.split)).toEqual([1, 2, 3]);
   });
 });

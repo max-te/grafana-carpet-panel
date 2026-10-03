@@ -177,3 +177,10 @@ export function makeCells<V>(
 
   return cells;
 }
+
+/** The cell whose interval holds `time`, as all its segments if it is split. */
+export function findCellsAt<V>(cells: Array<Cell<V>>, time: number): Array<Cell<V>> {
+  // Half-open, as the next cell starts where a cell ends
+  const cell = cells.find((c) => c.time <= time && time < c.endTime);
+  return cell ? cells.filter((c) => c.time === cell.time) : [];
+}

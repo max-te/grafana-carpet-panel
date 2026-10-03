@@ -27,7 +27,15 @@ import { Layer, Shape } from 'react-konva';
 import { Html } from 'react-konva-utils';
 import { SeriesLabel, XAxisIndicator, YAxisIndicator } from './AxisLabels';
 import { CarpetBand } from './CarpetBand';
-import { getTimeStep, makeCells, makeSpanArea, makeTimeRangeArea, type Area, type Cell } from './makeCells';
+import {
+  findCellsAt,
+  getTimeStep,
+  makeCells,
+  makeSpanArea,
+  makeTimeRangeArea,
+  type Area,
+  type Cell,
+} from './makeCells';
 import { countDays } from './useTimeScale';
 import { traceOutline, type Box } from './traceOutline';
 import { findBoxAt, snapArea } from './pixelBoxes';
@@ -84,12 +92,6 @@ function measureCellHover(node: Konva.Node, band: number, idx: number, time: num
     time,
     position: container && { x: container.x + origin.x + box.x1, y: container.y + origin.y + box.y1 },
   };
-}
-
-/** The cell covering `time`, as all its segments if it is split. */
-function findCellsAt(cells: Array<Cell<CellValue>>, time: number): Array<Cell<CellValue>> {
-  const cell = cells.find((c) => c.time <= time && time < c.endTime);
-  return cell ? cells.filter((c) => c.time === cell.time) : [];
 }
 
 interface ChartProps {
@@ -350,9 +352,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       return { cells: findCellsAt(cells, hoveredCell.time) };
     }
     if (externalHover) {
-      const { time } = externalHover;
-      const cell = cells.find((c) => c.endTime >= time && c.time <= time);
-      return { cells: cell ? [cell] : [] };
+      return { cells: findCellsAt(cells, externalHover.time) };
     }
     return { cells: [] };
   });
