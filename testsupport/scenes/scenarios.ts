@@ -224,7 +224,7 @@ export const scenarios: Scenario[] = [
           carpetPanel({ title: 'Number field only in second frame', generator: 'number-in-second-frame' }),
           carpetPanel({
             title: 'Two time and number fields, defaults',
-            description: 'Picks the first of each: `Created` (shifted by 3 h) and the constant `Power`.',
+            description: 'Pairs the first time field, `Created` (shifted by 3 h), with both `Power` and `Energy`.',
             generator: 'named-fields',
           }),
           carpetPanel({

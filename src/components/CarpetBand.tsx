@@ -8,9 +8,10 @@ import type { CellValue } from './categories';
 
 const HATCH_SPACING = 6;
 
-type CellsMouseHandler = (event: KonvaEventObject<MouseEvent>) => void;
+type CellsMouseHandler = (band: number, event: KonvaEventObject<MouseEvent>) => void;
 
 interface BandProps {
+  band: number;
   y: number;
   width: number;
   height: number;
@@ -32,6 +33,7 @@ interface BandProps {
 /** The cells of one series, over hatching that marks where the time range has no data. */
 export const CarpetBand: React.FC<BandProps> = React.memo(
   ({
+    band,
     y,
     width,
     height,
@@ -122,9 +124,15 @@ export const CarpetBand: React.FC<BandProps> = React.memo(
             context.rect(0, 0, width, height);
             context.fillShape(shape);
           }}
-          onMouseMove={onCellsMouseMove}
-          onMouseDown={onCellsMouseDown}
-          onMouseUp={onCellsMouseUp}
+          onMouseMove={(event) => {
+            onCellsMouseMove(band, event);
+          }}
+          onMouseDown={(event) => {
+            onCellsMouseDown(band, event);
+          }}
+          onMouseUp={(event) => {
+            onCellsMouseUp(band, event);
+          }}
         />
       </Group>
     );

@@ -1,4 +1,12 @@
-import { type Field, type TimeRange, dateTime, ThemeContext, getThemeById } from '@grafana/data';
+import {
+  type DataFrame,
+  type Field,
+  type TimeRange,
+  dateTime,
+  getFieldDisplayName,
+  ThemeContext,
+  getThemeById,
+} from '@grafana/data';
 import { Stage } from 'react-konva';
 import { CarpetPlot } from '../src/components/CarpetPlot';
 type ChartProps = React.ComponentProps<typeof CarpetPlot>;
@@ -39,6 +47,9 @@ const timeField: Field<number> = testData.series[0]!.fields[0] as Field<number>;
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const valueField = testData.series[0]!.fields[1] as Field<number>;
 
+// Only with its frame does the name honor displayNameFromDS
+const valueFieldName = getFieldDisplayName(valueField, testData.series[0] as DataFrame);
+
 const minHeight = 32;
 const maxHeight = 400;
 const minWidth = 100;
@@ -52,8 +63,13 @@ const ThemedCarpetPlot: React.FC<
     dpr: number;
   }
 > = ({ colorOptions, legend, dpr, ...chartProps }) => {
-  const { width, height, valueField, timeZone, onHover } = chartProps;
-  const coloring = useCellColoring(colorOptions, [valueField]);
+  const { width, height, series, timeZone, onHover } = chartProps;
+  const coloring = useCellColoring(
+    colorOptions,
+    series.map((s) => s.valueField)
+  );
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- the harness shows one series
+  const { valueField } = series[0]!;
   const [hoveredValue, setHoveredValue] = React.useState<number>();
   return (
     <VizLayout
@@ -183,8 +199,7 @@ export const Harness: React.FC = () => {
   const chartProps: Omit<ChartProps, 'coloring'> = {
     width,
     height,
-    timeField,
-    valueField: displayedValueField,
+    series: [{ name: valueFieldName, timeField, valueField: displayedValueField }],
     timeZone: 'Europe/Berlin',
     timeRange,
     gapWidth,

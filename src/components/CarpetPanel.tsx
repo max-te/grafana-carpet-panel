@@ -1,13 +1,6 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import type Konva from 'konva';
-import {
-  FieldType,
-  type PanelProps,
-  type Field,
-  DataHoverEvent,
-  DataHoverClearEvent,
-  DashboardCursorSync,
-} from '@grafana/data';
+import { FieldType, type PanelProps, DataHoverEvent, DataHoverClearEvent, DashboardCursorSync } from '@grafana/data';
 import type { CarpetPanelOptions } from '../types';
 import { usePanelContext, VizLayout } from '@grafana/ui';
 import { PanelDataErrorView } from '@grafana/runtime';
@@ -16,7 +9,7 @@ import { CarpetPlot, type ExternalHover } from './CarpetPlot';
 import { CategoryLegend } from './CategoryLegend';
 import { ColorLegend } from './ColorLegend';
 import { isCategoricalField, type CellValue } from './categories';
-import { findSeries, findTimeField } from './series';
+import { findSeries, findTimeField, type Series } from './series';
 import { useClientPositionChange } from './useClientPositionChange';
 import { useCellColoring } from './useCellColoring';
 import { useKonvaDpr } from './useKonvaDpr';
@@ -111,8 +104,8 @@ export const CarpetPanel: React.FC<Props> = ({
       />
     );
   }
-  const [firstSeries] = findSeries(data.series, options);
-  if (firstSeries === undefined) {
+  const series = findSeries(data.series, options);
+  if (series.length === 0) {
     return (
       <PanelDataErrorView
         fieldConfig={fieldConfig}
@@ -125,27 +118,28 @@ export const CarpetPanel: React.FC<Props> = ({
       />
     );
   }
-  const { timeField, valueField } = firstSeries;
-  if (timeField.type !== FieldType.time) {
+  if (series.some(({ timeField }) => timeField.type !== FieldType.time)) {
     return <PanelDataErrorView fieldConfig={fieldConfig} panelId={id} data={data} needsTimeField />;
   }
 
-  const displayedValueField: Field<CellValue> = {
-    ...valueField,
-    config: {
-      ...valueField.config,
-      unit: options.valueField?.unit || valueField.config.unit,
-      decimals: options.valueField?.decimals ?? valueField.config.decimals,
-      min: options.color.min,
-      max: options.color.max,
+  const displayedSeries = series.map(({ valueField, ...rest }) => ({
+    ...rest,
+    valueField: {
+      ...valueField,
+      config: {
+        ...valueField.config,
+        unit: options.valueField?.unit || valueField.config.unit,
+        decimals: options.valueField?.decimals ?? valueField.config.decimals,
+        min: options.color.min,
+        max: options.color.max,
+      },
     },
-  };
+  }));
 
   return (
     <CarpetView
       options={options}
-      timeField={timeField}
-      valueField={displayedValueField}
+      series={displayedSeries}
       width={width}
       height={height}
       timeRange={timeRange}
@@ -156,14 +150,13 @@ export const CarpetPanel: React.FC<Props> = ({
 };
 
 type ViewProps = Pick<Props, 'options' | 'width' | 'height' | 'timeRange' | 'timeZone' | 'onChangeTimeRange'> & {
-  timeField: Field<number>;
-  valueField: Field<CellValue>;
+  /** At least one; all share the value type */
+  series: Series[];
 };
 
 const CarpetView: React.FC<ViewProps> = ({
   options,
-  timeField,
-  valueField,
+  series,
   width,
   height,
   timeRange,
@@ -171,7 +164,13 @@ const CarpetView: React.FC<ViewProps> = ({
   onChangeTimeRange,
 }) => {
   const dpr = useKonvaDpr();
-  const coloring = useCellColoring(options.color, [valueField]);
+  const coloring = useCellColoring(
+    options.color,
+    series.map((s) => s.valueField)
+  );
+  // The legend formats values like every series, as they share the unit options
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- never empty
+  const { valueField } = series[0]!;
   const stageRef = useRef<Konva.Stage>(null);
   const { setGlobalHover, incomingHover } = useDashboardHoverEvents(stageRef);
   const [hoveredValue, setHoveredValue] = React.useState<CellValue>();
@@ -217,8 +216,7 @@ const CarpetView: React.FC<ViewProps> = ({
             width={Math.trunc(vizWidth)}
             height={Math.trunc(vizHeight)}
             timeRange={timeRange}
-            timeField={timeField}
-            valueField={valueField}
+            series={series}
             coloring={coloring}
             timeZone={timeZone}
             gapWidth={options.gapWidth ?? 0}

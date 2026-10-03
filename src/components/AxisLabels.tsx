@@ -7,7 +7,7 @@ import { makeTimeScale } from './useTimeScale';
 import { makeDayTicks } from './dayTicks';
 import { resolveTimeZone } from './timeZone';
 import { useFontEvents } from './useFontEvents';
-import { measureTextWidth, TextShape } from './TextShape';
+import { measureTextWidth, TextShape, truncateText } from './TextShape';
 import { formatHour, usesTwelveHourClock } from './hourLabels';
 import { formatDay } from './dayLabels';
 import type { HourFormat } from '../types';
@@ -122,3 +122,26 @@ export const YAxisIndicator: React.FC<{
     </>
   );
 };
+
+export const SeriesLabel: React.FC<{
+  x: number;
+  y: number;
+  width: number;
+  name: string;
+}> = React.memo(({ x, y, width, name }) => {
+  useFontEvents();
+  const theme = useTheme2();
+  return (
+    <TextShape
+      text={truncateText(name, width, theme.typography.fontFamily, AXIS_FONT_SIZE)}
+      x={x}
+      y={y}
+      fill={theme.colors.text.secondary}
+      width={width}
+      baseline="middle"
+      fontFamily={theme.typography.fontFamily}
+      fontSize={AXIS_FONT_SIZE}
+    />
+  );
+});
+SeriesLabel.displayName = 'SeriesLabel';

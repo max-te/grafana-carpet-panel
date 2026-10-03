@@ -38,3 +38,15 @@ export function measureTextWidth(text: string, fontFamily: string, fontSize: num
   measureContext.font = canvasFont(fontSize, fontFamily);
   return measureContext.measureText(text).width;
 }
+
+/** Shortens `text` with an ellipsis until it fits `maxWidth`. */
+export function truncateText(text: string, maxWidth: number, fontFamily: string, fontSize: number): string {
+  if (measureTextWidth(text, fontFamily, fontSize) <= maxWidth) {
+    return text;
+  }
+  let end = text.length;
+  while (end > 0 && measureTextWidth(`${text.slice(0, end)}…`, fontFamily, fontSize) > maxWidth) {
+    end--;
+  }
+  return `${text.slice(0, end)}…`;
+}

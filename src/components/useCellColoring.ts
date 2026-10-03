@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
   FieldColorModeId,
   FieldType,
@@ -15,6 +15,7 @@ import * as d3 from 'd3';
 import { HeatmapColorMode, type HeatmapColorOptions } from '../types';
 import { isNumberField, makeCategoryColors, type CellValue } from './categories';
 import { makeColorPalette, sampleGradientStops } from './useColorScale';
+import { useStableItems } from './useStableItems';
 
 export type ContinuousColoring = {
   kind: 'continuous';
@@ -72,16 +73,6 @@ function makeThresholdColoring(
     return [`${bandColor} ${(start * 100).toFixed(2)}%`, `${bandColor} ${(end * 100).toFixed(2)}%`];
   });
   return { kind: 'continuous', min, max, color, gradientStops };
-}
-
-/** Keeps the previous array while it holds the same items, so it can serve as a memo dependency. */
-function useStableItems<T>(items: T[]): T[] {
-  const [stable, setStable] = useState(items);
-  const unchanged = items.length === stable.length && items.every((item, i) => item === stable[i]);
-  if (!unchanged) {
-    setStable(items);
-  }
-  return unchanged ? stable : items;
 }
 
 /** One coloring for all fields, which share type and config. */
