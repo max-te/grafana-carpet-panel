@@ -5,7 +5,7 @@ export default defineConfig({
   testDir: 'tests',
 
   fullyParallel: true,
-  workers: '60%',
+  workers: '50%',
 
   // Reporter to use
   reporter: 'html',
@@ -19,10 +19,11 @@ export default defineConfig({
 
     // Collect traces
     trace: {
-      mode: 'on',
+      mode: 'on-all-retries',
       snapshots: { dom: false, screen: true }
     },
   },
+  retries: 1,
   // Configure projects for major browsers.
   projects: [
     {

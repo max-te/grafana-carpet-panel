@@ -10,7 +10,7 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
       scenes: './testsupport/scenes/index.tsx',
     },
     context: path.resolve(import.meta.dirname, '..'),
-    devtool: 'inline-source-map',
+    devtool: 'source-map',
     mode: 'development',
     watchOptions: {
       poll: true,
