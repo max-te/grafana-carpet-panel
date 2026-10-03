@@ -3,7 +3,6 @@ import type Konva from 'konva';
 import {
   FieldType,
   type PanelProps,
-  type DataFrame,
   type Field,
   DataHoverEvent,
   DataHoverClearEvent,
@@ -17,6 +16,7 @@ import { CarpetPlot, type ExternalHover } from './CarpetPlot';
 import { CategoryLegend } from './CategoryLegend';
 import { ColorLegend } from './ColorLegend';
 import { isCategoricalField, type CellValue } from './categories';
+import { findSeries, findTimeField } from './series';
 import { useClientPositionChange } from './useClientPositionChange';
 import { useCellColoring } from './useCellColoring';
 import { useKonvaDpr } from './useKonvaDpr';
@@ -30,29 +30,6 @@ function getVisibleClientOrigin(stage: Konva.Stage | null) {
     return undefined;
   }
   return { x: rect.x, y: rect.y };
-}
-
-/** Picks both fields from the first frame holding the value field, by name or else by `isDefaultValueField`. */
-function findFields(series: DataFrame[], options: CarpetPanelOptions, isDefaultValueField: (field: Field) => boolean) {
-  let timeField: Field<number> | undefined = undefined;
-  let valueField: Field<CellValue> | undefined = undefined;
-  for (const frame of series) {
-    timeField = options.timeFieldName
-      ? frame.fields.find(
-          (f) => f.name === options.timeFieldName || f.config.displayNameFromDS === options.timeFieldName
-        )
-      : frame.fields.find((f) => f.type === FieldType.time);
-
-    valueField = options.valueField?.name
-      ? frame.fields.find(
-          (f) => f.name === options.valueField?.name || f.config.displayNameFromDS === options.valueField?.name
-        )
-      : frame.fields.find(isDefaultValueField);
-    if (valueField) {
-      break;
-    }
-  }
-  return { timeField, valueField };
 }
 
 const useDashboardHoverEvents = (stageRef: React.RefObject<Konva.Stage | null>) => {
@@ -134,22 +111,21 @@ export const CarpetPanel: React.FC<Props> = ({
       />
     );
   }
-  let { timeField, valueField } = findFields(data.series, options, (f) => f.type === FieldType.number);
-  if (!valueField) {
-    ({ timeField, valueField } = findFields(data.series, options, isCategoricalField));
-  }
-
-  if (timeField === undefined || valueField === undefined) {
+  const [firstSeries] = findSeries(data.series, options);
+  if (firstSeries === undefined) {
     return (
       <PanelDataErrorView
         fieldConfig={fieldConfig}
         panelId={id}
         data={data}
-        needsTimeField={timeField === undefined}
-        needsNumberField={valueField === undefined}
+        needsTimeField={!data.series.some((frame) => findTimeField(frame, options.timeFieldName))}
+        needsNumberField={
+          !data.series.some((frame) => frame.fields.some((f) => f.type === FieldType.number || isCategoricalField(f)))
+        }
       />
     );
   }
+  const { timeField, valueField } = firstSeries;
   if (timeField.type !== FieldType.time) {
     return <PanelDataErrorView fieldConfig={fieldConfig} panelId={id} data={data} needsTimeField />;
   }
