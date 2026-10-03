@@ -25,6 +25,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Layer, Shape } from 'react-konva';
 import { Html } from 'react-konva-utils';
 import { XAxisIndicator, YAxisIndicator } from './AxisLabels';
+import { CarpetBand } from './CarpetBand';
 import { getTimeStep, makeCells, makeSpanArea, makeTimeRangeArea, type Area, type Cell } from './makeCells';
 import { countDays } from './useTimeScale';
 import { traceOutline, type Box } from './traceOutline';
@@ -35,7 +36,6 @@ import { useClientPositionChange } from './useClientPositionChange';
 import { HourFormat } from '../types';
 import type { KonvaEventObject } from 'konva/lib/Node';
 
-const HATCH_SPACING = 6;
 const SECONDS_PER_DAY = 86400;
 
 /** Widens or narrows `gap` so that the cells between gaps span whole pixels. */
@@ -249,107 +249,25 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       )}
     </Layer>
   );
-  const heatmapLayer = useMemo(
-    () => (
-      <Layer ref={heatmapLayerRef} onMouseLeave={handleLayerMouseLeave} x={leftPadding} y={topPadding}>
-        {/* Hatches the whole time range; cells paint over it, leaving data gaps hatched */}
-        <Shape
-          visible={hatchGaps}
-          listening={false}
-          sceneFunc={(context, shape) => {
-            context.save();
-            context.beginPath();
-            for (const box of timeRangeArea) {
-              const x0 = Math.floor(box.left * innerWidth);
-              const y0 = Math.floor(box.top * innerHeight);
-              context.rect(x0, y0, Math.floor(box.right * innerWidth) - x0, Math.floor(box.bottom * innerHeight) - y0);
-            }
-            context.clip();
-            context.beginPath();
-            for (let x = -innerHeight; x < innerWidth; x += HATCH_SPACING) {
-              context.moveTo(x, innerHeight);
-              context.lineTo(x + innerHeight, 0);
-            }
-            context.strokeShape(shape);
-            context.restore();
-          }}
-          stroke={theme.colors.border.medium}
-          strokeWidth={1}
-        />
-        {/* One path, so anti-aliased edges between neighbouring cells leave no seams for the hatching */}
-        <Shape
-          visible={gapWidth > 0}
-          listening={false}
-          sceneFunc={(context, shape) => {
-            context.beginPath();
-            for (const cell of cells) {
-              context.rect(
-                cell.left * innerWidth,
-                cell.top * innerHeight,
-                (cell.right - cell.left) * innerWidth,
-                (cell.bottom - cell.top) * innerHeight
-              );
-            }
-            context.fillShape(shape);
-          }}
-          fill={theme.colors.background.primary}
-        />
-        {/* All cells in one shape; the pointer position tells which cell an event is about */}
-        <Shape
-          sceneFunc={(context) => {
-            cells.forEach((cell, i) => {
-              const color = cellColors[i];
-              // The color scale maps NaN to undefined; such cells stay unpainted
-              if (!color) {
-                return;
-              }
-              context.fillStyle = color;
-              if (gapWidth > 0) {
-                context.fillRect(
-                  cell.left * innerWidth + gapX / 2,
-                  cell.top * innerHeight + gapY / 2,
-                  (cell.right - cell.left) * innerWidth - gapX,
-                  (cell.bottom - cell.top) * innerHeight - gapY
-                );
-              } else {
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- one box per cell
-                const { x0, y0, x1, y1 } = cellBoxes[i]!;
-                context.fillRect(x0, y0, x1 - x0, y1 - y0);
-              }
-            });
-          }}
-          // Spans gaps between cells too, so the cursor never falls between them
-          hitFunc={(context, shape) => {
-            context.beginPath();
-            context.rect(0, 0, innerWidth, innerHeight);
-            context.fillShape(shape);
-          }}
-          onMouseMove={handleCellsMouseMove}
-          onMouseDown={handleCellsMouseDown}
-          onMouseUp={handleCellsMouseUp}
-        />
-      </Layer>
-    ),
-    [
-      cells,
-      cellBoxes,
-      cellColors,
-      timeRangeArea,
-      hatchGaps,
-      theme.colors.border.medium,
-      innerWidth,
-      innerHeight,
-      handleCellsMouseDown,
-      handleCellsMouseMove,
-      handleCellsMouseUp,
-      handleLayerMouseLeave,
-      gapWidth,
-      gapX,
-      gapY,
-      theme.colors.background.primary,
-      leftPadding,
-      topPadding,
-    ]
+  const heatmapLayer = (
+    <Layer ref={heatmapLayerRef} onMouseLeave={handleLayerMouseLeave} x={leftPadding} y={topPadding}>
+      <CarpetBand
+        y={0}
+        width={innerWidth}
+        height={innerHeight}
+        cells={cells}
+        cellBoxes={cellBoxes}
+        cellColors={cellColors}
+        timeRangeArea={timeRangeArea}
+        gapWidth={gapWidth}
+        gapX={gapX}
+        gapY={gapY}
+        hatchGaps={hatchGaps}
+        onCellsMouseMove={handleCellsMouseMove}
+        onCellsMouseDown={handleCellsMouseDown}
+        onCellsMouseUp={handleCellsMouseUp}
+      />
+    </Layer>
   );
 
   // A data refresh under a resting cursor can move another cell to the stored index
