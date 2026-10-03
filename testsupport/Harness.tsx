@@ -53,7 +53,7 @@ const ThemedCarpetPlot: React.FC<
   }
 > = ({ colorOptions, legend, dpr, ...chartProps }) => {
   const { width, height, valueField, timeZone, onHover } = chartProps;
-  const coloring = useCellColoring(colorOptions, valueField);
+  const coloring = useCellColoring(colorOptions, [valueField]);
   const [hoveredValue, setHoveredValue] = React.useState<number>();
   return (
     <VizLayout

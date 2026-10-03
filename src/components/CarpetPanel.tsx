@@ -171,7 +171,7 @@ const CarpetView: React.FC<ViewProps> = ({
   onChangeTimeRange,
 }) => {
   const dpr = useKonvaDpr();
-  const coloring = useCellColoring(options.color, valueField);
+  const coloring = useCellColoring(options.color, [valueField]);
   const stageRef = useRef<Konva.Stage>(null);
   const { setGlobalHover, incomingHover } = useDashboardHoverEvents(stageRef);
   const [hoveredValue, setHoveredValue] = React.useState<CellValue>();

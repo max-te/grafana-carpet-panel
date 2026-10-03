@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   FieldColorModeId,
   FieldType,
@@ -74,19 +74,34 @@ function makeThresholdColoring(
   return { kind: 'continuous', min, max, color, gradientStops };
 }
 
-export function useCellColoring(colorOptions: HeatmapColorOptions, valueField: Field<CellValue>): CellColoring {
+/** Keeps the previous array while it holds the same items, so it can serve as a memo dependency. */
+function useStableItems<T>(items: T[]): T[] {
+  const [stable, setStable] = useState(items);
+  const unchanged = items.length === stable.length && items.every((item, i) => item === stable[i]);
+  if (!unchanged) {
+    setStable(items);
+  }
+  return unchanged ? stable : items;
+}
+
+/** One coloring for all fields, which share type and config. */
+export function useCellColoring(colorOptions: HeatmapColorOptions, valueFields: Array<Field<CellValue>>): CellColoring {
   const theme = useTheme2();
-  // valueField is rebuilt on every render, so the memo tracks only what decides the colors
-  const { type, values } = valueField;
-  const { mappings, type: typeConfig, thresholds } = valueField.config;
-  const minMax: Partial<NumericRange> = isNumberField(valueField) ? getMinMaxAndDelta(valueField) : {};
-  const min = minMax.min ?? 0;
-  const max = minMax.max ?? 1;
+  // The fields are rebuilt on every render, so the memo tracks only what decides the colors
+  const valueLists = useStableItems(valueFields.map((field) => field.values));
+  const type = valueFields[0]?.type;
+  const { mappings, type: typeConfig, thresholds } = valueFields[0]?.config ?? {};
+  const ranges: Array<Partial<NumericRange>> = valueFields.filter(isNumberField).map(getMinMaxAndDelta);
+  const min = d3.min(ranges, (range) => range.min ?? undefined) ?? 0;
+  const max = d3.max(ranges, (range) => range.max ?? undefined) ?? 1;
   return useMemo(() => {
     if (type !== FieldType.number) {
       return {
         kind: 'categories',
-        colors: makeCategoryColors({ type, values, config: { mappings, type: typeConfig } }, theme),
+        colors: makeCategoryColors(
+          { type: type ?? FieldType.other, values: valueLists.flat(), config: { mappings, type: typeConfig } },
+          theme
+        ),
       };
     }
     const { mode } = colorOptions;
@@ -101,5 +116,5 @@ export function useCellColoring(colorOptions: HeatmapColorOptions, valueField: F
       color: d3.scaleSequential(palette.call).domain([min, max]),
       gradientStops: sampleGradientStops(palette),
     };
-  }, [type, values, mappings, typeConfig, thresholds, theme, colorOptions, min, max]);
+  }, [type, valueLists, mappings, typeConfig, thresholds, theme, colorOptions, min, max]);
 }
