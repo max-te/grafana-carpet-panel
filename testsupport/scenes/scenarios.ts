@@ -63,10 +63,10 @@ function carpetScene({
   });
 }
 
-function grid(panels: SceneObject[], minColumnWidth = '480px'): SceneCSSGridLayout {
+function grid(panels: SceneObject[], minColumnWidth = '480px', rowHeight = '320px'): SceneCSSGridLayout {
   return new SceneCSSGridLayout({
     templateColumns: `repeat(auto-fill, minmax(${minColumnWidth}, 1fr))`,
-    autoRows: '320px',
+    autoRows: rowHeight,
     children: panels,
   });
 }
@@ -248,29 +248,33 @@ export const scenarios: Scenario[] = [
     build: () =>
       carpetScene({
         ...fortnight,
-        body: grid([
-          carpetPanel({
-            title: 'Three label sets, All tooltip sorted descending',
-            generator: 'labelled-hosts',
-            options: {
-              tooltip: { mode: TooltipDisplayMode.Multi, sort: SortOrder.Descending },
-              legend: { show: true },
-            },
-          }),
-          carpetPanel({ title: 'Wide frame, Y axis', generator: 'wide-frame', options: { axes: { showY: true } } }),
-          carpetPanel({ title: 'Time steps of 15 min and 6 h', generator: 'mixed-steps' }),
-          carpetPanel({
-            title: 'Categorical, two machines',
-            generator: 'machine-states',
-            options: { legend: { show: true } },
-          }),
-          carpetPanel({ title: 'Eight series, Y axis', generator: 'many-hosts', options: { axes: { showY: true } } }),
-          carpetPanel({
-            title: 'Three label sets, beta selected',
-            generator: 'labelled-hosts',
-            options: { valueField: { name: 'beta' } },
-          }),
-        ]),
+        body: grid(
+          [
+            carpetPanel({
+              title: 'Three label sets, All tooltip sorted descending',
+              generator: 'labelled-hosts',
+              options: {
+                tooltip: { mode: TooltipDisplayMode.Multi, sort: SortOrder.Descending },
+                legend: { show: true },
+              },
+            }),
+            carpetPanel({ title: 'Wide frame, Y axis', generator: 'wide-frame', options: { axes: { showY: true } } }),
+            carpetPanel({ title: 'Time steps of 15 min and 6 h', generator: 'mixed-steps' }),
+            carpetPanel({
+              title: 'Categorical, two machines',
+              generator: 'machine-states',
+              options: { legend: { show: true } },
+            }),
+            carpetPanel({ title: 'Eight series, Y axis', generator: 'many-hosts', options: { axes: { showY: true } } }),
+            carpetPanel({
+              title: 'Three label sets, beta selected',
+              generator: 'labelled-hosts',
+              options: { valueField: { name: 'beta' } },
+            }),
+          ],
+          undefined,
+          '560px'
+        ),
       }),
   },
   {
