@@ -14,4 +14,8 @@ describe('formatDay', () => {
     expect(formatDay(day, true, 'en-US')).toBe('10/2026');
     expect(formatDay(day, true, 'ja-JP')).toBe('2026/10');
   });
+
+  it('should keep two-digit years', () => {
+    expect(formatDay(Temporal.PlainDate.from('0050-03-04'), true, 'en-US')).toBe('3/50');
+  });
 });
