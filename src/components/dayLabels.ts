@@ -1,4 +1,4 @@
-import type { Temporal } from '@js-temporal/polyfill';
+import type { Temporal } from './temporal';
 
 // Building a formatter is costly; PlainDate.toLocaleString builds one per call
 const formatters = new Map<string, Intl.DateTimeFormat>();

@@ -1,7 +1,7 @@
 import type { ScaleTime } from 'd3';
 import * as d3 from 'd3';
 import type { TimeRange } from '@grafana/data';
-import { Temporal } from '@js-temporal/polyfill';
+import { Temporal } from './temporal';
 import { resolveTimeZone } from './timeZone';
 
 /** Number of calendar days the time range touches, i.e. the columns of the plot. */

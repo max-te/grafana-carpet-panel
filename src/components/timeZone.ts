@@ -1,4 +1,4 @@
-import { Temporal } from '@js-temporal/polyfill';
+import { Temporal } from './temporal';
 
 /** Grafana passes "browser" to mean the user's local timezone. Temporal requires an IANA identifier. */
 export function resolveTimeZone(timeZone: string): string {

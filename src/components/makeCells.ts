@@ -1,5 +1,5 @@
 import type { TimeRange } from '@grafana/data';
-import { Temporal } from '@js-temporal/polyfill';
+import { Temporal } from './temporal';
 import { makeTimeScale } from './useTimeScale';
 import { resolveTimeZone } from './timeZone';
 
