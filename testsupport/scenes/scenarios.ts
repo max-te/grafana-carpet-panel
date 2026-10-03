@@ -515,4 +515,21 @@ export const scenarios: Scenario[] = [
         ]),
       }),
   },
+  {
+    id: 'readme',
+    title: 'README',
+    description: 'The panel pictured in the README.',
+    build: () =>
+      carpetScene({
+        ...recordedRange,
+        timeZone: 'Europe/Berlin',
+        body: grid([
+          carpetPanel({
+            title: 'Energy consumption',
+            generator: 'recorded',
+            options: { axes: { showX: true, showY: true } },
+          }),
+        ]),
+      }),
+  },
 ];
