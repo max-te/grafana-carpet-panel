@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 
 test('every scenes scenario renders without errors', async ({ page }) => {
-  test.setTimeout(120_000);
   let errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('console', (message) => {

@@ -4,6 +4,9 @@ export default defineConfig({
   // Look for test files in the "tests" directory, relative to this configuration file.
   testDir: 'tests',
 
+  fullyParallel: true,
+  workers: '60%',
+
   // Reporter to use
   reporter: 'html',
 
@@ -14,8 +17,11 @@ export default defineConfig({
     // Axis label snapshots follow this locale's clock and date order
     locale: 'en-GB',
 
-    // Collect trace when retrying the failed test.
-    trace: 'on-first-retry',
+    // Collect traces
+    trace: {
+      mode: 'on',
+      snapshots: { dom: false, screen: true }
+    },
   },
   // Configure projects for major browsers.
   projects: [
