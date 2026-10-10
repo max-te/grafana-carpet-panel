@@ -134,6 +134,13 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
       ],
     },
 
+    // Grafana caches module.js and loads it only for dashboards that use the panel.
+    // react-konva bundles its own React reconciler of about 125 KiB.
+    performance: {
+      maxAssetSize: 400 * 1024,
+      maxEntrypointSize: 400 * 1024,
+    },
+
     output: {
       clean: {
         // It really doesn't matter if this regex syntax works. We just need to prevent rspack from deleting the directory, since it's mounted by docker.
