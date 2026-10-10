@@ -1,43 +1,17 @@
 /* eslint-disable @eslint-react/no-array-index-key -- a band is its position in the stack */
-import {
-  dateTimeFormat,
-  formattedValueToString,
-  getDisplayProcessor,
-  type AbsoluteTimeRange,
-  type GrafanaTheme2,
-  type TimeRange,
-} from '@grafana/data';
-import {
-  TooltipDisplayMode,
-  useStyles2,
-  useTheme2,
-  VizTooltip,
-  VizTooltipColorIndicator,
-  VizTooltipColorPlacement,
-  VizTooltipContent,
-  VizTooltipHeader,
-  VizTooltipWrapper,
-} from '@grafana/ui';
+import type { AbsoluteTimeRange, TimeRange } from '@grafana/data';
+import { TooltipDisplayMode, useTheme2 } from '@grafana/ui';
 import { SortOrder } from '@grafana/schema';
-import { css } from '@emotion/css';
-import * as d3 from 'd3';
 import type Konva from 'konva';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Layer, Shape } from 'react-konva';
-import { Html } from 'react-konva-utils';
+import { Layer } from 'react-konva';
 import { SeriesLabel, XAxisIndicator, YAxisIndicator } from './AxisLabels';
+import { BandHighlightShape, findBandHighlight } from './BandHighlight';
 import { CarpetBand } from './CarpetBand';
-import {
-  findCellsAt,
-  getTimeStep,
-  makeCells,
-  makeSpanArea,
-  makeTimeRangeArea,
-  type Area,
-  type Cell,
-} from './makeCells';
+import { CarpetTooltip } from './CarpetTooltip';
+import { getTimeStep, makeCells, makeTimeRangeArea, type Cell } from './makeCells';
 import { countDays } from './useTimeScale';
-import { traceOutline, type Box } from './traceOutline';
+import type { Box } from './traceOutline';
 import { findBoxAt, snapArea } from './pixelBoxes';
 import { getCellColor, type CellColoring } from './useCellColoring';
 import type { CellValue } from './categories';
@@ -68,12 +42,6 @@ interface CellHover {
   time: number;
   /** Client position of the tooltip; absent while hidden */
   position?: { x: number; y: number };
-}
-
-interface BandHighlight {
-  cells: Array<Cell<CellValue>>;
-  /** The region a selection spans, data gaps included; absent outside a selection */
-  area?: Area[];
 }
 
 /** Index of the cell under the pointer, from the cells' pixel boxes in the coordinates of `node`; -1 if none. */
@@ -121,11 +89,6 @@ interface ChartProps {
   externalHover?: ExternalHover;
 }
 
-const getStyles = (theme: GrafanaTheme2, tooltipMaxWidth?: number) => ({
-  // Header and content bring their own padding; cancel VizTooltip's container padding
-  tooltip: css({ margin: theme.spacing(-1), maxWidth: tooltipMaxWidth }),
-});
-
 export const CarpetPlot: React.FC<ChartProps> = ({
   width,
   height,
@@ -148,7 +111,6 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   externalHover,
 }) => {
   const theme = useTheme2();
-  const styles = useStyles2(getStyles, tooltipMaxWidth);
   const [tooltipData, setTooltipData] = useState<CellHover | null>(null);
   const [selectionStart, setSelectionStart] = useState<CellSpan | null>(null);
   // Keeps the cell handlers stable, so starting a selection does not redraw the cells
@@ -340,134 +302,50 @@ export const CarpetPlot: React.FC<ChartProps> = ({
       onHover?.(hoveredCell ?? null);
     }
   }, [onHover, hoveredCell, tooltipShown]);
-  const bandHighlights = bandCells.map((cells): BandHighlight => {
-    if (hoveredCell && selectionStart) {
-      const start = Math.min(hoveredCell.time, selectionStart.time);
-      const end = Math.max(hoveredCell.time, selectionStart.time);
-      const selected = cells.filter((c) => c.time <= end && c.endTime > start);
-      const [first, last] = [selected[0], selected.at(-1)];
-      return { cells: selected, area: first && last ? makeSpanArea(first, last) : undefined };
-    }
-    if (hoveredCell) {
-      return { cells: findCellsAt(cells, hoveredCell.time) };
-    }
-    if (externalHover) {
-      return { cells: findCellsAt(cells, externalHover.time) };
-    }
-    return { cells: [] };
-  });
+  const bandHighlights = bandCells.map((cells) =>
+    findBandHighlight(cells, hoveredCell, selectionStart, externalHover?.time)
+  );
 
-  let tooltipBand = validTooltip?.band;
-  let tooltipCell = hoveredCell;
+  let tooltipTarget = hoveredCell && validTooltip && { band: validTooltip.band, cell: hoveredCell };
   let tooltipPosition = validTooltip?.position;
   if (!hoveredCell && externalHover?.tooltipOrigin) {
     const { tooltipOrigin } = externalHover;
     const band = bandHighlights.findIndex((highlight) => highlight.cells.length > 0);
     const cell = bandHighlights[band]?.cells[0];
     if (cell) {
-      tooltipBand = band;
-      tooltipCell = cell;
+      tooltipTarget = { band, cell };
       tooltipPosition = {
         x: tooltipOrigin.x + leftPadding + Math.floor(cell.right * innerWidth),
         y: tooltipOrigin.y + topPadding + bandTop(band) + Math.floor(cell.bottom * bandHeight),
       };
     }
   }
-  const tooltipRows: Array<{ band: number; cell: Cell<CellValue> }> = [];
-  if (tooltipCell && tooltipBand !== undefined) {
-    if (tooltipMode === TooltipDisplayMode.Multi) {
-      bandCells.forEach((cells, band) => {
-        const cell = band === tooltipBand ? tooltipCell : findCellsAt(cells, tooltipCell.time)[0];
-        if (cell) {
-          tooltipRows.push({ band, cell });
-        }
-      });
-      if (coloring.kind === 'continuous' && tooltipSort !== SortOrder.None) {
-        const order = tooltipSort === SortOrder.Descending ? d3.descending : d3.ascending;
-        tooltipRows.sort((a, b) => order(a.cell.value, b.cell.value));
-      }
-    } else {
-      tooltipRows.push({ band: tooltipBand, cell: tooltipCell });
-    }
-  }
-  const tooltipItems = tooltipRows.flatMap(({ band, cell }) => {
-    const bandSeries = series[band];
-    if (!bandSeries) {
-      return [];
-    }
-    const display = getDisplayProcessor({ field: bandSeries.valueField, theme, timeZone });
-    return [
-      {
-        label: bandSeries.name,
-        value: formattedValueToString(display(cell.value)),
-        color: cellColor(cell.value),
-        colorIndicator: VizTooltipColorIndicator.value,
-        colorPlacement: VizTooltipColorPlacement.trailing,
-        // Marks the series under the pointer among the others
-        isActive: tooltipRows.length > 1 && band === validTooltip?.band,
-      },
-    ];
-  });
 
-  const getOutlineColor = (cells: Array<Cell<CellValue>>) => {
-    if (coloring.kind === 'categories') {
-      const firstCell = cells[0];
-      return firstCell && theme.colors.getContrastText(cellColor(firstCell.value));
-    }
-    const { min, max, color } = coloring;
-    const highlightedMean = d3.mean(cells, (cell) => cell.value as number) ?? min;
-    return highlightedMean > (min + max) / 2 ? color(min) : color(max);
-  };
   const hoverLayer = (
     <Layer listening={false} x={leftPadding} y={topPadding}>
-      {bandHighlights.map(({ cells, area }, band) => {
-        const highlightBoxes = (area ?? cells).map((a) => snapArea(a, innerWidth, bandHeight));
-        const highlightOutline = traceOutline(highlightBoxes);
-        return (
-          <Shape
-            key={band}
-            y={bandTop(band)}
-            sceneFunc={(context, shape) => {
-              // One fill for all boxes, so the translucency does not stack where they touch
-              context.beginPath();
-              for (const { x0, y0, x1, y1 } of highlightBoxes) {
-                context.rect(x0, y0, x1 - x0, y1 - y0);
-              }
-              context.fillShape(shape);
-
-              // Centers the 1px stroke on a pixel row for a crisp line
-              context.beginPath();
-              for (const [x0, y0, x1, y1] of highlightOutline) {
-                context.moveTo(x0 - 0.5, y0 - 0.5);
-                context.lineTo(x1 - 0.5, y1 - 0.5);
-              }
-              context.strokeShape(shape);
-            }}
-            fill={'rgba(120, 120, 130, 0.2)'}
-            stroke={getOutlineColor(cells)}
-            dash={[4, 2]}
-            strokeWidth={1}
-          />
-        );
-      })}
-      <Html>
-        <VizTooltip
-          position={tooltipMode === TooltipDisplayMode.None ? undefined : tooltipPosition}
-          offset={{ x: 5, y: 5 }}
-          content={
-            tooltipCell && tooltipItems.length > 0 ? (
-              <VizTooltipWrapper className={styles.tooltip}>
-                <VizTooltipHeader item={{ label: '', value: dateTimeFormat(tooltipCell.time * 1000, { timeZone }) }} />
-                <VizTooltipContent
-                  items={tooltipItems}
-                  scrollable={tooltipMode === TooltipDisplayMode.Multi && tooltipMaxHeight !== undefined}
-                  maxHeight={tooltipMaxHeight}
-                />
-              </VizTooltipWrapper>
-            ) : undefined
-          }
+      {bandHighlights.map((highlight, band) => (
+        <BandHighlightShape
+          key={band}
+          y={bandTop(band)}
+          width={innerWidth}
+          height={bandHeight}
+          coloring={coloring}
+          {...highlight}
         />
-      </Html>
+      ))}
+      <CarpetTooltip
+        series={series}
+        bandCells={bandCells}
+        target={tooltipTarget}
+        activeBand={validTooltip?.band}
+        position={tooltipPosition}
+        coloring={coloring}
+        timeZone={timeZone}
+        mode={tooltipMode}
+        sort={tooltipSort}
+        maxWidth={tooltipMaxWidth}
+        maxHeight={tooltipMaxHeight}
+      />
     </Layer>
   );
 
