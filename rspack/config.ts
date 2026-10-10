@@ -50,6 +50,8 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
       'react-router',
       'react-router-dom',
       'd3',
+      // Grafana's d3 bundle re-exports these packages
+      { 'd3-scale-chromatic': 'd3', 'd3-color': 'd3', 'd3-interpolate': 'd3' },
       'angular',
       /^@grafana\/ui/i,
       /^@grafana\/runtime/i,
