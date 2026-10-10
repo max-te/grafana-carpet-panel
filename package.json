@@ -10,7 +10,7 @@
     "format": "biome format --write .",
     "lint": "eslint src testsupport tests",
     "typecheck": "tsc --noEmit",
-    "devserver": "pnpm exec rspack serve -w -m development --config rspack/config.testharness.ts",
+    "devserver": "pnpm exec rspack serve -m development --config rspack/config.testharness.ts",
     "test": "pnpm run test:unit && pnpm run test:e2e",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
