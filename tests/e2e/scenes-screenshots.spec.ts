@@ -49,12 +49,15 @@ test('scenes match screenshots', async ({ page })=> {
   }
 })
 
-async function hoverFirstPanel(page: Page) {
+async function hoverFirstPanel(page: Page, position = { x: 200, y: 150 }) {
   const canvas = page.locator('.konvajs-content').first();
   await canvas.waitFor();
   await page.evaluate(async () => await document.fonts.load('12px Inter'));
-  await canvas.hover({ position: { x: 200, y: 150 } });
+  await canvas.hover({ position });
 }
+
+// Moves the pointer off the first hover position, so the panel sees a new hover
+const hoverFirstPanelAgain = (page: Page) => hoverFirstPanel(page, { x: 201, y: 151 });
 
 test('shared tooltip shows in every synced panel', async ({ page }) => {
   await page.goto('/scenes.html#shared-tooltip');
@@ -72,10 +75,7 @@ test('scrolling hides the tooltip until the next hover', async ({ page }) => {
     window.scrollBy(0, 50);
   });
   await expect(tooltips).toHaveCount(0);
-  await page
-    .locator('.konvajs-content')
-    .first()
-    .hover({ position: { x: 201, y: 151 } });
+  await hoverFirstPanelAgain(page);
   await expect(tooltips).toHaveCount(1);
 });
 
@@ -86,10 +86,7 @@ test('scrolling hides shared tooltips', async ({ page }) => {
   await expect(tooltips).toHaveCount(3);
   await page.evaluate(() => document.dispatchEvent(new Event('scroll')));
   await expect(tooltips).toHaveCount(0);
-  await page
-    .locator('.konvajs-content')
-    .first()
-    .hover({ position: { x: 201, y: 151 } });
+  await hoverFirstPanelAgain(page);
   await expect(tooltips).toHaveCount(3);
 });
 
@@ -100,10 +97,7 @@ test('resizing the window hides tooltips until the next hover', async ({ page })
   await expect(tooltips).toHaveCount(3);
   await page.setViewportSize({ width: 1500, height: 1000 });
   await expect(tooltips).toHaveCount(0);
-  await page
-    .locator('.konvajs-content')
-    .first()
-    .hover({ position: { x: 201, y: 151 } });
+  await hoverFirstPanelAgain(page);
   await expect(tooltips).toHaveCount(3);
 });
 
