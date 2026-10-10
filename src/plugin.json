@@ -4,7 +4,9 @@
   "name": "Carpet-Panel",
   "id": "maxte-carpet-panel",
   "info": {
-    "keywords": ["panel"],
+    "keywords": [
+      "panel"
+    ],
     "description": "",
     "author": {
       "name": "Max te"
@@ -19,7 +21,7 @@
     "updated": "%TODAY%"
   },
   "dependencies": {
-    "grafanaDependency": ">=13.1.0",
+    "grafanaDependency": ">=13.2.0",
     "plugins": []
   }
 }
