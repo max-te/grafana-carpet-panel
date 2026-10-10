@@ -1,5 +1,5 @@
-import { DashboardCursorSync, MappingType, ThresholdsMode } from '@grafana/data';
-import { SortOrder, TooltipDisplayMode } from '@grafana/schema';
+import { MappingType, ThresholdsMode } from '@grafana/data';
+import { DashboardCursorSync, SortOrder, TooltipDisplayMode } from '@grafana/schema';
 import {
   behaviors,
   EmbeddedScene,
