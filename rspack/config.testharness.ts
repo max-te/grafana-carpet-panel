@@ -1,5 +1,6 @@
 import { defineConfig } from '@rspack/cli';
 import { rspack, type RspackOptions } from '@rspack/core';
+import type { IncomingMessage, ServerResponse } from 'http';
 import path from 'path';
 import { reactCompilerConfig } from './react-compiler-config.ts';
 
@@ -31,7 +32,7 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
         middlewares.push({
           name: 'fonts',
           path: '/public/fonts/inter',
-          middleware: async (req, res) => {
+          middleware: async (req: IncomingMessage, res: ServerResponse) => {
             res.statusCode = 302;
             res.setHeader('Location', 'https://fonts.gstatic.com/s/inter/v19/UcCo3FwrK3iLTcviYwY.woff2');
             res.end();
