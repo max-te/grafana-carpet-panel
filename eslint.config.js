@@ -19,6 +19,10 @@ export default tseslint.config(
     rules: {},
   },
   {
+    settings: {
+      // eslint-plugin-react's "detect" calls context.getFilename, which ESLint 10 removed
+      react: { version: '19.2' },
+    },
     rules: {
       'react/prop-types': 'off',
     },
