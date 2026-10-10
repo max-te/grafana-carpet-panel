@@ -1,6 +1,8 @@
 import { useTheme2 } from '@grafana/ui';
 import React, { Fragment } from 'react';
 import { Line } from 'react-konva';
+// Registers Line, which react-konva's core entry omits
+import 'konva/lib/shapes/Line';
 import type { TimeRange } from '@grafana/data';
 import { Temporal } from './temporal';
 import { makeTimeScale } from './useTimeScale';

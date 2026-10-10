@@ -1,4 +1,4 @@
-import Konva from 'konva';
+import Konva from 'konva/lib/Core';
 import { useEffect, useInsertionEffect, useState } from 'react';
 import { getDevicePixelRatio, type DevicePixelRatioOptions } from 'use-device-pixel-ratio';
 

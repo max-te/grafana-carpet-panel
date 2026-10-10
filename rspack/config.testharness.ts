@@ -3,6 +3,7 @@ import { rspack, type RspackOptions } from '@rspack/core';
 import type { IncomingMessage, ServerResponse } from 'http';
 import path from 'path';
 import { reactCompilerConfig } from './react-compiler-config.ts';
+import { konvaCoreAlias } from './konva-core-alias.ts';
 
 const config = async (env: Record<string, any>, argv: Record<string, any>) => {
   return defineConfig({
@@ -92,6 +93,7 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx'],
       tsConfig: './tsconfig.json',
+      alias: konvaCoreAlias,
     },
     plugins: [
       new rspack.HtmlRspackPlugin({

@@ -8,6 +8,7 @@ import { DIST_DIR } from './constants.ts';
 import { TsCheckerRspackPlugin } from 'ts-checker-rspack-plugin';
 import { BuildModeRspackPlugin } from './BuildModeRspackPlugin.ts';
 import { reactCompilerConfig } from './react-compiler-config.ts';
+import { konvaCoreAlias } from './konva-core-alias.ts';
 
 const pluginJson = getPluginJson();
 
@@ -153,6 +154,7 @@ const config = async (env: Record<string, any>, argv: Record<string, any>) => {
       extensions: ['.js', '.jsx', '.ts', '.tsx'],
       // handle resolving "rootDir" paths
       modules: [path.resolve(process.cwd(), 'src'), 'node_modules'],
+      alias: konvaCoreAlias,
     },
 
     plugins: [
