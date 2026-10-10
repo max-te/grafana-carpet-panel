@@ -4,7 +4,7 @@ import { Line } from 'react-konva';
 // Registers Line, which react-konva's core entry omits
 import 'konva/lib/shapes/Line';
 import type { TimeRange } from '@grafana/data';
-import { Temporal } from './temporal';
+import { Temporal } from 'temporal-polyfill';
 import { makeTimeScale } from './useTimeScale';
 import { makeDayTicks } from './dayTicks';
 import { resolveTimeZone } from './timeZone';

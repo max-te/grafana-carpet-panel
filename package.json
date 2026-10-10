@@ -21,7 +21,6 @@
     "@grafana/data": "13.2.3",
     "@grafana/runtime": "13.2.3",
     "@grafana/ui": "13.2.3",
-    "@js-temporal/polyfill": "^0.5.1",
     "d3": "^7.9.0",
     "d3-scale-chromatic": "^3.1.0",
     "konva": "^10.7.1",
@@ -30,6 +29,7 @@
     "react-dom": "19.3.0",
     "react-konva": "19.3.0",
     "react-konva-utils": "2.1.0",
+    "temporal-polyfill": "1.0.5",
     "tinycolor2": "^1.6.0",
     "use-device-pixel-ratio": "^1.1.2"
   },
