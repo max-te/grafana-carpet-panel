@@ -20,7 +20,7 @@ export default defineConfig({
     // Collect traces
     trace: {
       mode: 'on-all-retries',
-      snapshots: { dom: false, screen: true }
+      snapshots: { dom: false, screen: true },
     },
   },
   retries: 1,

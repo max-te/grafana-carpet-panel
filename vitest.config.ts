@@ -4,7 +4,7 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     env: {
-      "I18NEXT_NO_SUPPORT_NOTICE": "1"
+      I18NEXT_NO_SUPPORT_NOTICE: '1',
     },
     include: ['tests/**/*.test.ts'],
     exclude: ['tests/e2e/**'],

@@ -24,7 +24,6 @@ test.beforeEach(async ({ page }) => {
   await page.clock.setFixedTime(new Date('2025-06-16T12:00:00+02:00'));
 });
 
-
 async function expectSceneScreenshot(page: Page, name: string, scale: 'css' | 'device' = 'css') {
   await page.waitForSelector('.konvajs-content');
   await page.evaluate(async () => await document.fonts.load('12px Inter'));
@@ -32,12 +31,14 @@ async function expectSceneScreenshot(page: Page, name: string, scale: 'css' | 'd
   await expect.soft(page.getByTestId('scenario')).toHaveScreenshot(name, { scale });
 }
 
-test('scenes match screenshots', async ({ page })=> {
+test('scenes match screenshots', async ({ page }) => {
   await test.step('screenshots cover every scenario', async () => {
     await page.goto('/scenes.html');
     const tabs = page.getByRole('tablist').getByRole('tab');
     await expect(tabs).not.toHaveCount(0);
-    const tabIds = await tabs.evaluateAll((elements) => elements.map((tab) => tab.getAttribute('href')?.slice(1) ?? ''));
+    const tabIds = await tabs.evaluateAll((elements) =>
+      elements.map((tab) => tab.getAttribute('href')?.slice(1) ?? '')
+    );
     expect.soft(tabIds).toEqual(scenarioIds);
   });
 
@@ -47,7 +48,7 @@ test('scenes match screenshots', async ({ page })=> {
       await expectSceneScreenshot(page, `scenes-${id}.png`);
     });
   }
-})
+});
 
 async function hoverFirstPanel(page: Page, position = { x: 200, y: 150 }) {
   const canvas = page.locator('.konvajs-content').first();
