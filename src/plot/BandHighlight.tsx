@@ -6,8 +6,8 @@ import { Shape } from 'react-konva';
 import { findCellsAt, makeSpanArea, type Area, type Cell } from './makeCells';
 import { traceOutline } from './traceOutline';
 import type { BandLayout } from './plotLayout';
-import { getCellColor, type CellColoring } from './useCellColoring';
-import type { CellValue } from './categories';
+import { getCellColor, type CellColoring } from '../color/useCellColoring';
+import type { CellValue } from '../color/categories';
 
 export interface BandHighlight {
   cells: Array<Cell<CellValue>>;

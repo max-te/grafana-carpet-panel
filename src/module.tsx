@@ -1,10 +1,10 @@
 import { FieldConfigProperty, FieldType, PanelPlugin, FieldNamePickerBaseNameMode } from '@grafana/data';
 import { commonOptionsBuilder } from '@grafana/ui';
 import { HeatmapColorMode, HeatmapColorScale, HourFormat, type CarpetPanelOptions } from './types';
-import { CarpetPanel } from './components/CarpetPanel';
-import { isCategoricalField } from './components/categories';
-import { colorSchemes } from './palettes';
-import { useSchemeGradientStops } from './components/useColorScale';
+import { CarpetPanel } from './panel/CarpetPanel';
+import { isCategoricalField } from './color/categories';
+import { colorSchemes } from './color/palettes';
+import { useSchemeGradientStops } from './color/useColorScale';
 import React from 'react';
 
 export const plugin = new PanelPlugin<CarpetPanelOptions>(CarpetPanel)

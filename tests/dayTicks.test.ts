@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { dateTime } from '@grafana/data';
-import { makeDayTicks } from '../src/components/dayTicks';
+import { makeDayTicks } from '../src/axes/dayTicks';
 
 const range = (from: string, to: string) => ({
   from: dateTime(from),

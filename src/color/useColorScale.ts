@@ -1,7 +1,7 @@
 import type { GrafanaTheme2 } from '@grafana/data';
 import { HeatmapColorMode, HeatmapColorScale, type HeatmapColorOptions } from '../types';
 import { useTheme2 } from '@grafana/ui';
-import { colorSchemes } from '../palettes';
+import { colorSchemes } from './palettes';
 import * as d3ScaleChromatic from 'd3-scale-chromatic';
 import tinycolor from 'tinycolor2';
 import * as d3 from 'd3';

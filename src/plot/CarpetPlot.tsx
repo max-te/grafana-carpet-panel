@@ -4,17 +4,17 @@ import { TooltipDisplayMode, useTheme2 } from '@grafana/ui';
 import { SortOrder } from '@grafana/schema';
 import React, { useMemo } from 'react';
 import { Layer } from 'react-konva';
-import { SeriesLabel, XAxisIndicator, YAxisIndicator } from './AxisLabels';
+import { SeriesLabel, XAxisIndicator, YAxisIndicator } from '../axes/AxisLabels';
 import { BandHighlightShape, findBandHighlight, type BandHighlight } from './BandHighlight';
 import { CarpetBand } from './CarpetBand';
 import { CarpetTooltip } from './CarpetTooltip';
 import { makeCells, makeTimeRangeArea, type Cell } from './makeCells';
 import { makePlotLayout } from './plotLayout';
-import { getCellColor, type CellColoring } from './useCellColoring';
-import type { CellValue } from './categories';
-import type { Series } from './series';
+import { getCellColor, type CellColoring } from '../color/useCellColoring';
+import type { CellValue } from '../color/categories';
+import type { Series } from '../series';
 import { useCellPointer, type CellHover } from './useCellPointer';
-import { useStableItems } from './useStableItems';
+import { useStableItems } from '../hooks/useStableItems';
 import { HourFormat } from '../types';
 
 export interface ExternalHover {

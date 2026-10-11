@@ -15,7 +15,7 @@ import * as d3 from 'd3';
 import { HeatmapColorMode, type HeatmapColorOptions } from '../types';
 import { isNumberField, makeCategoryColors, type CellValue } from './categories';
 import { makeColorPalette, sampleGradientStops } from './useColorScale';
-import { useStableItems } from './useStableItems';
+import { useStableItems } from '../hooks/useStableItems';
 
 export type ContinuousColoring = {
   kind: 'continuous';

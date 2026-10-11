@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Temporal } from 'temporal-polyfill';
-import { formatDay } from '../src/components/dayLabels';
+import { formatDay } from '../src/axes/dayLabels';
 
 describe('formatDay', () => {
   const day = Temporal.PlainDate.from('2026-10-02');

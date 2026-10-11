@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import type { Area } from '../src/components/makeCells';
-import { makePlotLayout, type PlotLayoutInput } from '../src/components/plotLayout';
+import type { Area } from '../src/plot/makeCells';
+import { makePlotLayout, type PlotLayoutInput } from '../src/plot/plotLayout';
 
 /** Two days of four six-hour rows, as makeCells lays them out */
 const twoDaysOfQuarters: Area[] = [0, 1].flatMap((day) =>

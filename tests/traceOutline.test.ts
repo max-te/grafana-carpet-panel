@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { traceOutline, type Segment } from '../src/components/traceOutline';
+import { traceOutline, type Segment } from '../src/plot/traceOutline';
 
 const sortSegments = (segments: Segment[]) => [...segments].sort((a, b) => a.join().localeCompare(b.join()));
 

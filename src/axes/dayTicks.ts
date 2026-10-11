@@ -1,6 +1,6 @@
 import type { TimeRange } from '@grafana/data';
 import { Temporal } from 'temporal-polyfill';
-import { resolveTimeZone } from './timeZone';
+import { resolveTimeZone } from '../time/timeZone';
 
 type TickInterval = { minDaysApart: number; isTick: (day: Temporal.PlainDate) => boolean };
 

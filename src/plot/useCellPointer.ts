@@ -3,9 +3,9 @@ import type Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Cell } from './makeCells';
-import type { CellValue } from './categories';
+import type { CellValue } from '../color/categories';
 import type { PlotLayout } from './plotLayout';
-import { useClientPositionChange } from './useClientPositionChange';
+import { useClientPositionChange } from '../hooks/useClientPositionChange';
 
 type Point = { x: number; y: number };
 type CellSpan = Pick<Cell, 'time' | 'endTime'>;

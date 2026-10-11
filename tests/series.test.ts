@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { FieldType, toDataFrame, type DataFrame } from '@grafana/data';
-import { findSeries } from '../src/components/series';
+import { findSeries } from '../src/series';
 import type { CarpetPanelOptions } from '../src/types';
 
 const options = (overrides: Partial<CarpetPanelOptions> = {}) => overrides as CarpetPanelOptions;

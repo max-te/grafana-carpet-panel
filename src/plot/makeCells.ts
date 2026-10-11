@@ -1,7 +1,7 @@
 import type { TimeRange } from '@grafana/data';
 import { Temporal } from 'temporal-polyfill';
-import { makeTimeScale } from './useTimeScale';
-import { resolveTimeZone } from './timeZone';
+import { makeTimeScale } from '../time/useTimeScale';
+import { resolveTimeZone } from '../time/timeZone';
 
 export type Cell<V = number> = {
   time: number;

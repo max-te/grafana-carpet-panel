@@ -1,6 +1,6 @@
 import { FieldType, getFieldDisplayName, type DataFrame, type Field } from '@grafana/data';
-import type { CarpetPanelOptions } from '../types';
-import { isCategoricalField, type CellValue } from './categories';
+import type { CarpetPanelOptions } from './types';
+import { isCategoricalField, type CellValue } from './color/categories';
 
 /** One carpet band: a value field and the time field of its frame */
 export interface Series {

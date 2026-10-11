@@ -8,7 +8,7 @@ import {
   getThemeById,
 } from '@grafana/data';
 import { Stage } from 'react-konva';
-import { CarpetPlot } from '../src/components/CarpetPlot';
+import { CarpetPlot } from '../src/plot/CarpetPlot';
 type ChartProps = React.ComponentProps<typeof CarpetPlot>;
 import React from 'react';
 import {
@@ -29,10 +29,10 @@ import {
   VizLayout,
   type LegendPlacement,
 } from '@grafana/ui';
-import { ColorLegend } from '../src/components/ColorLegend';
+import { ColorLegend } from '../src/color/ColorLegend';
 import * as testData from './testdata.json';
-import { useKonvaDpr } from '../src/components/useKonvaDpr';
-import { useCellColoring } from '../src/components/useCellColoring';
+import { useKonvaDpr } from '../src/panel/useKonvaDpr';
+import { useCellColoring } from '../src/color/useCellColoring';
 import { HeatmapColorMode, HourFormat, type HeatmapColorOptions } from '../src/types';
 
 const timeRange: TimeRange = {

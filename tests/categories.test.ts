@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createTheme, FieldType, MappingType } from '@grafana/data';
-import { makeCategoryColors } from '../src/components/categories';
+import { makeCategoryColors } from '../src/color/categories';
 
 const theme = createTheme();
 const paletteColor = (index: number) =>

@@ -1,14 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { dateTime, type Field, type TimeRange } from '@grafana/data';
 import * as testData from '../testsupport/testdata.json';
-import {
-  findCellsAt,
-  makeCells,
-  makeSpanArea,
-  makeTimeRangeArea,
-  type Area,
-  type Cell,
-} from '../src/components/makeCells';
+import { findCellsAt, makeCells, makeSpanArea, makeTimeRangeArea, type Area, type Cell } from '../src/plot/makeCells';
 
 const timeRange: TimeRange = {
   from: dateTime(testData.request.range.from),

@@ -16,9 +16,9 @@ import { SortOrder } from '@grafana/schema';
 import * as d3 from 'd3';
 import { Html } from 'react-konva-utils';
 import { findCellsAt, type Cell } from './makeCells';
-import { getCellColor, type CellColoring } from './useCellColoring';
-import type { CellValue } from './categories';
-import type { Series } from './series';
+import { getCellColor, type CellColoring } from '../color/useCellColoring';
+import type { CellValue } from '../color/categories';
+import type { Series } from '../series';
 
 interface TooltipRow {
   band: number;

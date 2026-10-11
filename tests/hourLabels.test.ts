@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatHour, usesTwelveHourClock } from '../src/components/hourLabels';
+import { formatHour, usesTwelveHourClock } from '../src/axes/hourLabels';
 import { HourFormat } from '../src/types';
 
 describe('formatHour', () => {
