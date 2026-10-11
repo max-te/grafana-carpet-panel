@@ -2,8 +2,7 @@ import { DashboardCursorSync, DataHoverEvent, DataHoverClearEvent } from '@grafa
 import { usePanelContext } from '@grafana/ui';
 import type Konva from 'konva';
 import React, { useCallback, useEffect } from 'react';
-import { useClientPositionChange } from '../hooks/useClientPositionChange';
-import type { ExternalHover } from '../plot/CarpetPlot';
+import type { ExternalHover } from '../plot/pointerInteraction';
 
 export const useDashboardHoverEvents = (stageRef: React.RefObject<Konva.Stage | null>) => {
   const { eventBus, sync } = usePanelContext();
@@ -51,10 +50,6 @@ export const useDashboardHoverEvents = (stageRef: React.RefObject<Konva.Stage | 
     };
   }, [eventBus]);
 
-  const hideIncomingTooltip = useCallback(() => {
-    setIncomingHover((hover) => (hover?.tooltipOrigin ? { time: hover.time } : hover));
-  }, []);
-  useClientPositionChange(stageRef, hideIncomingTooltip);
   return {
     setGlobalHover,
     incomingHover: syncMode === DashboardCursorSync.Off ? null : incomingHover,

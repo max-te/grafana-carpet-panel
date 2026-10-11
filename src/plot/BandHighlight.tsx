@@ -3,35 +3,12 @@ import type { GrafanaTheme2 } from '@grafana/data';
 import { useTheme2 } from '@grafana/ui';
 import * as d3 from 'd3';
 import { Shape } from 'react-konva';
-import { findCellsAt, makeSpanArea, type Area, type Cell } from './makeCells';
+import type { Cell } from './makeCells';
+import type { BandHighlight } from './pointerInteraction';
 import { traceOutline } from './traceOutline';
 import type { BandLayout } from './plotLayout';
 import { getCellColor, type CellColoring } from '../color/useCellColoring';
 import type { CellValue } from '../color/categories';
-
-export interface BandHighlight {
-  cells: Array<Cell<CellValue>>;
-  /** The region a selection spans, data gaps included; absent outside a selection */
-  area?: Area[];
-}
-
-/** Highlights a selection in progress, else the hovered time, else the time hovered in another panel. */
-export function findBandHighlight(
-  cells: Array<Cell<CellValue>>,
-  hoveredCell: Cell<CellValue> | undefined,
-  selectionStart: Pick<Cell, 'time'> | null,
-  externalHoverTime: number | undefined
-): BandHighlight {
-  if (hoveredCell && selectionStart) {
-    const start = Math.min(hoveredCell.time, selectionStart.time);
-    const end = Math.max(hoveredCell.time, selectionStart.time);
-    const selected = cells.filter((c) => c.time <= end && c.endTime > start);
-    const [first, last] = [selected[0], selected.at(-1)];
-    return { cells: selected, area: first && last ? makeSpanArea(first, last) : undefined };
-  }
-  const time = hoveredCell?.time ?? externalHoverTime;
-  return { cells: time === undefined ? [] : findCellsAt(cells, time) };
-}
 
 /** Contrasts with the highlighted cells, so the outline stands out against them. */
 function pickOutlineColor(coloring: CellColoring, cells: Array<Cell<CellValue>>, theme: GrafanaTheme2) {

@@ -5,7 +5,7 @@ import { SortOrder } from '@grafana/schema';
 import React, { useMemo } from 'react';
 import { Layer } from 'react-konva';
 import { SeriesLabel, XAxisIndicator, YAxisIndicator } from '../axes/AxisLabels';
-import { BandHighlightShape, findBandHighlight, type BandHighlight } from './BandHighlight';
+import { BandHighlightShape } from './BandHighlight';
 import { CarpetBand } from './CarpetBand';
 import { CarpetTooltip } from './CarpetTooltip';
 import { makeCells, makeTimeRangeArea, type Cell } from './makeCells';
@@ -14,25 +14,16 @@ import { makePlotLayout } from './plotLayout';
 import { getCellColor, type CellColoring } from '../color/useCellColoring';
 import type { CellValue } from '../color/categories';
 import type { Series } from '../series';
-import { useCellPointer, type CellHover } from './useCellPointer';
+import { useCellPointer } from './useCellPointer';
+import {
+  selectBandHighlights,
+  selectHover,
+  selectTooltipTarget,
+  type CellHover,
+  type ExternalHover,
+} from './pointerInteraction';
 import { useStableItems } from '../hooks/useStableItems';
 import { HourFormat } from '../types';
-
-export interface ExternalHover {
-  time: number;
-  /** Client position of the stage; present when a shared tooltip should show */
-  tooltipOrigin?: { x: number; y: number };
-}
-
-/** Shows the shared tooltip at the first band with a cell at the hovered time. */
-function findSharedTooltipTarget(
-  bandHighlights: BandHighlight[],
-  stageOrigin: { x: number; y: number }
-): CellHover | undefined {
-  const band = bandHighlights.findIndex((highlight) => highlight.cells.length > 0);
-  const cell = bandHighlights[band]?.cells[0];
-  return cell && { band, cell, stageOrigin };
-}
 
 interface ChartProps {
   width: number;
@@ -114,12 +105,11 @@ export const CarpetPlot: React.FC<ChartProps> = ({
     () => bandCells.map((cells) => cells.map((cell) => getCellColor(coloring, cell.value))),
     [bandCells, coloring]
   );
-  const { hover, selectionStart, layerRef, layerHandlers } = useCellPointer(
-    bandCells,
-    layout,
-    onHover,
-    onChangeTimeRange
-  );
+  const {
+    state: pointerState,
+    layerRef,
+    layerHandlers,
+  } = useCellPointer(bandCells, layout, externalHover, onHover, onChangeTimeRange);
 
   const axesLayer = (
     <Layer listening={false} x={heatmap.x} y={heatmap.y}>
@@ -167,11 +157,9 @@ export const CarpetPlot: React.FC<ChartProps> = ({
     </Layer>
   );
 
-  const bandHighlights = bandCells.map((cells) =>
-    findBandHighlight(cells, hover?.cell, selectionStart, externalHover?.time)
-  );
-  const tooltipTarget =
-    hover ?? (externalHover?.tooltipOrigin && findSharedTooltipTarget(bandHighlights, externalHover.tooltipOrigin));
+  const hover = selectHover(pointerState, bandCells);
+  const bandHighlights = selectBandHighlights(pointerState, bandCells);
+  const tooltipTarget = selectTooltipTarget(pointerState, bandCells);
   /** Places the tooltip at the bottom-right corner of the cell, in client coordinates. */
   const placeTooltip = ({ band, cell, stageOrigin }: CellHover) => {
     if (!stageOrigin) {

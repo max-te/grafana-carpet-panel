@@ -145,9 +145,9 @@ function transition(state: PointerState, event: PointerEvent, bandCells: BandCel
     case 'externalHover':
       return { ...state, external: event.hover };
     case 'externalClear':
-      return { ...state, external: null };
+      return state.external ? { ...state, external: null } : state;
     case 'data':
-      return selectHover(state, bandCells) ? state : { ...state, pointer: null };
+      return state.pointer && !selectHover(state, bandCells) ? { ...state, pointer: null } : state;
   }
 }
 
