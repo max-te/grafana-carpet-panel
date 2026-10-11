@@ -8,7 +8,6 @@ const HATCH_SPACING = 6;
 
 interface BandProps {
   layout: BandLayout;
-  cellAreas: Area[];
   /** Fill of each cell; undefined leaves it unpainted */
   cellColors: Array<string | undefined>;
   timeRangeArea: Area[];
@@ -19,7 +18,7 @@ interface BandProps {
 
 /** The cells of one series, over hatching that marks where the time range has no data. */
 export const CarpetBand: React.FC<BandProps> = React.memo(
-  ({ layout, cellAreas, cellColors, timeRangeArea, hasGaps, hatchGaps }) => {
+  ({ layout, cellColors, timeRangeArea, hasGaps, hatchGaps }) => {
     const theme = useTheme2();
     const { y, width, height, cells, snap } = layout;
     return (
@@ -47,19 +46,14 @@ export const CarpetBand: React.FC<BandProps> = React.memo(
           stroke={theme.colors.border.medium}
           strokeWidth={1}
         />
-        {/* One path, so anti-aliased edges between neighbouring cells leave no seams for the hatching */}
+        {/* Keeps the hatching out of the gaps between cells */}
         <Shape
           visible={hasGaps}
           listening={false}
           sceneFunc={(context, shape) => {
             context.beginPath();
-            for (const area of cellAreas) {
-              context.rect(
-                area.left * width,
-                area.top * height,
-                (area.right - area.left) * width,
-                (area.bottom - area.top) * height
-              );
+            for (const { hit } of cells) {
+              context.rect(hit.x0, hit.y0, hit.x1 - hit.x0, hit.y1 - hit.y0);
             }
             context.fillShape(shape);
           }}

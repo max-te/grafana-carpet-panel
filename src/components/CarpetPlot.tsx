@@ -8,8 +8,7 @@ import { SeriesLabel, XAxisIndicator, YAxisIndicator } from './AxisLabels';
 import { BandHighlightShape, findBandHighlight, type BandHighlight } from './BandHighlight';
 import { CarpetBand } from './CarpetBand';
 import { CarpetTooltip } from './CarpetTooltip';
-import { getTimeStep, makeCells, makeTimeRangeArea, type Cell } from './makeCells';
-import { countDays } from './useTimeScale';
+import { makeCells, makeTimeRangeArea, type Cell } from './makeCells';
 import { makePlotLayout } from './plotLayout';
 import { getCellColor, type CellColoring } from './useCellColoring';
 import type { CellValue } from './categories';
@@ -93,8 +92,6 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   );
   const timeRangeArea = useMemo(() => makeTimeRangeArea(timeZone, timeRange), [timeZone, timeRange]);
 
-  const numDays = useMemo(() => countDays(timeRange, timeZone), [timeRange, timeZone]);
-  const bandTimeSteps = useMemo(() => timeLists.map((times) => getTimeStep(times)), [timeLists]);
   const fontSize = theme.typography.fontSize;
   const layout = useMemo(
     () =>
@@ -107,10 +104,8 @@ export const CarpetPlot: React.FC<ChartProps> = ({
         showSeriesNames,
         gapWidth,
         bandCells,
-        numDays,
-        bandTimeSteps,
       }),
-    [width, height, fontSize, showXAxis, showYAxis, showSeriesNames, gapWidth, bandCells, numDays, bandTimeSteps]
+    [width, height, fontSize, showXAxis, showYAxis, showSeriesNames, gapWidth, bandCells]
   );
   const { heatmap } = layout;
   const bandColors = useMemo(
@@ -162,7 +157,6 @@ export const CarpetPlot: React.FC<ChartProps> = ({
         <CarpetBand
           key={band}
           layout={bandLayout}
-          cellAreas={bandCells[band] ?? []}
           cellColors={bandColors[band] ?? []}
           timeRangeArea={timeRangeArea}
           hasGaps={gapWidth > 0}

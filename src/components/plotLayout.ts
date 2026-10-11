@@ -1,7 +1,5 @@
-import type { Area } from './makeCells';
+import type { Area, Cell } from './makeCells';
 import type { Box } from './traceOutline';
-
-const SECONDS_PER_DAY = 86400;
 
 type Point = { x: number; y: number };
 
@@ -16,10 +14,7 @@ export interface PlotLayoutInput {
   showSeriesNames: boolean;
   gapWidth: number;
   /** The cells of each band, top to bottom */
-  bandCells: Area[][];
-  numDays: number;
-  /** Time step of each band, in seconds */
-  bandTimeSteps: number[];
+  bandCells: Array<Array<Pick<Cell, keyof Area | 'split'>>>;
 }
 
 export interface CellBoxes {
@@ -28,7 +23,7 @@ export interface CellBoxes {
    * so the pointer never falls between cells, however small the painted box.
    */
   hit: Box;
-  /** Where the cell is filled: the hit area inset by the gap */
+  /** Where the cell is filled: the cell inset by the gap, fitted so that it spans whole pixels */
   paint: Box;
 }
 
@@ -86,8 +81,6 @@ export function makePlotLayout({
   showSeriesNames,
   gapWidth,
   bandCells,
-  numDays,
-  bandTimeSteps,
 }: PlotLayoutInput): PlotLayout {
   const padding = fontSize / 2;
   const topPadding = showYAxis ? padding : 0;
@@ -108,11 +101,8 @@ export function makePlotLayout({
   const labelHeight = isStacked && showSeriesNames ? xAxisHeight : 0;
   const bandSpacing = isStacked ? padding : 0;
   const bandHeight = Math.max(0, Math.floor((heatmap.height - (numBands - 1) * bandSpacing) / numBands - labelHeight));
-  const gapX = fitGap(heatmap.width / numDays, gapWidth);
 
   const bands = bandCells.map((cells, band): BandLayout => {
-    const rowsPerDay = SECONDS_PER_DAY / (bandTimeSteps[band] ?? SECONDS_PER_DAY);
-    const gapY = Number.isInteger(rowsPerDay) ? fitGap(bandHeight / rowsPerDay, gapWidth) : gapWidth;
     const snap = (area: Area): Box => ({
       x0: Math.floor(area.left * heatmap.width),
       y0: Math.floor(area.top * bandHeight),
@@ -127,16 +117,18 @@ export function makePlotLayout({
       labelY: labelHeight > 0 ? y - labelHeight / 2 : undefined,
       cells: cells.map((cell) => {
         const hit = snap(cell);
-        const paint =
-          gapWidth > 0
-            ? {
-                x0: cell.left * heatmap.width + gapX / 2,
-                y0: cell.top * bandHeight + gapY / 2,
-                x1: cell.right * heatmap.width - gapX / 2,
-                y1: cell.bottom * bandHeight - gapY / 2,
-              }
-            : hit;
-        return { hit, paint };
+        if (gapWidth <= 0) {
+          return { hit, paint: hit };
+        }
+        // A cell spans one day column and one time step, so its own size is the pitch of its day
+        const x0 = cell.left * heatmap.width;
+        const x1 = cell.right * heatmap.width;
+        const y0 = cell.top * bandHeight;
+        const y1 = cell.bottom * bandHeight;
+        const gapX = fitGap(x1 - x0, gapWidth);
+        // A segment of a split cell is shorter than the pitch
+        const gapY = cell.split ? gapWidth : fitGap(y1 - y0, gapWidth);
+        return { hit, paint: { x0: x0 + gapX / 2, y0: y0 + gapY / 2, x1: x1 - gapX / 2, y1: y1 - gapY / 2 } };
       }),
       snap,
     };

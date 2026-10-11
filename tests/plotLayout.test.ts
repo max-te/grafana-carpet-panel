@@ -18,8 +18,6 @@ function layout(input: Partial<PlotLayoutInput> = {}) {
     showSeriesNames: true,
     gapWidth: 0,
     bandCells: [twoDaysOfQuarters],
-    numDays: 2,
-    bandTimeSteps: [21600],
     ...input,
   });
 }
@@ -40,7 +38,7 @@ describe('makePlotLayout', () => {
   });
 
   it('should stack bands with a label strip above each', () => {
-    const { bands } = layout({ bandCells: [twoDaysOfQuarters, twoDaysOfQuarters], bandTimeSteps: [21600, 21600] });
+    const { bands } = layout({ bandCells: [twoDaysOfQuarters, twoDaysOfQuarters] });
     // (100 - 5 spacing) / 2 - 15 label = 32.5, floored
     expect(bands.map(({ y, height, labelY }) => ({ y, height, labelY }))).toEqual([
       { y: 15, height: 32, labelY: 7.5 },
@@ -51,7 +49,6 @@ describe('makePlotLayout', () => {
   it('should stack bands without label strips when series names are hidden', () => {
     const { bands } = layout({
       bandCells: [twoDaysOfQuarters, twoDaysOfQuarters],
-      bandTimeSteps: [21600, 21600],
       showSeriesNames: false,
     });
     expect(bands.map(({ y, height, labelY }) => ({ y, height, labelY }))).toEqual([
@@ -70,6 +67,29 @@ describe('makePlotLayout', () => {
     const cell = layout({ gapWidth: 4 }).bands[0]?.cells[0];
     expect(cell?.hit).toEqual({ x0: 0, y0: 0, x1: 50, y1: 25 });
     expect(cell?.paint).toEqual({ x0: 2, y0: 2, x1: 48, y1: 23 });
+  });
+
+  it('should fit the gap so that painted cells span whole pixels, on short days too', () => {
+    // A 23 h day: its column is 23/24 as wide, and it has 23 hourly rows
+    const shortDay = Array.from({ length: 23 }, (_, row) => ({
+      left: 0.5,
+      top: row / 23,
+      right: 0.5 + 23 / 48,
+      bottom: (row + 1) / 23,
+    }));
+    const cells =
+      layout({ gapWidth: 1, bandCells: [[...twoDaysOfQuarters.slice(0, 4), ...shortDay]] }).bands[0]?.cells ?? [];
+    for (const { paint } of cells) {
+      const [paintWidth, paintHeight] = [paint.x1 - paint.x0, paint.y1 - paint.y0];
+      expect(paintWidth).toBeCloseTo(Math.round(paintWidth));
+      expect(paintHeight).toBeCloseTo(Math.round(paintHeight));
+    }
+  });
+
+  it('should keep the plain gap on the segments of a split cell', () => {
+    const segment = { left: 0, top: 0.9, right: 0.5, bottom: 1, split: 1 };
+    const cell = layout({ gapWidth: 4, bandCells: [[segment]] }).bands[0]?.cells[0];
+    expect(cell?.paint).toEqual({ x0: 2, y0: 92, x1: 48, y1: 98 });
   });
 
   it('should snap areas so that neighbours tile without seams', () => {
@@ -106,13 +126,13 @@ describe('makePlotLayout', () => {
     });
 
     it('should find the band under the point', () => {
-      const { pick } = layout({ bandCells: [twoDaysOfQuarters, twoDaysOfQuarters], bandTimeSteps: [21600, 21600] });
+      const { pick } = layout({ bandCells: [twoDaysOfQuarters, twoDaysOfQuarters] });
       // The second band starts at 67 and is 32 pixels tall, so 8 pixels per row
       expect(pick({ x: 10, y: 67 + 9 })).toEqual({ band: 1, index: 1 });
     });
 
     it('should find nothing between bands or outside every cell', () => {
-      const { pick } = layout({ bandCells: [twoDaysOfQuarters, twoDaysOfQuarters], bandTimeSteps: [21600, 21600] });
+      const { pick } = layout({ bandCells: [twoDaysOfQuarters, twoDaysOfQuarters] });
       expect(pick({ x: 10, y: 5 })).toBeUndefined();
       expect(pick({ x: 10, y: 50 })).toBeUndefined();
       expect(layout({ bandCells: [[]] }).pick({ x: 10, y: 10 })).toBeUndefined();
@@ -120,7 +140,7 @@ describe('makePlotLayout', () => {
   });
 
   it("should anchor an area at its hit box's bottom-right corner on the stage", () => {
-    const { anchorOf } = layout({ bandCells: [twoDaysOfQuarters, twoDaysOfQuarters], bandTimeSteps: [21600, 21600] });
+    const { anchorOf } = layout({ bandCells: [twoDaysOfQuarters, twoDaysOfQuarters] });
     expect(anchorOf(1, { left: 0, top: 0, right: 0.5, bottom: 0.25 })).toEqual({ x: 5 + 50, y: 67 + 8 });
     expect(anchorOf(2, { left: 0, top: 0, right: 0.5, bottom: 0.25 })).toBeUndefined();
   });
