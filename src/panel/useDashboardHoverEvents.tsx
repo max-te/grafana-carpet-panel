@@ -30,9 +30,10 @@ export const useDashboardHoverEvents = (stageRef: React.RefObject<Konva.Stage | 
       setIncomingHover(
         time !== null && time !== undefined
           ? {
-            time,
-            tooltipOrigin: syncMode === DashboardCursorSync.Tooltip ? getVisibleClientOrigin(stageRef.current) : undefined,
-          }
+              time,
+              tooltipOrigin:
+                syncMode === DashboardCursorSync.Tooltip ? getVisibleClientOrigin(stageRef.current) : undefined,
+            }
           : null
       );
     });

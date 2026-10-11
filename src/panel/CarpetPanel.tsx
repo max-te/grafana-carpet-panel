@@ -75,5 +75,3 @@ export const CarpetPanel: React.FC<Props> = ({
     />
   );
 };
-
-

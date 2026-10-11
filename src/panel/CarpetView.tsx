@@ -17,7 +17,13 @@ type ViewProps = Pick<Props, 'options' | 'width' | 'height' | 'timeRange' | 'tim
   series: Series[];
 };
 export const CarpetView: React.FC<ViewProps> = ({
-  options, series, width, height, timeRange, timeZone, onChangeTimeRange,
+  options,
+  series,
+  width,
+  height,
+  timeRange,
+  timeZone,
+  onChangeTimeRange,
 }) => {
   const dpr = useKonvaDpr();
   const coloring = useCellColoring(
@@ -34,7 +40,7 @@ export const CarpetView: React.FC<ViewProps> = ({
   height = Math.trunc(height);
 
   const onHover = React.useCallback(
-    (cell: { time: number; value: CellValue; } | null) => {
+    (cell: { time: number; value: CellValue } | null) => {
       setGlobalHover(cell ? cell.time : null);
       setHoveredValue(cell?.value);
     },
@@ -50,14 +56,16 @@ export const CarpetView: React.FC<ViewProps> = ({
           timeZone={timeZone}
           placement={options.legend.placement ?? 'bottom'}
           height={height}
-          markedValue={typeof hoveredValue === 'number' ? hoveredValue : undefined} />
+          markedValue={typeof hoveredValue === 'number' ? hoveredValue : undefined}
+        />
       ) : (
         <CategoryLegend
           colors={coloring.colors}
           valueField={valueField}
           timeZone={timeZone}
           placement={options.legend.placement ?? 'bottom'}
-          markedValue={hoveredValue} />
+          markedValue={hoveredValue}
+        />
       )}
     </VizLayout.Legend>
   ) : null;
@@ -85,7 +93,8 @@ export const CarpetView: React.FC<ViewProps> = ({
             tooltipMaxHeight={options.tooltip.maxHeight}
             onHover={onHover}
             onChangeTimeRange={onChangeTimeRange}
-            externalHover={incomingHover ?? undefined} />
+            externalHover={incomingHover ?? undefined}
+          />
         </Stage>
       )}
     </VizLayout>
