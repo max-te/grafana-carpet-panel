@@ -52,6 +52,17 @@ export function useCellPointer(
     dispatch(externalHover ? { kind: 'externalHover', hover: externalHover } : { kind: 'externalClear' });
   }, [dispatch, externalHover]);
 
+  useEffect(() => {
+    // The window hears a mouseup after the layer does, so a release over a cell reports its range first
+    const release = () => {
+      dispatch({ kind: 'release' });
+    };
+    window.addEventListener('mouseup', release);
+    return () => {
+      window.removeEventListener('mouseup', release);
+    };
+  }, [dispatch]);
+
   const layerRef = useRef<Konva.Layer>(null);
   const reposition = useCallback(() => {
     dispatch({ kind: 'reposition' });

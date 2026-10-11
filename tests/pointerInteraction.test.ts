@@ -142,9 +142,36 @@ describe('step', () => {
       expect(state.selectionStart).toBeNull();
     });
 
-    it('should keep the start when released outside every cell', () => {
+    it('should leave an up over no cell to the release that follows', () => {
       const { state } = run([{ kind: 'down', at: { band: 0, index: 1 } }, { kind: 'up' }]);
       expect(state.selectionStart).toEqual({ time: 1 * HOUR, endTime: 2 * HOUR });
+      expect(run([{ kind: 'release' }], twoBands, state).state.selectionStart).toBeNull();
+    });
+
+    it('should not resume a selection released outside the plot', () => {
+      // Release outside, press again outside, drag back in and release over another cell
+      const { effects } = run([
+        { kind: 'down', at: { band: 0, index: 1 } },
+        { kind: 'leave' },
+        { kind: 'release' },
+        move(0, 3, true),
+        { kind: 'up', at: { band: 0, index: 3 } },
+        { kind: 'release' },
+      ]);
+      expect(effects.flat().filter((effect) => effect.kind === 'timeRange')).toEqual([]);
+    });
+
+    it('should continue a selection dragged out of the plot and back without releasing', () => {
+      const { effects } = run([
+        { kind: 'down', at: { band: 0, index: 1 } },
+        { kind: 'leave' },
+        move(0, 3, true),
+        { kind: 'up', at: { band: 0, index: 3 } },
+        { kind: 'release' },
+      ]);
+      expect(effects.flat().filter((effect) => effect.kind === 'timeRange')).toEqual([
+        { kind: 'timeRange', from: 1 * HOUR, to: 4 * HOUR },
+      ]);
     });
   });
 

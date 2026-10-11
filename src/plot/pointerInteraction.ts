@@ -51,6 +51,8 @@ export type PointerEvent =
   | { kind: 'down'; at?: At }
   | { kind: 'up'; at?: At }
   | { kind: 'leave' }
+  /** The mouse button was released anywhere in the window, after any `up` over the plot */
+  | { kind: 'release' }
   /** An ancestor scrolled or the window resized, so client positions are stale */
   | { kind: 'reposition' }
   | { kind: 'externalHover'; hover: ExternalHover }
@@ -134,6 +136,8 @@ function transition(state: PointerState, event: PointerEvent, bandCells: BandCel
       return cellAt(bandCells, event.at) ? { ...state, selectionStart: null } : state;
     case 'leave':
       return { ...state, pointer: null };
+    case 'release':
+      return state.selectionStart ? { ...state, selectionStart: null } : state;
     case 'reposition': {
       const { pointer, external } = state;
       return {
