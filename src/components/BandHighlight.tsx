@@ -5,7 +5,7 @@ import * as d3 from 'd3';
 import { Shape } from 'react-konva';
 import { findCellsAt, makeSpanArea, type Area, type Cell } from './makeCells';
 import { traceOutline } from './traceOutline';
-import { snapArea } from './pixelBoxes';
+import type { BandLayout } from './plotLayout';
 import { getCellColor, type CellColoring } from './useCellColoring';
 import type { CellValue } from './categories';
 
@@ -45,20 +45,18 @@ function pickOutlineColor(coloring: CellColoring, cells: Array<Cell<CellValue>>,
 }
 
 interface HighlightProps extends BandHighlight {
-  y: number;
-  width: number;
-  height: number;
+  layout: BandLayout;
   coloring: CellColoring;
 }
 
 /** A translucent fill with a dashed outline over the highlighted cells of one band. */
-export const BandHighlightShape: React.FC<HighlightProps> = ({ y, width, height, cells, area, coloring }) => {
+export const BandHighlightShape: React.FC<HighlightProps> = ({ layout, cells, area, coloring }) => {
   const theme = useTheme2();
-  const boxes = (area ?? cells).map((a) => snapArea(a, width, height));
+  const boxes = (area ?? cells).map(layout.snap);
   const outline = traceOutline(boxes);
   return (
     <Shape
-      y={y}
+      y={layout.y}
       sceneFunc={(context, shape) => {
         // One fill for all boxes, so the translucency does not stack where they touch
         context.beginPath();

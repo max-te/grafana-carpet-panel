@@ -1,55 +1,27 @@
 import React from 'react';
 import { useTheme2 } from '@grafana/ui';
 import { Group, Shape } from 'react-konva';
-import type { KonvaEventObject } from 'konva/lib/Node';
-import type { Area, Cell } from './makeCells';
-import type { Box } from './traceOutline';
-import type { CellValue } from './categories';
+import type { Area } from './makeCells';
+import type { BandLayout } from './plotLayout';
 
 const HATCH_SPACING = 6;
 
-type CellsMouseHandler = (band: number, event: KonvaEventObject<MouseEvent>) => void;
-
 interface BandProps {
-  band: number;
-  y: number;
-  width: number;
-  height: number;
-  cells: Array<Cell<CellValue>>;
-  /** Pixel box of each cell */
-  cellBoxes: Box[];
+  layout: BandLayout;
+  cellAreas: Area[];
   /** Fill of each cell; undefined leaves it unpainted */
   cellColors: Array<string | undefined>;
   timeRangeArea: Area[];
-  gapWidth: number;
-  gapX: number;
-  gapY: number;
+  /** Whether the painted cells leave gaps between them */
+  hasGaps: boolean;
   hatchGaps?: boolean;
-  onCellsMouseMove: CellsMouseHandler;
-  onCellsMouseDown: CellsMouseHandler;
-  onCellsMouseUp: CellsMouseHandler;
 }
 
 /** The cells of one series, over hatching that marks where the time range has no data. */
 export const CarpetBand: React.FC<BandProps> = React.memo(
-  ({
-    band,
-    y,
-    width,
-    height,
-    cells,
-    cellBoxes,
-    cellColors,
-    timeRangeArea,
-    gapWidth,
-    gapX,
-    gapY,
-    hatchGaps,
-    onCellsMouseMove,
-    onCellsMouseDown,
-    onCellsMouseUp,
-  }) => {
+  ({ layout, cellAreas, cellColors, timeRangeArea, hasGaps, hatchGaps }) => {
     const theme = useTheme2();
+    const { y, width, height, cells, snap } = layout;
     return (
       <Group y={y}>
         {/* Hatches the whole time range; cells paint over it, leaving data gaps hatched */}
@@ -59,10 +31,9 @@ export const CarpetBand: React.FC<BandProps> = React.memo(
           sceneFunc={(context, shape) => {
             context.save();
             context.beginPath();
-            for (const box of timeRangeArea) {
-              const x0 = Math.floor(box.left * width);
-              const y0 = Math.floor(box.top * height);
-              context.rect(x0, y0, Math.floor(box.right * width) - x0, Math.floor(box.bottom * height) - y0);
+            for (const area of timeRangeArea) {
+              const { x0, y0, x1, y1 } = snap(area);
+              context.rect(x0, y0, x1 - x0, y1 - y0);
             }
             context.clip();
             context.beginPath();
@@ -78,44 +49,33 @@ export const CarpetBand: React.FC<BandProps> = React.memo(
         />
         {/* One path, so anti-aliased edges between neighbouring cells leave no seams for the hatching */}
         <Shape
-          visible={gapWidth > 0}
+          visible={hasGaps}
           listening={false}
           sceneFunc={(context, shape) => {
             context.beginPath();
-            for (const cell of cells) {
+            for (const area of cellAreas) {
               context.rect(
-                cell.left * width,
-                cell.top * height,
-                (cell.right - cell.left) * width,
-                (cell.bottom - cell.top) * height
+                area.left * width,
+                area.top * height,
+                (area.right - area.left) * width,
+                (area.bottom - area.top) * height
               );
             }
             context.fillShape(shape);
           }}
           fill={theme.colors.background.primary}
         />
-        {/* All cells in one shape; the pointer position tells which cell an event is about */}
+        {/* All cells in one shape; the heatmap layer picks the cell an event is about */}
         <Shape
           sceneFunc={(context) => {
-            cells.forEach((cell, i) => {
+            cells.forEach(({ paint }, i) => {
               const color = cellColors[i];
               // The color scale maps NaN to undefined; such cells stay unpainted
               if (!color) {
                 return;
               }
               context.fillStyle = color;
-              if (gapWidth > 0) {
-                context.fillRect(
-                  cell.left * width + gapX / 2,
-                  cell.top * height + gapY / 2,
-                  (cell.right - cell.left) * width - gapX,
-                  (cell.bottom - cell.top) * height - gapY
-                );
-              } else {
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- one box per cell
-                const { x0, y0, x1, y1 } = cellBoxes[i]!;
-                context.fillRect(x0, y0, x1 - x0, y1 - y0);
-              }
+              context.fillRect(paint.x0, paint.y0, paint.x1 - paint.x0, paint.y1 - paint.y0);
             });
           }}
           // Spans gaps between cells too, so the cursor never falls between them
@@ -123,15 +83,6 @@ export const CarpetBand: React.FC<BandProps> = React.memo(
             context.beginPath();
             context.rect(0, 0, width, height);
             context.fillShape(shape);
-          }}
-          onMouseMove={(event) => {
-            onCellsMouseMove(band, event);
-          }}
-          onMouseDown={(event) => {
-            onCellsMouseDown(band, event);
-          }}
-          onMouseUp={(event) => {
-            onCellsMouseUp(band, event);
           }}
         />
       </Group>

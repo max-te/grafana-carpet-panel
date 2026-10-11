@@ -4,8 +4,7 @@ import type { KonvaEventObject } from 'konva/lib/Node';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Cell } from './makeCells';
 import type { CellValue } from './categories';
-import type { Box } from './traceOutline';
-import { findBoxAt } from './pixelBoxes';
+import type { PlotLayout } from './plotLayout';
 import { useClientPositionChange } from './useClientPositionChange';
 
 type Point = { x: number; y: number };
@@ -34,13 +33,12 @@ function getStageOrigin(node: Konva.Node): Point | undefined {
 /** Tracks the cell under the pointer, and turns a drag from one cell to another into a time range. */
 export function useCellPointer(
   bandCells: Array<Array<Cell<CellValue>>>,
-  bandBoxes: Box[][],
+  layout: PlotLayout,
   onHover?: (cell: Cell<CellValue> | null) => void,
   onChangeTimeRange?: (timeRange: AbsoluteTimeRange) => void
 ) {
   const [pointer, setPointer] = useState<PointerPosition | null>(null);
   const [selectionStart, setSelectionStart] = useState<CellSpan | null>(null);
-  // Keeps the cell handlers stable, so starting a selection does not redraw the cells
   const selectionStartRef = useRef<CellSpan | null>(null);
   const updateSelectionStart = useCallback((start: CellSpan | null) => {
     selectionStartRef.current = start;
@@ -48,7 +46,7 @@ export function useCellPointer(
   }, []);
 
   const layerRef = useRef<Konva.Layer>(null);
-  const handleLayerMouseLeave = useCallback(() => {
+  const onMouseLeave = useCallback(() => {
     setPointer(null);
   }, []);
   const hideTooltip = useCallback(() => {
@@ -56,29 +54,29 @@ export function useCellPointer(
   }, []);
   useClientPositionChange(layerRef, hideTooltip);
 
-  /** The cell under the pointer, from the band's pixel boxes in the coordinates of `node`. */
+  /** The cell under the pointer, given the heatmap layer. */
   const pickCell = useCallback(
-    (band: number, node: Konva.Node) => {
-      const position = node.getRelativePointerPosition();
-      const idx = position ? findBoxAt(bandBoxes[band] ?? [], position.x, position.y) : -1;
-      const cell = bandCells[band]?.[idx];
-      return cell && { idx, cell };
+    (layer: Konva.Node) => {
+      const position = layer.getRelativePointerPosition();
+      const picked = position && layout.pick(position);
+      const cell = picked && bandCells[picked.band]?.[picked.index];
+      return cell && { band: picked.band, idx: picked.index, cell };
     },
-    [bandCells, bandBoxes]
+    [bandCells, layout]
   );
 
-  const onCellsMouseMove = useCallback(
-    (band: number, { evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
+  const onMouseMove = useCallback(
+    ({ evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
       if (evt.buttons !== 1 && selectionStartRef.current) {
         updateSelectionStart(null);
       }
-      const picked = pickCell(band, currentTarget);
+      const picked = pickCell(currentTarget);
       if (!picked) {
         setPointer(null);
         return;
       }
       evt.stopPropagation();
-      const { idx, cell } = picked;
+      const { band, idx, cell } = picked;
       // Keeps the state while the pointer stays within the cell, unless scrolling or resizing hid the tooltip
       setPointer((p) =>
         p?.band === band && p.idx === idx && p.time === cell.time && p.stageOrigin
@@ -88,9 +86,9 @@ export function useCellPointer(
     },
     [pickCell, updateSelectionStart]
   );
-  const onCellsMouseDown = useCallback(
-    (band: number, { evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
-      const start = pickCell(band, currentTarget)?.cell;
+  const onMouseDown = useCallback(
+    ({ evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
+      const start = pickCell(currentTarget)?.cell;
       if (!start) {
         return;
       }
@@ -99,9 +97,9 @@ export function useCellPointer(
     },
     [pickCell, updateSelectionStart]
   );
-  const onCellsMouseUp = useCallback(
-    (band: number, { evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
-      const end = pickCell(band, currentTarget)?.cell;
+  const onMouseUp = useCallback(
+    ({ evt, currentTarget }: KonvaEventObject<MouseEvent>) => {
+      const end = pickCell(currentTarget)?.cell;
       if (!end) {
         return;
       }
@@ -137,7 +135,6 @@ export function useCellPointer(
     hover,
     selectionStart,
     layerRef,
-    handleLayerMouseLeave,
-    cellHandlers: { onCellsMouseMove, onCellsMouseDown, onCellsMouseUp },
+    layerHandlers: { onMouseMove, onMouseDown, onMouseUp, onMouseLeave },
   };
 }

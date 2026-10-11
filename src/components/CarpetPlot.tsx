@@ -10,20 +10,13 @@ import { CarpetBand } from './CarpetBand';
 import { CarpetTooltip } from './CarpetTooltip';
 import { getTimeStep, makeCells, makeTimeRangeArea, type Cell } from './makeCells';
 import { countDays } from './useTimeScale';
-import { snapArea } from './pixelBoxes';
+import { makePlotLayout } from './plotLayout';
 import { getCellColor, type CellColoring } from './useCellColoring';
 import type { CellValue } from './categories';
 import type { Series } from './series';
 import { useCellPointer, type CellHover } from './useCellPointer';
 import { useStableItems } from './useStableItems';
 import { HourFormat } from '../types';
-
-const SECONDS_PER_DAY = 86400;
-
-/** Widens or narrows `gap` so that the cells between gaps span whole pixels. */
-function fitGap(pitch: number, gap: number): number {
-  return Math.max(0, pitch - Math.max(1, Math.round(pitch - gap)));
-}
 
 export interface ExternalHover {
   time: number;
@@ -77,8 +70,8 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   timeZone,
   gapWidth,
   hatchGaps,
-  showXAxis,
-  showYAxis,
+  showXAxis = false,
+  showYAxis = false,
   hourFormat = HourFormat.Auto,
   showSeriesNames = true,
   tooltipMode = TooltipDisplayMode.Single,
@@ -90,27 +83,6 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   externalHover,
 }) => {
   const theme = useTheme2();
-  const padding = theme.typography.fontSize / 2;
-  const topPadding = showYAxis ? padding : 0;
-
-  const yAxisWidth = theme.typography.fontSize * 3;
-  const leftPadding = showYAxis ? yAxisWidth : padding;
-  const xAxisHeight = theme.typography.fontSize * 1.5;
-  const bottomPadding = showXAxis ? xAxisHeight : showYAxis ? padding : 0;
-
-  const innerWidth = width - leftPadding;
-  const innerHeight = height - bottomPadding - topPadding;
-
-  // A lone series needs no label, and keeps the whole plot to itself
-  const isStacked = series.length > 1;
-  const isLabelled = isStacked && showSeriesNames;
-  const labelHeight = isLabelled ? xAxisHeight : 0;
-  const bandSpacing = isStacked ? padding : 0;
-  const bandHeight = Math.max(
-    0,
-    Math.floor((innerHeight - (series.length - 1) * bandSpacing) / series.length - labelHeight)
-  );
-  const bandTop = (band: number) => band * (labelHeight + bandHeight + bandSpacing) + labelHeight;
 
   // The series are rebuilt on every render, so the memos track their values
   const timeLists = useStableItems(series.map((s) => s.timeField.values));
@@ -122,80 +94,79 @@ export const CarpetPlot: React.FC<ChartProps> = ({
   const timeRangeArea = useMemo(() => makeTimeRangeArea(timeZone, timeRange), [timeZone, timeRange]);
 
   const numDays = useMemo(() => countDays(timeRange, timeZone), [timeRange, timeZone]);
-  const bandRowsPerDay = useMemo(() => timeLists.map((times) => SECONDS_PER_DAY / getTimeStep(times)), [timeLists]);
-  const gapX = fitGap(innerWidth / numDays, gapWidth);
-  const bandGapY = bandRowsPerDay.map((rowsPerDay) =>
-    Number.isInteger(rowsPerDay) ? fitGap(bandHeight / rowsPerDay, gapWidth) : gapWidth
+  const bandTimeSteps = useMemo(() => timeLists.map((times) => getTimeStep(times)), [timeLists]);
+  const fontSize = theme.typography.fontSize;
+  const layout = useMemo(
+    () =>
+      makePlotLayout({
+        width,
+        height,
+        fontSize,
+        showXAxis,
+        showYAxis,
+        showSeriesNames,
+        gapWidth,
+        bandCells,
+        numDays,
+        bandTimeSteps,
+      }),
+    [width, height, fontSize, showXAxis, showYAxis, showSeriesNames, gapWidth, bandCells, numDays, bandTimeSteps]
   );
-  const bandBoxes = useMemo(
-    () => bandCells.map((cells) => cells.map((cell) => snapArea(cell, innerWidth, bandHeight))),
-    [bandCells, innerWidth, bandHeight]
-  );
+  const { heatmap } = layout;
   const bandColors = useMemo(
     () => bandCells.map((cells) => cells.map((cell) => getCellColor(coloring, cell.value))),
     [bandCells, coloring]
   );
-  const { hover, selectionStart, layerRef, handleLayerMouseLeave, cellHandlers } = useCellPointer(
+  const { hover, selectionStart, layerRef, layerHandlers } = useCellPointer(
     bandCells,
-    bandBoxes,
+    layout,
     onHover,
     onChangeTimeRange
   );
 
   const axesLayer = (
-    <Layer listening={false}>
+    <Layer listening={false} x={heatmap.x} y={heatmap.y}>
       {showXAxis && (
         <XAxisIndicator
-          x={leftPadding}
-          y={innerHeight + topPadding}
-          height={xAxisHeight}
-          width={innerWidth}
+          x={0}
+          y={heatmap.height}
+          height={layout.xAxisHeight}
+          width={heatmap.width}
           range={timeRange}
           timeZone={timeZone}
         />
       )}
       {showYAxis &&
-        series.map((_, band) => (
+        layout.bands.map((bandLayout, band) => (
           <YAxisIndicator
             key={band}
-            x={leftPadding}
-            y={topPadding + bandTop(band)}
-            height={bandHeight}
-            width={yAxisWidth}
+            x={0}
+            y={bandLayout.y}
+            height={bandLayout.height}
+            width={layout.yAxisWidth}
             hourFormat={hourFormat}
-            showEndLabel={band === series.length - 1}
+            showEndLabel={band === layout.bands.length - 1}
           />
         ))}
-      {isLabelled &&
-        series.map(({ name }, band) => (
-          <SeriesLabel
-            key={band}
-            x={leftPadding}
-            y={topPadding + bandTop(band) - labelHeight / 2}
-            width={innerWidth}
-            name={name}
-          />
-        ))}
+      {layout.bands.map(
+        ({ labelY, width }, band) =>
+          labelY !== undefined && (
+            <SeriesLabel key={band} x={0} y={labelY} width={width} name={series[band]?.name ?? ''} />
+          )
+      )}
     </Layer>
   );
   const heatmapLayer = (
-    <Layer ref={layerRef} onMouseLeave={handleLayerMouseLeave} x={leftPadding} y={topPadding}>
-      {bandCells.map((cells, band) => (
+    <Layer ref={layerRef} {...layerHandlers} x={heatmap.x} y={heatmap.y}>
+      {layout.bands.map((bandLayout, band) => (
         <CarpetBand
           key={band}
-          band={band}
-          y={bandTop(band)}
-          width={innerWidth}
-          height={bandHeight}
-          cells={cells}
-          cellBoxes={bandBoxes[band] ?? []}
+          layout={bandLayout}
+          cellAreas={bandCells[band] ?? []}
           cellColors={bandColors[band] ?? []}
           timeRangeArea={timeRangeArea}
-          gapWidth={gapWidth}
-          gapX={gapX}
-          gapY={bandGapY[band] ?? gapWidth}
+          hasGaps={gapWidth > 0}
           hatchGaps={hatchGaps}
-          {...cellHandlers}
         />
       ))}
     </Layer>
@@ -211,22 +182,16 @@ export const CarpetPlot: React.FC<ChartProps> = ({
     if (!stageOrigin) {
       return undefined;
     }
-    const { x1, y1 } = snapArea(cell, innerWidth, bandHeight);
-    return { x: stageOrigin.x + leftPadding + x1, y: stageOrigin.y + topPadding + bandTop(band) + y1 };
+    const anchor = layout.anchorOf(band, cell);
+    return anchor && { x: stageOrigin.x + anchor.x, y: stageOrigin.y + anchor.y };
   };
 
   const hoverLayer = (
-    <Layer listening={false} x={leftPadding} y={topPadding}>
-      {bandHighlights.map((highlight, band) => (
-        <BandHighlightShape
-          key={band}
-          y={bandTop(band)}
-          width={innerWidth}
-          height={bandHeight}
-          coloring={coloring}
-          {...highlight}
-        />
-      ))}
+    <Layer listening={false} x={heatmap.x} y={heatmap.y}>
+      {layout.bands.map((bandLayout, band) => {
+        const highlight = bandHighlights[band];
+        return highlight && <BandHighlightShape key={band} layout={bandLayout} coloring={coloring} {...highlight} />;
+      })}
       <CarpetTooltip
         series={series}
         bandCells={bandCells}
