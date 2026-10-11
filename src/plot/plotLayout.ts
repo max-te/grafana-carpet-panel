@@ -17,7 +17,7 @@ export interface PlotLayoutInput {
   bandCells: Array<Array<Pick<Cell, keyof Area | 'split'>>>;
 }
 
-export interface CellBoxes {
+interface CellBoxes {
   /**
    * Where the pointer resolves to this cell. It spans the gaps around the cell,
    * so the pointer never falls between cells, however small the painted box.
