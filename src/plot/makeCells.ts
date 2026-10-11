@@ -1,7 +1,4 @@
-import type { TimeRange } from '@grafana/data';
-import { Temporal } from 'temporal-polyfill';
-import { makeTimeScale } from '../time/useTimeScale';
-import { resolveTimeZone } from '../time/timeZone';
+import type { Calendar } from '../time/calendar';
 
 export type Cell<V = number> = {
   /** Start of the sample, in epoch milliseconds */
@@ -20,37 +17,22 @@ export type Area = Pick<Cell, 'left' | 'top' | 'right' | 'bottom'>;
 
 const FALLBACK_TIME_STEP = 3_600_000;
 
-/** Maps epoch milliseconds to their position within the day, scaled to `height`. */
-function makeTimeOfDayScale(tz: string, height: number) {
-  return (epochMs: number) => {
-    const zdt = Temporal.Instant.fromEpochMilliseconds(epochMs).toZonedDateTimeISO(tz);
-    const startOfDay = zdt.startOfDay();
-    const secondsInDay = zdt.since(startOfDay, { largestUnit: 'seconds' }).total({ unit: 'seconds' });
-    const totalDaySeconds = startOfDay
-      .add({ days: 1 })
-      .since(startOfDay, { largestUnit: 'seconds' })
-      .total({ unit: 'seconds' });
-    return (height * secondsInDay) / totalDaySeconds;
-  };
+/** Horizontal extent of a day's column, as wide as the day is long. */
+export function getDayColumn({ days }: Calendar, index: number): Pick<Area, 'left' | 'right'> {
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- a calendar has at least one day, and callers pass a day's index
+  const [first, last, day] = [days[0]!, days.at(-1)!, days[index]!];
+  const scale = (epochMs: number) => (epochMs - first.start) / (last.end - 1 - first.start);
+  return { left: scale(day.start), right: scale(day.end) };
 }
 
 /** The region of the plot covered by the time range, as up to three boxes. */
-export function makeTimeRangeArea(timeZone: string, timeRange: TimeRange): Area[] {
-  const tz = resolveTimeZone(timeZone);
-  const xTime = makeTimeScale(timeRange, 1, tz);
-  const yAxis = makeTimeOfDayScale(tz, 1);
-  const from = Temporal.Instant.fromEpochMilliseconds(timeRange.from.valueOf()).toZonedDateTimeISO(tz);
-  const to = Temporal.Instant.fromEpochMilliseconds(timeRange.to.valueOf()).toZonedDateTimeISO(tz);
-  const first = {
-    left: xTime(from.startOfDay().epochMilliseconds),
-    top: yAxis(from.epochMilliseconds),
-    right: xTime(from.startOfDay().add({ days: 1 }).epochMilliseconds),
-  };
-  const last = {
-    left: xTime(to.startOfDay().epochMilliseconds),
-    right: xTime(to.startOfDay().add({ days: 1 }).epochMilliseconds),
-    bottom: yAxis(to.epochMilliseconds),
-  };
+export function makeTimeRangeArea(calendar: Calendar): Area[] {
+  const { from, to, dayAt, timeOfDay } = calendar;
+  // The range starts and ends within its own days
+  /* eslint-disable @typescript-eslint/no-non-null-assertion */
+  const first = { ...getDayColumn(calendar, dayAt(from)!), top: timeOfDay(from)! };
+  const last = { ...getDayColumn(calendar, dayAt(to)!), bottom: timeOfDay(to)! };
+  /* eslint-enable @typescript-eslint/no-non-null-assertion */
   return makeSpanArea(first, last);
 }
 
@@ -83,41 +65,12 @@ export function getTimeStep(timeValues: number[]): number {
   return Number.isFinite(minInterval) ? minInterval : FALLBACK_TIME_STEP;
 }
 
-export function makeCells<V>(
-  values: Array<V | null>,
-  timeValues: number[],
-  timeZone: string,
-  timeRange: TimeRange,
-  height = 1,
-  width = 1
-): Array<Cell<V>> {
-  const tz = resolveTimeZone(timeZone);
-  const xTime = makeTimeScale(timeRange, width, tz);
-  const yAxis = makeTimeOfDayScale(tz, height);
-
+/** Turns samples into cells, dropping the parts of cells on days outside the calendar. */
+export function makeCells<V>(values: Array<V | null>, timeValues: number[], calendar: Calendar): Array<Cell<V>> {
+  const { days, dayAt, timeOfDay } = calendar;
   const timeStep = getTimeStep(timeValues);
+  const TIME_EPS = 60_000;
   const cells: Array<Cell<V>> = [];
-
-  const startDate = Temporal.Instant.fromEpochMilliseconds(timeRange.from.valueOf()).toZonedDateTimeISO(tz);
-  let dayStart = startDate.startOfDay();
-  let nextDay = dayStart;
-  // Epoch milliseconds of dayStart and nextDay, as Temporal's epoch getters are costly per sample
-  let dayStartMs = dayStart.epochMilliseconds;
-  let nextDayMs = dayStartMs;
-  let dayWidth = 0,
-    x = 0,
-    nextDayX = 0;
-  const advanceDay = (start: Temporal.ZonedDateTime) => {
-    dayStart = start;
-    nextDay = dayStart.add({ days: 1 });
-    dayStartMs = dayStart.epochMilliseconds;
-    nextDayMs = nextDay.epochMilliseconds;
-  };
-  // Equals yAxis within the current day, without a time zone lookup per sample
-  const timeOfDay = (epochMs: number) =>
-    epochMs >= dayStartMs && epochMs < nextDayMs
-      ? (height * (epochMs - dayStartMs)) / (nextDayMs - dayStartMs)
-      : yAxis(epochMs);
 
   for (let i = 0; i < values.length; i++) {
     const value = values[i];
@@ -131,41 +84,30 @@ export function makeCells<V>(
     if (timeValues[i + 1] === time) {
       continue;
     }
+    const endTime = time + timeStep;
 
-    while (time >= nextDayMs) {
-      advanceDay(
-        dayStart === nextDay
-          ? Temporal.Instant.fromEpochMilliseconds(time).toZonedDateTimeISO(tz).startOfDay()
-          : nextDay
-      );
-      x = xTime(dayStart.epochMilliseconds);
-      nextDayX = xTime(nextDay.epochMilliseconds);
-      dayWidth = nextDayX - x;
-    }
-
-    const cellEndTime = time + timeStep;
-
-    const TIME_EPS = 60_000;
+    // A sample before the first day may still reach into it
+    const firstDay = dayAt(time) ?? (time < (days[0]?.start ?? 0) ? 0 : days.length);
     const segments: Array<Cell<V>> = [];
-    let top = timeOfDay(time);
-    for (;;) {
-      segments.push({
-        time,
-        endTime: cellEndTime,
-        value,
-        left: x,
-        top,
-        right: x + dayWidth,
-        bottom: cellEndTime < nextDayMs ? timeOfDay(cellEndTime) : height,
-      });
-      if (cellEndTime - nextDayMs <= TIME_EPS) {
+    for (let index = firstDay; index < days.length; index++) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- index is within the days
+      const day = days[index]!;
+      if (endTime <= day.start) {
         break;
       }
-      advanceDay(nextDay);
-      x = nextDayX;
-      nextDayX = xTime(nextDay.epochMilliseconds);
-      dayWidth = nextDayX - x;
-      top = 0;
+      /* eslint-disable @typescript-eslint/no-non-null-assertion -- both instants lie within the day */
+      segments.push({
+        time,
+        endTime,
+        value,
+        ...getDayColumn(calendar, index),
+        top: time > day.start ? timeOfDay(time)! : 0,
+        bottom: endTime < day.end ? timeOfDay(endTime)! : 1,
+      });
+      /* eslint-enable @typescript-eslint/no-non-null-assertion */
+      if (endTime - day.end <= TIME_EPS) {
+        break;
+      }
     }
 
     if (segments.length > 1) {

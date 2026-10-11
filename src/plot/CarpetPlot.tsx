@@ -9,6 +9,7 @@ import { BandHighlightShape, findBandHighlight, type BandHighlight } from './Ban
 import { CarpetBand } from './CarpetBand';
 import { CarpetTooltip } from './CarpetTooltip';
 import { makeCells, makeTimeRangeArea, type Cell } from './makeCells';
+import { makeCalendar } from '../time/calendar';
 import { makePlotLayout } from './plotLayout';
 import { getCellColor, type CellColoring } from '../color/useCellColoring';
 import type { CellValue } from '../color/categories';
@@ -83,14 +84,15 @@ export const CarpetPlot: React.FC<ChartProps> = ({
 }) => {
   const theme = useTheme2();
 
+  const calendar = useMemo(() => makeCalendar(timeRange, timeZone), [timeRange, timeZone]);
   // The series are rebuilt on every render, so the memos track their values
   const timeLists = useStableItems(series.map((s) => s.timeField.values));
   const valueLists = useStableItems(series.map((s) => s.valueField.values));
   const bandCells = useMemo(
-    () => valueLists.map((values, band) => makeCells(values, timeLists[band] ?? [], timeZone, timeRange)),
-    [valueLists, timeLists, timeZone, timeRange]
+    () => valueLists.map((values, band) => makeCells(values, timeLists[band] ?? [], calendar)),
+    [valueLists, timeLists, calendar]
   );
-  const timeRangeArea = useMemo(() => makeTimeRangeArea(timeZone, timeRange), [timeZone, timeRange]);
+  const timeRangeArea = useMemo(() => makeTimeRangeArea(calendar), [calendar]);
 
   const fontSize = theme.typography.fontSize;
   const layout = useMemo(
@@ -127,8 +129,7 @@ export const CarpetPlot: React.FC<ChartProps> = ({
           y={heatmap.height}
           height={layout.xAxisHeight}
           width={heatmap.width}
-          range={timeRange}
-          timeZone={timeZone}
+          calendar={calendar}
         />
       )}
       {showYAxis &&

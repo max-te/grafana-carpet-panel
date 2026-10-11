@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { dateTime, type Field, type TimeRange } from '@grafana/data';
 import * as testData from '../testsupport/testdata.json';
 import { findCellsAt, makeCells, makeSpanArea, makeTimeRangeArea, type Area, type Cell } from '../src/plot/makeCells';
+import { makeCalendar } from '../src/time/calendar';
 
 const timeRange: TimeRange = {
   from: dateTime(testData.request.range.from),
@@ -18,8 +19,6 @@ const timeValues = timeField.values;
 const valueValues = valueField.values;
 
 const timeZone = 'Europe/Berlin';
-const width = 1000;
-const height = 360;
 
 const expectArea = (actual: Area[], expected: Area[]) => {
   expect(actual).toHaveLength(expected.length);
@@ -32,7 +31,7 @@ const expectArea = (actual: Area[], expected: Area[]) => {
 
 describe('makeCells', () => {
   it('should produce consistent output for testdata', () => {
-    const cells = makeCells(valueValues, timeValues, timeZone, timeRange, height, width);
+    const cells = makeCells(valueValues, timeValues, makeCalendar(timeRange, timeZone));
 
     expect(cells).toBeDefined();
     expect(Array.isArray(cells)).toBe(true);
@@ -48,7 +47,7 @@ describe('makeCells', () => {
       raw: { from: '1970-01-01T00:00:01Z', to: '1970-01-01T00:00:06Z' },
     };
 
-    const cells = makeCells(valuesWithNull, times, 'utc', tr, 100, 100);
+    const cells = makeCells(valuesWithNull, times, makeCalendar(tr, 'utc'));
 
     expect(cells.length).toBe(4);
   });
@@ -65,7 +64,7 @@ describe('makeCells', () => {
       },
     };
 
-    const cells = makeCells(values, times, 'utc', tr, 100, 200);
+    const cells = makeCells(values, times, makeCalendar(tr, 'utc'));
 
     const splitCells = cells.filter((c) => c.split !== undefined);
     expect(splitCells).toHaveLength(2);
@@ -78,7 +77,7 @@ describe('makeCells', () => {
       raw: { from: '2024-01-01T00:00:00Z', to: '2024-01-04T12:00:00Z' },
     };
     const segmentsOfFirstSample = (times: number[]) => {
-      const cells = makeCells([1, 2], times, 'utc', tr);
+      const cells = makeCells([1, 2], times, makeCalendar(tr, 'utc'));
       return cells.filter((c) => c.time === cells[0]?.time);
     };
 
@@ -122,7 +121,7 @@ describe('makeCells', () => {
       raw: { from: '1969-12-31T20:00:00Z', to: '1970-01-01T04:00:00Z' },
     };
 
-    const cells = makeCells(values, times, 'utc', tr, 100, 200);
+    const cells = makeCells(values, times, makeCalendar(tr, 'utc'));
 
     expect(cells.length).toBeGreaterThan(0);
     for (const c of cells) {
@@ -140,7 +139,7 @@ describe('makeCells', () => {
       raw: { from: '2024-01-01T00:00:00Z', to: '2024-01-04T12:00:00Z' },
     };
 
-    const cells = makeCells([1, 2], times, 'utc', tr);
+    const cells = makeCells([1, 2], times, makeCalendar(tr, 'utc'));
 
     for (const c of cells) {
       expect(c.left).toBeCloseTo(0.5);
@@ -155,7 +154,7 @@ describe('makeCells', () => {
       raw: { from: '2024-01-01T00:00:00Z', to: '2024-01-02T00:00:00Z' },
     };
 
-    const cells = makeCells([1], [dateTime('2024-01-01T10:00:00Z').valueOf()], 'utc', tr);
+    const cells = makeCells([1], [dateTime('2024-01-01T10:00:00Z').valueOf()], makeCalendar(tr, 'utc'));
 
     expect(cells.length).toBe(1);
   });
@@ -168,7 +167,7 @@ describe('makeCells', () => {
       raw: { from: '2024-01-01T00:00:00Z', to: '2024-01-02T00:00:00Z' },
     };
 
-    const cells = makeCells([1, 2, 3], [start, start, start + 3600_000], 'utc', tr);
+    const cells = makeCells([1, 2, 3], [start, start, start + 3600_000], makeCalendar(tr, 'utc'));
 
     for (const c of cells) {
       expect(c.bottom - c.top).toBeCloseTo(1 / 24);
@@ -184,7 +183,7 @@ describe('makeCells', () => {
     };
 
     // Two-hour cells; the repeated one crosses midnight
-    const cells = makeCells([1, 2, 3], [start, start, start + 7200_000], 'utc', tr);
+    const cells = makeCells([1, 2, 3], [start, start, start + 7200_000], makeCalendar(tr, 'utc'));
 
     expect(cells.map((c) => [c.value, c.split])).toEqual([
       [2, 1],
@@ -194,39 +193,29 @@ describe('makeCells', () => {
     expect(cells.every((c) => c.bottom > c.top)).toBe(true);
   });
 
-  describe('on daylight saving transition days in Europe/Berlin', () => {
-    const hourlyCells = (from: string, to: string) => {
-      const tr = { from: dateTime(from), to: dateTime(to), raw: { from, to } };
-      const times: number[] = [];
-      for (let t = tr.from.valueOf(); t < tr.to.valueOf(); t += 3600_000) {
-        times.push(t);
-      }
-      return makeCells(
-        times.map(() => 1),
-        times,
-        'Europe/Berlin',
-        tr
-      );
+  it('should keep only the parts of cells on days within the range', () => {
+    const tr = {
+      from: dateTime('2024-01-02T00:00:00Z'),
+      to: dateTime('2024-01-03T23:59:59Z'),
+      raw: { from: '2024-01-02T00:00:00Z', to: '2024-01-03T23:59:59Z' },
     };
-    const cellAt = (cells: Cell[], iso: string) => cells.find((c) => c.time === dateTime(iso).valueOf());
+    // Daily cells: the first reaches from the day before the range into its first day, the last lies after it
+    const times = ['2024-01-01T12:00:00Z', '2024-01-02T12:00:00Z', '2024-01-04T12:00:00Z'].map((t) =>
+      dateTime(t).valueOf()
+    );
 
-    it('should scale the 23-hour spring-forward day by its real length', () => {
-      const cells = hourlyCells('2025-03-29T00:00:00Z', '2025-04-01T00:00:00Z');
-      // Local noon (CEST) is 11 hours after local midnight (CET)
-      expect(cellAt(cells, '2025-03-30T10:00:00Z')?.top).toBeCloseTo(11 / 23);
-      expect(cellAt(cells, '2025-03-30T10:00:00Z')?.bottom).toBeCloseTo(12 / 23);
-    });
+    const cells = makeCells([1, 2, 3], times, makeCalendar(tr, 'utc'));
 
-    it('should scale the 25-hour fall-back day by its real length', () => {
-      const cells = hourlyCells('2025-10-25T00:00:00Z', '2025-10-28T00:00:00Z');
-      // Local noon (CET) is 13 hours after local midnight (CEST)
-      expect(cellAt(cells, '2025-10-26T11:00:00Z')?.top).toBeCloseTo(13 / 25);
-      expect(cellAt(cells, '2025-10-26T11:00:00Z')?.bottom).toBeCloseTo(14 / 25);
-    });
+    expect(cells.map((c) => [c.value, c.split])).toEqual([
+      [1, undefined],
+      [2, 1],
+      [2, 2],
+    ]);
+    expectArea(cells.slice(0, 1), [{ left: 0, top: 0, right: 0.5, bottom: 0.5 }]);
   });
 
   it('should match snapshot with testdata', () => {
-    const cells = makeCells(valueValues, timeValues, timeZone, timeRange, height, width);
+    const cells = makeCells(valueValues, timeValues, makeCalendar(timeRange, timeZone));
 
     expect(cells).toMatchSnapshot();
   });
@@ -240,7 +229,7 @@ describe('makeTimeRangeArea', () => {
       raw: { from: '2024-01-01T06:00:00Z', to: '2024-01-04T12:00:00Z' },
     };
 
-    expectArea(makeTimeRangeArea('utc', tr), [
+    expectArea(makeTimeRangeArea(makeCalendar(tr, 'utc')), [
       { left: 0, top: 0.25, right: 0.25, bottom: 1 },
       { left: 0.25, top: 0, right: 0.75, bottom: 1 },
       { left: 0.75, top: 0, right: 1, bottom: 0.5 },
@@ -254,7 +243,7 @@ describe('makeTimeRangeArea', () => {
       raw: { from: '2024-01-01T06:00:00Z', to: '2024-01-01T18:00:00Z' },
     };
 
-    expectArea(makeTimeRangeArea('utc', tr), [{ left: 0, top: 0.25, right: 1, bottom: 0.75 }]);
+    expectArea(makeTimeRangeArea(makeCalendar(tr, 'utc')), [{ left: 0, top: 0.25, right: 1, bottom: 0.75 }]);
   });
 });
 
@@ -284,8 +273,7 @@ describe('findCellsAt', () => {
   const hourly = makeCells(
     [1, 2, 3, 4],
     ['10:00', '11:00', '12:00', '14:00'].map((t) => dateTime(`2024-01-01T${t}:00Z`).valueOf()),
-    'utc',
-    tr
+    makeCalendar(tr, 'utc')
   );
 
   it('should resolve the start of a cell to that cell, not the one ending there', () => {
@@ -304,8 +292,7 @@ describe('findCellsAt', () => {
     const cells = makeCells(
       [1, 2],
       ['2024-01-01T12:00:00Z', '2024-01-03T12:00:00Z'].map((t) => dateTime(t).valueOf()),
-      'utc',
-      tr
+      makeCalendar(tr, 'utc')
     );
     const segments = findCellsAt(cells, at('2024-01-02T18:00:00Z'));
     expect(segments.map((c) => c.split)).toEqual([1, 2, 3]);

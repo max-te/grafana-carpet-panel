@@ -3,11 +3,10 @@ import React, { Fragment } from 'react';
 import { Line } from 'react-konva';
 // Registers Line, which react-konva's core entry omits
 import 'konva/lib/shapes/Line';
-import type { TimeRange } from '@grafana/data';
 import { Temporal } from 'temporal-polyfill';
-import { makeTimeScale } from '../time/useTimeScale';
+import type { Calendar } from '../time/calendar';
+import { getDayColumn } from '../plot/makeCells';
 import { makeDayTicks } from './dayTicks';
-import { resolveTimeZone } from '../time/timeZone';
 import { useFontEvents } from './useFontEvents';
 import { measureTextWidth, TextShape, truncateText } from './TextShape';
 import { formatHour, usesTwelveHourClock } from './hourLabels';
@@ -22,24 +21,24 @@ export const XAxisIndicator: React.FC<{
   y: number;
   height: number;
   width: number;
-  range: TimeRange;
-  timeZone: string;
-}> = React.memo(({ x, y, width, range, timeZone }) => {
+  calendar: Calendar;
+}> = React.memo(({ x, y, width, calendar }) => {
   useFontEvents();
   const theme = useTheme2();
-  const tz = resolveTimeZone(timeZone);
-  const fromZdt = Temporal.Instant.fromEpochMilliseconds(range.from.valueOf()).toZonedDateTimeISO(tz);
-  const toZdt = Temporal.Instant.fromEpochMilliseconds(range.to.valueOf()).toZonedDateTimeISO(tz);
-  const totalMonths = toZdt.since(fromZdt, { largestUnit: 'months' }).total({ unit: 'months', relativeTo: fromZdt });
+  const { days } = calendar;
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- a calendar has at least one day
+  const [firstDate, lastDate] = [days[0]!.date, days.at(-1)!.date];
+  const totalMonths = firstDate
+    .until(lastDate, { largestUnit: 'months' })
+    .total({ unit: 'months', relativeTo: firstDate });
   const isLong = totalMonths > 6;
-  const scale = React.useMemo(() => makeTimeScale(range, width, timeZone), [range, width, timeZone]);
   const fontSize = AXIS_FONT_SIZE;
   // Two-digit month and day sample label plus a one-em gap
   const minLabelSpacing =
     measureTextWidth(formatDay(WIDEST_SAMPLE_DAY, isLong), theme.typography.fontFamily, fontSize) + fontSize;
   const ticks = React.useMemo(
-    () => makeDayTicks(range, timeZone, Math.floor(width / minLabelSpacing)),
-    [range, timeZone, width, minLabelSpacing]
+    () => makeDayTicks(days, Math.floor(width / minLabelSpacing)),
+    [days, width, minLabelSpacing]
   );
 
   const spacing = width / ticks.length;
@@ -48,11 +47,11 @@ export const XAxisIndicator: React.FC<{
   return (
     <>
       <Line points={[x, y, x + width, y]} stroke={colorGrid} strokeWidth={1} />
-      {ticks.map((day, idx) => {
-        const dayStart = day.toZonedDateTime(tz).epochMilliseconds;
-        const nextDayStart = day.add({ days: 1 }).toZonedDateTime(tz).epochMilliseconds;
-        const tickX = (scale(dayStart) + scale(nextDayStart)) / 2 + x;
-        const label = formatDay(day, isLong);
+      {ticks.map((dayIndex, idx) => {
+        const { left, right } = getDayColumn(calendar, dayIndex);
+        const tickX = ((left + right) / 2) * width + x;
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- ticks index the days
+        const label = formatDay(days[dayIndex]!.date, isLong);
         return (
           // eslint-disable-next-line @eslint-react/no-array-index-key -- In the Konva context, this is okay. Using the date causes a bug where stale labels remain.
           <Fragment key={idx}>
