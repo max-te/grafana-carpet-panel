@@ -50,7 +50,7 @@ export function makeSpanArea(
 }
 
 /** Smallest interval between samples, in milliseconds. */
-export function getTimeStep(timeValues: number[]): number {
+function getTimeStep(timeValues: number[]): number {
   let minInterval = Infinity;
   for (let i = 1; i < timeValues.length; i++) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- range checked above
