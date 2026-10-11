@@ -1,7 +1,13 @@
 import type { Area, Cell } from './makeCells';
 import type { Box } from './traceOutline';
 
-type Point = { x: number; y: number };
+export type Point = { x: number; y: number };
+
+/** A cell picked by the pointer: its band and its index among the band's cells */
+export interface At {
+  band: number;
+  index: number;
+}
 
 export interface PlotLayoutInput {
   width: number;
@@ -47,7 +53,7 @@ export interface PlotLayout {
   yAxisWidth: number;
   bands: BandLayout[];
   /** The band and cell index under a point within the heatmap, if any */
-  pick: (point: Point) => { band: number; index: number } | undefined;
+  pick: (point: Point) => At | undefined;
   /** The bottom-right corner of an area of a band, on the stage */
   anchorOf: (band: number, area: Area) => Point | undefined;
 }

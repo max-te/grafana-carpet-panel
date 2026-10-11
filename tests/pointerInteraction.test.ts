@@ -66,6 +66,14 @@ describe('step', () => {
       expect(effects.at(-1)).toEqual([{ kind: 'hover', cell: null }]);
     });
 
+    it('should keep the same state while moves change nothing', () => {
+      const { state } = run([move(0, 1)]);
+      expect(run([move(0, 1)], twoBands, state).state).toBe(state);
+
+      const outside = run([{ kind: 'leave' }]).state;
+      expect(run([{ kind: 'move', dragging: false }, { kind: 'leave' }], twoBands, outside).state).toBe(outside);
+    });
+
     it('should hide the tooltip on reposition without reporting, and report again on the next move', () => {
       const { state, effects } = run([move(0, 1), { kind: 'reposition' }]);
       expect(effects.at(-1)).toEqual([]);

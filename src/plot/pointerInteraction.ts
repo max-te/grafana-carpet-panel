@@ -1,15 +1,9 @@
 import { findCellsAt, makeSpanArea, type Area, type Cell } from './makeCells';
 import type { CellValue } from '../color/categories';
+import type { At, Point } from './plotLayout';
 
-type Point = { x: number; y: number };
 type CellSpan = Pick<Cell, 'time' | 'endTime'>;
-type BandCells = Array<Array<Cell<CellValue>>>;
-
-/** A cell picked by the pointer: its band and its index among the band's cells */
-export interface At {
-  band: number;
-  index: number;
-}
+export type BandCells = Array<Array<Cell<CellValue>>>;
 
 /** A hover from another panel of the dashboard */
 export interface ExternalHover {
@@ -102,9 +96,24 @@ export function selectTooltipTarget(state: PointerState, bandCells: BandCells): 
   if (hover || !external?.tooltipOrigin) {
     return hover;
   }
-  const band = bandCells.findIndex((cells) => findCellsAt(cells, external.time).length > 0);
-  const cell = bandCells[band] && findCellsAt(bandCells[band], external.time)[0];
-  return cell && { band, cell, stageOrigin: external.tooltipOrigin };
+  for (const [band, cells] of bandCells.entries()) {
+    const cell = findCellsAt(cells, external.time)[0];
+    if (cell) {
+      return { band, cell, stageOrigin: external.tooltipOrigin };
+    }
+  }
+  return undefined;
+}
+
+/** Keeps the same state object when nothing changed, so that the plot need not re-render. */
+function withPointer(
+  state: PointerState,
+  pointer: PointerState['pointer'],
+  selectionStart: PointerState['selectionStart']
+): PointerState {
+  return pointer === state.pointer && selectionStart === state.selectionStart
+    ? state
+    : { ...state, pointer, selectionStart };
 }
 
 function transition(state: PointerState, event: PointerEvent, bandCells: BandCells): PointerState {
@@ -113,20 +122,15 @@ function transition(state: PointerState, event: PointerEvent, bandCells: BandCel
       const selectionStart = event.dragging ? state.selectionStart : null;
       const cell = cellAt(bandCells, event.at);
       if (!event.at || !cell) {
-        return { ...state, selectionStart, pointer: null };
+        return withPointer(state, null, selectionStart);
       }
       const { pointer } = state;
       // Keeps the pointer while it stays within the cell, unless scrolling or resizing hid the tooltip
       const isSameCell =
         pointer?.at.band === event.at.band && pointer.at.index === event.at.index && pointer.time === cell.time;
-      return {
-        ...state,
-        selectionStart,
-        pointer:
-          isSameCell && pointer.stageOrigin
-            ? pointer
-            : { at: event.at, time: cell.time, stageOrigin: event.stageOrigin },
-      };
+      const next =
+        isSameCell && pointer.stageOrigin ? pointer : { at: event.at, time: cell.time, stageOrigin: event.stageOrigin };
+      return withPointer(state, next, selectionStart);
     }
     case 'down': {
       const cell = cellAt(bandCells, event.at);
@@ -135,7 +139,7 @@ function transition(state: PointerState, event: PointerEvent, bandCells: BandCel
     case 'up':
       return cellAt(bandCells, event.at) ? { ...state, selectionStart: null } : state;
     case 'leave':
-      return { ...state, pointer: null };
+      return withPointer(state, null, state.selectionStart);
     case 'release':
       return state.selectionStart ? { ...state, selectionStart: null } : state;
     case 'reposition': {
