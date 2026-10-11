@@ -5,7 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import type { Cell } from './makeCells';
 import type { CellValue } from '../color/categories';
 import type { PlotLayout } from './plotLayout';
-import { initialPointerState, step, type ExternalHover, type PointerEvent } from './pointerInteraction';
+import { initialPointerState, step, type BandCells, type ExternalHover, type PointerEvent } from './pointerInteraction';
 import { useClientPositionChange } from '../hooks/useClientPositionChange';
 
 function getStageOrigin(node: Konva.Node) {
@@ -15,7 +15,7 @@ function getStageOrigin(node: Konva.Node) {
 
 /** Feeds the heatmap layer's mouse events, data refreshes and other panels' hover into the pointer interaction. */
 export function useCellPointer(
-  bandCells: Array<Array<Cell<CellValue>>>,
+  bandCells: BandCells,
   layout: PlotLayout,
   externalHover: ExternalHover | undefined,
   onHover?: (cell: Cell<CellValue> | null) => void,
