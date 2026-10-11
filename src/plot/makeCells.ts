@@ -17,12 +17,9 @@ export type Area = Pick<Cell, 'left' | 'top' | 'right' | 'bottom'>;
 
 const FALLBACK_TIME_STEP = 3_600_000;
 
-/** Horizontal extent of a day's column, as wide as the day is long. */
+/** Horizontal extent of a day's column; every day gets an equal share, however long it is. */
 export function getDayColumn({ days }: Calendar, index: number): Pick<Area, 'left' | 'right'> {
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- a calendar has at least one day, and callers pass a day's index
-  const [first, last, day] = [days[0]!, days.at(-1)!, days[index]!];
-  const scale = (epochMs: number) => (epochMs - first.start) / (last.end - 1 - first.start);
-  return { left: scale(day.start), right: scale(day.end) };
+  return { left: index / days.length, right: (index + 1) / days.length };
 }
 
 /** The region of the plot covered by the time range, as up to three boxes. */

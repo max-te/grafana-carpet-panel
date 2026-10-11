@@ -193,6 +193,27 @@ describe('makeCells', () => {
     expect(cells.every((c) => c.bottom > c.top)).toBe(true);
   });
 
+  it('should give every day an equal column, short and long days included', () => {
+    const tr = {
+      from: dateTime('2025-03-29T12:00:00Z'),
+      to: dateTime('2025-03-31T12:00:00Z'),
+      raw: { from: '2025-03-29T12:00:00Z', to: '2025-03-31T12:00:00Z' },
+    };
+    // Local noon on each day, plus 13:00 on the first, so that hourly cells stay within their day
+    const times = ['2025-03-29T11:00:00Z', '2025-03-29T12:00:00Z', '2025-03-30T10:00:00Z', '2025-03-31T10:00:00Z'].map(
+      (t) => dateTime(t).valueOf()
+    );
+
+    const cells = makeCells([1, 2, 3, 4], times, makeCalendar(tr, 'Europe/Berlin'));
+
+    expect(cells.map((c) => [c.left, c.right])).toEqual([
+      [0, 1 / 3],
+      [0, 1 / 3],
+      [1 / 3, 2 / 3],
+      [2 / 3, 1],
+    ]);
+  });
+
   it('should keep only the parts of cells on days within the range', () => {
     const tr = {
       from: dateTime('2024-01-02T00:00:00Z'),
