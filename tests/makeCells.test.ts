@@ -106,7 +106,7 @@ describe('makeCells', () => {
         { left: 0.5, top: 0, right: 0.75, bottom: 2 / 24 },
       ]);
       for (const c of segments) {
-        expect(c.endTime).toBe(dateTime('2024-01-03T02:00:00Z').valueOf() / 1000);
+        expect(c.endTime).toBe(dateTime('2024-01-03T02:00:00Z').valueOf());
         expect(c.value).toBe(1);
       }
     });
@@ -208,7 +208,7 @@ describe('makeCells', () => {
         tr
       );
     };
-    const cellAt = (cells: Cell[], iso: string) => cells.find((c) => c.time === dateTime(iso).valueOf() / 1000);
+    const cellAt = (cells: Cell[], iso: string) => cells.find((c) => c.time === dateTime(iso).valueOf());
 
     it('should scale the 23-hour spring-forward day by its real length', () => {
       const cells = hourlyCells('2025-03-29T00:00:00Z', '2025-04-01T00:00:00Z');
@@ -272,14 +272,14 @@ describe('makeSpanArea', () => {
 });
 
 describe('findCellsAt', () => {
-  const hour = 3600;
+  const hour = 3_600_000;
   const tr = {
     from: dateTime('2024-01-01T00:00:00Z'),
     to: dateTime('2024-01-04T00:00:00Z'),
     raw: { from: '2024-01-01T00:00:00Z', to: '2024-01-04T00:00:00Z' },
   };
-  const at = (iso: string) => dateTime(iso).valueOf() / 1000;
-  const startsOf = (cells: Cell[]) => cells.map((c) => new Date(c.time * 1000).toISOString());
+  const at = (iso: string) => dateTime(iso).valueOf();
+  const startsOf = (cells: Cell[]) => cells.map((c) => new Date(c.time).toISOString());
 
   const hourly = makeCells(
     [1, 2, 3, 4],

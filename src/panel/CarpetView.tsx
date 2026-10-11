@@ -35,7 +35,7 @@ export const CarpetView: React.FC<ViewProps> = ({
 
   const onHover = React.useCallback(
     (cell: { time: number; value: CellValue; } | null) => {
-      setGlobalHover(cell?.time ? cell.time * 1000 : null);
+      setGlobalHover(cell ? cell.time : null);
       setHoveredValue(cell?.value);
     },
     [setGlobalHover]

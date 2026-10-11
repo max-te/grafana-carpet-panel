@@ -111,7 +111,7 @@ export const CarpetTooltip: React.FC<TooltipProps> = ({
         content={
           target && items.length > 0 ? (
             <VizTooltipWrapper className={styles.tooltip}>
-              <VizTooltipHeader item={{ label: '', value: dateTimeFormat(target.cell.time * 1000, { timeZone }) }} />
+              <VizTooltipHeader item={{ label: '', value: dateTimeFormat(target.cell.time, { timeZone }) }} />
               <VizTooltipContent
                 items={items}
                 scrollable={mode === TooltipDisplayMode.Multi && maxHeight !== undefined}

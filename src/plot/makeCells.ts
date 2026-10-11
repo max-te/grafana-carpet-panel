@@ -4,7 +4,9 @@ import { makeTimeScale } from '../time/useTimeScale';
 import { resolveTimeZone } from '../time/timeZone';
 
 export type Cell<V = number> = {
+  /** Start of the sample, in epoch milliseconds */
   time: number;
+  /** End of the sample, in epoch milliseconds */
   endTime: number;
   value: V;
   left: number;
@@ -16,12 +18,12 @@ export type Cell<V = number> = {
 
 export type Area = Pick<Cell, 'left' | 'top' | 'right' | 'bottom'>;
 
-const FALLBACK_TIME_STEP = 3600;
+const FALLBACK_TIME_STEP = 3_600_000;
 
-/** Maps unix seconds to their position within the day, scaled to `height`. */
+/** Maps epoch milliseconds to their position within the day, scaled to `height`. */
 function makeTimeOfDayScale(tz: string, height: number) {
-  return (unixSeconds: number) => {
-    const zdt = Temporal.Instant.fromEpochMilliseconds(unixSeconds * 1000).toZonedDateTimeISO(tz);
+  return (epochMs: number) => {
+    const zdt = Temporal.Instant.fromEpochMilliseconds(epochMs).toZonedDateTimeISO(tz);
     const startOfDay = zdt.startOfDay();
     const secondsInDay = zdt.since(startOfDay, { largestUnit: 'seconds' }).total({ unit: 'seconds' });
     const totalDaySeconds = startOfDay
@@ -41,13 +43,13 @@ export function makeTimeRangeArea(timeZone: string, timeRange: TimeRange): Area[
   const to = Temporal.Instant.fromEpochMilliseconds(timeRange.to.valueOf()).toZonedDateTimeISO(tz);
   const first = {
     left: xTime(from.startOfDay().epochMilliseconds),
-    top: yAxis(from.epochMilliseconds / 1000),
+    top: yAxis(from.epochMilliseconds),
     right: xTime(from.startOfDay().add({ days: 1 }).epochMilliseconds),
   };
   const last = {
     left: xTime(to.startOfDay().epochMilliseconds),
     right: xTime(to.startOfDay().add({ days: 1 }).epochMilliseconds),
-    bottom: yAxis(to.epochMilliseconds / 1000),
+    bottom: yAxis(to.epochMilliseconds),
   };
   return makeSpanArea(first, last);
 }
@@ -68,7 +70,7 @@ export function makeSpanArea(
   return area;
 }
 
-/** Smallest interval between samples, in seconds. */
+/** Smallest interval between samples, in milliseconds. */
 export function getTimeStep(timeValues: number[]): number {
   let minInterval = Infinity;
   for (let i = 1; i < timeValues.length; i++) {
@@ -78,7 +80,7 @@ export function getTimeStep(timeValues: number[]): number {
       minInterval = interval;
     }
   }
-  return Number.isFinite(minInterval) ? minInterval / 1000 : FALLBACK_TIME_STEP;
+  return Number.isFinite(minInterval) ? minInterval : FALLBACK_TIME_STEP;
 }
 
 export function makeCells<V>(
@@ -96,26 +98,26 @@ export function makeCells<V>(
   const timeStep = getTimeStep(timeValues);
   const cells: Array<Cell<V>> = [];
 
-  const startDate = Temporal.Instant.fromEpochMilliseconds(timeRange.from.unix() * 1000).toZonedDateTimeISO(tz);
+  const startDate = Temporal.Instant.fromEpochMilliseconds(timeRange.from.valueOf()).toZonedDateTimeISO(tz);
   let dayStart = startDate.startOfDay();
   let nextDay = dayStart;
-  // Unix seconds of dayStart and nextDay, as Temporal's epoch getters are costly per sample
-  let dayStartUnix = dayStart.epochMilliseconds / 1000;
-  let nextDayUnix = dayStartUnix;
+  // Epoch milliseconds of dayStart and nextDay, as Temporal's epoch getters are costly per sample
+  let dayStartMs = dayStart.epochMilliseconds;
+  let nextDayMs = dayStartMs;
   let dayWidth = 0,
     x = 0,
     nextDayX = 0;
   const advanceDay = (start: Temporal.ZonedDateTime) => {
     dayStart = start;
     nextDay = dayStart.add({ days: 1 });
-    dayStartUnix = dayStart.epochMilliseconds / 1000;
-    nextDayUnix = nextDay.epochMilliseconds / 1000;
+    dayStartMs = dayStart.epochMilliseconds;
+    nextDayMs = nextDay.epochMilliseconds;
   };
   // Equals yAxis within the current day, without a time zone lookup per sample
-  const timeOfDay = (unixSeconds: number) =>
-    unixSeconds >= dayStartUnix && unixSeconds < nextDayUnix
-      ? (height * (unixSeconds - dayStartUnix)) / (nextDayUnix - dayStartUnix)
-      : yAxis(unixSeconds);
+  const timeOfDay = (epochMs: number) =>
+    epochMs >= dayStartMs && epochMs < nextDayMs
+      ? (height * (epochMs - dayStartMs)) / (nextDayMs - dayStartMs)
+      : yAxis(epochMs);
 
   for (let i = 0; i < values.length; i++) {
     const value = values[i];
@@ -124,17 +126,16 @@ export function makeCells<V>(
     }
     // timeValues and values share length
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const timeMs = timeValues[i]!;
+    const time = timeValues[i]!;
     // Sorted input puts repeated timestamps side by side; the last sample wins
-    if (timeValues[i + 1] === timeMs) {
+    if (timeValues[i + 1] === time) {
       continue;
     }
-    const time = timeMs / 1000;
 
-    while (time >= nextDayUnix) {
+    while (time >= nextDayMs) {
       advanceDay(
         dayStart === nextDay
-          ? Temporal.Instant.fromEpochMilliseconds(timeMs).toZonedDateTimeISO(tz).startOfDay()
+          ? Temporal.Instant.fromEpochMilliseconds(time).toZonedDateTimeISO(tz).startOfDay()
           : nextDay
       );
       x = xTime(dayStart.epochMilliseconds);
@@ -144,7 +145,7 @@ export function makeCells<V>(
 
     const cellEndTime = time + timeStep;
 
-    const TIME_EPS = 60;
+    const TIME_EPS = 60_000;
     const segments: Array<Cell<V>> = [];
     let top = timeOfDay(time);
     for (;;) {
@@ -155,9 +156,9 @@ export function makeCells<V>(
         left: x,
         top,
         right: x + dayWidth,
-        bottom: cellEndTime < nextDayUnix ? timeOfDay(cellEndTime) : height,
+        bottom: cellEndTime < nextDayMs ? timeOfDay(cellEndTime) : height,
       });
-      if (cellEndTime - nextDayUnix <= TIME_EPS) {
+      if (cellEndTime - nextDayMs <= TIME_EPS) {
         break;
       }
       advanceDay(nextDay);

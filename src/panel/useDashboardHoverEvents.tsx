@@ -12,7 +12,7 @@ export const useDashboardHoverEvents = (stageRef: React.RefObject<Konva.Stage | 
   const setGlobalHover = useCallback(
     (time: number | null) => {
       if (syncMode !== DashboardCursorSync.Off) {
-        if (time) {
+        if (time !== null) {
           const event = new DataHoverEvent({
             point: { time: time },
           });
@@ -28,9 +28,9 @@ export const useDashboardHoverEvents = (stageRef: React.RefObject<Konva.Stage | 
     const sub = eventBus.getStream(DataHoverEvent).subscribe((ev) => {
       const time = ev.payload.point.time;
       setIncomingHover(
-        time
+        time !== null && time !== undefined
           ? {
-            time: time / 1000,
+            time,
             tooltipOrigin: syncMode === DashboardCursorSync.Tooltip ? getVisibleClientOrigin(stageRef.current) : undefined,
           }
           : null

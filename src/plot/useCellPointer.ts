@@ -107,8 +107,8 @@ export function useCellPointer(
       const start = selectionStartRef.current;
       if (start && start.time !== end.time) {
         onChangeTimeRange?.({
-          from: Math.min(start.time, end.time) * 1000,
-          to: Math.max(start.endTime, end.endTime) * 1000,
+          from: Math.min(start.time, end.time),
+          to: Math.max(start.endTime, end.endTime),
         });
       }
       updateSelectionStart(null);
